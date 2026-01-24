@@ -1,0 +1,114 @@
+{
+  "name": "docusaurus-plugin-mcp-server",
+  "version": "0.1.0",
+  "description": "A Docusaurus plugin that exposes an MCP server endpoint for AI agents to search and retrieve documentation",
+  "author": "Steve Calvert",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/scalvert/docusaurus-plugin-mcp-server.git"
+  },
+  "homepage": "https://github.com/scalvert/docusaurus-plugin-mcp-server#readme",
+  "bugs": {
+    "url": "https://github.com/scalvert/docusaurus-plugin-mcp-server/issues"
+  },
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./adapters": {
+      "types": "./dist/adapters-entry.d.ts",
+      "import": "./dist/adapters-entry.mjs",
+      "require": "./dist/adapters-entry.js"
+    },
+    "./theme": {
+      "types": "./dist/theme/index.d.ts",
+      "import": "./dist/theme/index.mjs",
+      "require": "./dist/theme/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/ tests/ && prettier --check .",
+    "lint:fix": "eslint src/ tests/ --fix && prettier --write .",
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:all": "npm run lint && npm run typecheck && npm run test",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "docusaurus",
+    "docusaurus-plugin",
+    "mcp",
+    "model-context-protocol",
+    "documentation",
+    "ai",
+    "search",
+    "llm",
+    "claude",
+    "cursor"
+  ],
+  "peerDependencies": {
+    "@docusaurus/types": "^3.0.0",
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
+  },
+  "dependencies": {
+    "@gleanwork/mcp-config-schema": "^4.1.0",
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "flexsearch": "^0.7.43",
+    "fs-extra": "^11.0.0",
+    "hast-util-select": "^6.0.0",
+    "hast-util-to-string": "^3.0.0",
+    "p-map": "^7.0.0",
+    "rehype-parse": "^9.0.0",
+    "rehype-remark": "^10.0.0",
+    "remark-gfm": "^4.0.0",
+    "remark-stringify": "^11.0.0",
+    "unified": "^11.0.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@docusaurus/types": "^3.9.2",
+    "@types/fs-extra": "^11.0.0",
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.0.0",
+    "@types/react-dom": "^18.0.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "@vitest/coverage-v8": "^2.0.0",
+    "eslint": "^8.57.0",
+    "eslint-import-resolver-typescript": "^3.0.0",
+    "eslint-plugin-import": "^2.29.0",
+    "prettier": "^3.0.0",
+    "tsup": "^8.0.0",
+    "typescript": "^5.0.0",
+    "vitest": "^2.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "volta": {
+    "node": "22.11.0"
+  }
+}
