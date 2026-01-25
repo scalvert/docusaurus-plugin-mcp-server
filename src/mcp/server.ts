@@ -101,7 +101,9 @@ export class McpDocsServer {
 
         const results = executeDocsSearch({ query, limit }, this.searchIndex, this.docs);
         return {
-          content: [{ type: 'text' as const, text: formatSearchResults(results, this.config.baseUrl) }],
+          content: [
+            { type: 'text' as const, text: formatSearchResults(results, this.config.baseUrl) },
+          ],
         };
       }
     );
@@ -165,7 +167,10 @@ export class McpDocsServer {
         const result = executeDocsGetSection({ route, headingId }, this.docs);
         return {
           content: [
-            { type: 'text' as const, text: formatSectionContent(result, headingId, this.config.baseUrl) },
+            {
+              type: 'text' as const,
+              text: formatSectionContent(result, headingId, this.config.baseUrl),
+            },
           ],
         };
       }

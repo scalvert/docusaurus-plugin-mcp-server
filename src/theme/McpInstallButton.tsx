@@ -83,7 +83,7 @@ export function McpInstallButton({
   if (!config.serverUrl || !config.serverName) {
     console.error(
       '[McpInstallButton] Missing serverUrl or serverName. ' +
-      'Either pass them as props or configure the docusaurus-plugin-mcp-server plugin.'
+        'Either pass them as props or configure the docusaurus-plugin-mcp-server plugin.'
     );
     return null;
   }

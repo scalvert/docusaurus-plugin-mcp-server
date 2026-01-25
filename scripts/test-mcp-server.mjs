@@ -59,7 +59,13 @@ npm install my-platform
     headings: [
       { level: 1, text: 'Installation', id: 'installation', startOffset: 0, endOffset: 80 },
       { level: 2, text: 'Prerequisites', id: 'prerequisites', startOffset: 81, endOffset: 200 },
-      { level: 2, text: 'Installing via npm', id: 'installing-via-npm', startOffset: 201, endOffset: 300 },
+      {
+        level: 2,
+        text: 'Installing via npm',
+        id: 'installing-via-npm',
+        startOffset: 201,
+        endOffset: 300,
+      },
     ],
   },
   {

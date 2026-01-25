@@ -1,9 +1,6 @@
 import { useMemo } from 'react';
 import { usePluginData } from '@docusaurus/useGlobalData';
-import {
-  MCPConfigRegistry,
-  type RegistryOptions,
-} from '@gleanwork/mcp-config-schema/browser';
+import { MCPConfigRegistry, type RegistryOptions } from '@gleanwork/mcp-config-schema/browser';
 
 /**
  * Configuration from the plugin

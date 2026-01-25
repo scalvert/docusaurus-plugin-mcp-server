@@ -78,7 +78,7 @@ export function createSearchIndex(): FlexSearchDocument {
     // Apply stemming to normalize word forms
     encode: (str: string) => {
       // Normalize to lowercase and split into words
-      const words = str.toLowerCase().split(/[\s\-_.,;:!?'"()\[\]{}]+/);
+      const words = str.toLowerCase().split(/[\s\-_.,;:!?'"()[\]{}]+/);
       // Apply stemmer to each word
       return words.filter(Boolean).map(englishStemmer);
     },
@@ -261,10 +261,7 @@ function findMatchingHeadings(doc: ProcessedDoc, query: string): string[] {
 
   for (const heading of doc.headings) {
     const headingLower = heading.text.toLowerCase();
-    const headingStemmed = headingLower
-      .split(/\s+/)
-      .map(englishStemmer)
-      .join(' ');
+    const headingStemmed = headingLower.split(/\s+/).map(englishStemmer).join(' ');
 
     // Check if any query term matches the heading or its stemmed form
     if (
