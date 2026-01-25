@@ -64,6 +64,10 @@ const config = {
             position: 'left',
             label: 'Docs',
           },
+          {
+            type: 'custom-mcpInstall',
+            position: 'right',
+          },
         ],
       },
       footer: {

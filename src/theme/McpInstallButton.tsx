@@ -110,30 +110,39 @@ export function McpInstallButton({
   }, []);
 
   const getConfigForClient = useCallback(
-    (clientId: ClientId): string => {
-      const builder = registry.createBuilder(clientId);
-      const clientConfig = builder.buildConfiguration({
-        transport: 'http',
-        serverUrl: config.serverUrl,
-        serverName: config.serverName,
-      });
-      return JSON.stringify(clientConfig, null, 2);
+    (clientId: ClientId): string | null => {
+      try {
+        const builder = registry.createBuilder(clientId);
+        const clientConfig = builder.buildConfiguration({
+          transport: 'http',
+          serverUrl: config.serverUrl,
+          serverName: config.serverName,
+        });
+        return JSON.stringify(clientConfig, null, 2);
+      } catch {
+        // Client doesn't support local configuration
+        return null;
+      }
     },
     [registry, config.serverUrl, config.serverName]
   );
 
   const getCommandForClient = useCallback(
     (clientId: ClientId): string | null => {
-      const builder = registry.createBuilder(clientId);
-      const cliStatus = builder.supportsCliInstallation();
-      if (!cliStatus.supported) {
+      try {
+        const builder = registry.createBuilder(clientId);
+        const cliStatus = builder.supportsCliInstallation();
+        if (!cliStatus.supported) {
+          return null;
+        }
+        return builder.buildCommand({
+          transport: 'http',
+          serverUrl: config.serverUrl,
+          serverName: config.serverName,
+        });
+      } catch {
         return null;
       }
-      return builder.buildCommand({
-        transport: 'http',
-        serverUrl: config.serverUrl,
-        serverName: config.serverName,
-      });
     },
     [registry, config.serverUrl, config.serverName]
   );
@@ -156,8 +165,13 @@ export function McpInstallButton({
 
           {clientConfigs.map((client) => {
             const command = getCommandForClient(client.id);
-            const config = getConfigForClient(client.id);
+            const clientConfig = getConfigForClient(client.id);
             const isCopied = copiedClient === client.id;
+
+            // Skip clients that don't support local configuration
+            if (!command && !clientConfig) {
+              return null;
+            }
 
             return (
               <div key={client.id} style={styles.clientSection}>
@@ -176,20 +190,20 @@ export function McpInstallButton({
                       {isCopied ? '✓' : '📋'}
                     </button>
                   </div>
-                ) : (
+                ) : clientConfig ? (
                   <div style={styles.codeBlock}>
                     <pre style={styles.pre}>
-                      <code style={styles.code}>{config}</code>
+                      <code style={styles.code}>{clientConfig}</code>
                     </pre>
                     <button
-                      onClick={() => copyToClipboard(config, client.id)}
+                      onClick={() => copyToClipboard(clientConfig, client.id)}
                       style={styles.copyButton}
                       title="Copy to clipboard"
                     >
                       {isCopied ? '✓' : '📋'}
                     </button>
                   </div>
-                )}
+                ) : null}
 
                 {client.localConfigNotes && (
                   <div style={styles.notes}>{client.localConfigNotes}</div>
