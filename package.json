@@ -58,9 +58,9 @@
     "lint:fix": "eslint src/ tests/ --fix && prettier --write .",
     "prepublishOnly": "npm run build",
     "test": "vitest run",
-    "test:mcp": "playwright test",
     "test:all": "npm run lint && npm run typecheck && npm run test && npm run test:mcp",
     "test:coverage": "vitest run --coverage",
+    "test:mcp": "playwright test",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
