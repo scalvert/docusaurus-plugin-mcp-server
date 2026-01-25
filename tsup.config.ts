@@ -14,5 +14,10 @@ export default defineConfig({
   splitting: false,
   treeshake: true,
   outDir: 'dist',
-  external: ['react', 'react-dom', '@docusaurus/useGlobalData'],
+  external: [
+    'react',
+    'react-dom',
+    '@docusaurus/useGlobalData',
+    /^@theme\//, // Docusaurus theme aliases resolved at runtime
+  ],
 });
