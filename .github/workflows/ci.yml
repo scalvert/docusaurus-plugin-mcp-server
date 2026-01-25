@@ -47,6 +47,31 @@ jobs:
       - name: Test
         run: npm test
 
+  mcp-integration:
+    name: MCP Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Build
+        run: npm run build
+
+      - name: Run MCP integration tests
+        run: npm run test:mcp
+
   coverage:
     name: Coverage
     runs-on: ubuntu-latest
