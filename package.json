@@ -124,6 +124,9 @@
   "engines": {
     "node": ">=20.0.0"
   },
+  "overrides": {
+    "tar": "^7.5.6"
+  },
   "publishConfig": {
     "registry": "https://registry.npmjs.org"
   },
