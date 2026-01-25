@@ -277,7 +277,58 @@ For the runtime adapters:
 
 *Use either file paths (Node.js) or pre-loaded data (Workers).
 
+## Verifying Your Build
+
+After running `npm run build`, use the included CLI to verify the MCP output:
+
+```bash
+npx docusaurus-mcp-verify
+```
+
+This checks that:
+- All required files exist (`docs.json`, `search-index.json`, `manifest.json`)
+- Document structure is valid
+- The MCP server can initialize and load the content
+
+You can specify a custom build directory:
+
+```bash
+npx docusaurus-mcp-verify ./custom-build
+```
+
+Example output:
+
+```
+🔍 MCP Build Verification
+==================================================
+Build directory: /path/to/your/project/build
+
+📁 Checking build output...
+   ✓ Found 42 documents
+   ✓ All required files present
+   ✓ File structure valid
+
+🚀 Testing MCP server...
+   ✓ Server initialized with 42 documents
+
+✅ All checks passed!
+```
+
 ## Testing the Endpoint
+
+The easiest way to test your MCP server is with the official MCP Inspector:
+
+```bash
+npx @modelcontextprotocol/inspector
+```
+
+This opens a visual interface where you can:
+- Connect to your server URL
+- Browse available tools
+- Execute tool calls interactively
+- View responses in a formatted display
+
+Alternatively, test with curl:
 
 ```bash
 # List available tools
@@ -442,7 +493,7 @@ import {
 
 ## Requirements
 
-- Node.js >= 18
+- Node.js >= 20
 - Docusaurus 3.x
 
 ## License
