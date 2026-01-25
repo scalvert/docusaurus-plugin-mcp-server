@@ -58,7 +58,8 @@
     "lint:fix": "eslint src/ tests/ --fix && prettier --write .",
     "prepublishOnly": "npm run build",
     "test": "vitest run",
-    "test:all": "npm run lint && npm run typecheck && npm run test",
+    "test:mcp": "playwright test",
+    "test:all": "npm run lint && npm run typecheck && npm run test && npm run test:mcp",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
@@ -81,6 +82,8 @@
   "devDependencies": {
     "@docusaurus/core": "^3.9.2",
     "@docusaurus/types": "^3.9.2",
+    "@gleanwork/mcp-server-tester": "^0.12.0",
+    "@playwright/test": "^1.58.0",
     "@release-it-plugins/lerna-changelog": "^5.0.0",
     "@types/fs-extra": "^11.0.0",
     "@types/node": "^20.0.0",
