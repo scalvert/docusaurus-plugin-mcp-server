@@ -21,7 +21,6 @@ export type {
 
 export { DEFAULT_OPTIONS } from './types/index.js';
 
-// Provider types and loader
 export type {
   ProviderContext,
   ContentIndexer,
