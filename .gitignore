@@ -3,6 +3,10 @@ node_modules/
 
 # Build output
 dist/
+build/
+
+# Docusaurus
+.docusaurus/
 
 # IDE
 .idea/
