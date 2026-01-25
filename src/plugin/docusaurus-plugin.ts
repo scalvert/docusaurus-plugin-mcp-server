@@ -13,7 +13,8 @@ import { collectRoutes } from './route-collector.js';
 import { extractContent, type ExtractContentOptions } from '../processing/html-parser.js';
 import { htmlToMarkdown } from '../processing/html-to-markdown.js';
 import { extractHeadingsFromMarkdown } from '../processing/heading-extractor.js';
-import { buildSearchIndex, exportSearchIndex } from '../search/flexsearch-indexer.js';
+import { loadIndexer } from '../providers/loader.js';
+import type { ProviderContext } from '../providers/types.js';
 
 /**
  * Resolve plugin options with defaults
@@ -26,6 +27,8 @@ function resolveOptions(options: McpServerPluginOptions): ResolvedPluginOptions 
       ...DEFAULT_OPTIONS.server,
       ...options.server,
     },
+    indexers: options.indexers,
+    search: options.search ?? DEFAULT_OPTIONS.search,
   };
 }
 
@@ -112,6 +115,12 @@ export default function mcpServerPlugin(
       console.log('[MCP] Starting MCP artifact generation...');
       const startTime = Date.now();
 
+      // Check if indexing is disabled
+      if (resolvedOptions.indexers === false) {
+        console.log('[MCP] Indexing disabled, skipping artifact generation');
+        return;
+      }
+
       // Collect routes from the build output
       const routes = await collectRoutes(outDir, resolvedOptions.excludeRoutes);
       console.log(`[MCP] Found ${routes.length} routes to process`);
@@ -145,35 +154,63 @@ export default function mcpServerPlugin(
         return;
       }
 
-      // Build docs index
-      const docsIndex: Record<string, ProcessedDoc> = {};
-      for (const doc of validDocs) {
-        docsIndex[doc.route] = doc;
-      }
-
-      // Build search index
-      console.log('[MCP] Building search index...');
-      const searchIndex = buildSearchIndex(validDocs);
-      const exportedIndex = await exportSearchIndex(searchIndex);
-
-      // Create manifest
-      const manifest: McpManifest = {
-        version: resolvedOptions.server.version,
-        buildTime: new Date().toISOString(),
-        docCount: validDocs.length,
-        serverName: resolvedOptions.server.name,
+      // Create provider context
+      const mcpOutputDir = path.join(outDir, resolvedOptions.outputDir);
+      const providerContext: ProviderContext = {
         baseUrl: context.siteConfig.url,
+        serverName: resolvedOptions.server.name,
+        serverVersion: resolvedOptions.server.version,
+        outputDir: mcpOutputDir,
       };
 
-      // Write output files
-      const mcpOutputDir = path.join(outDir, resolvedOptions.outputDir);
+      // Determine which indexers to run
+      // undefined = ['flexsearch'] for backward compatibility
+      const indexerSpecs = resolvedOptions.indexers ?? ['flexsearch'];
+
       await fs.ensureDir(mcpOutputDir);
 
-      await Promise.all([
-        fs.writeJson(path.join(mcpOutputDir, 'docs.json'), docsIndex, { spaces: 0 }),
-        fs.writeJson(path.join(mcpOutputDir, 'search-index.json'), exportedIndex, { spaces: 0 }),
-        fs.writeJson(path.join(mcpOutputDir, 'manifest.json'), manifest, { spaces: 2 }),
-      ]);
+      const indexerNames: string[] = [];
+
+      for (const indexerSpec of indexerSpecs) {
+        try {
+          const indexer = await loadIndexer(indexerSpec);
+
+          // Check if indexer wants to run (env var gating)
+          if (indexer.shouldRun && !indexer.shouldRun()) {
+            console.log(`[MCP] Skipping indexer: ${indexer.name}`);
+            continue;
+          }
+
+          console.log(`[MCP] Running indexer: ${indexer.name}`);
+          await indexer.initialize(providerContext);
+          await indexer.indexDocuments(validDocs);
+
+          // Write artifacts from this indexer
+          const artifacts = await indexer.finalize();
+          for (const [filename, content] of artifacts) {
+            await fs.writeJson(path.join(mcpOutputDir, filename), content, { spaces: 0 });
+          }
+
+          indexerNames.push(indexer.name);
+        } catch (error) {
+          console.error(`[MCP] Error running indexer "${indexerSpec}":`, error);
+          throw error;
+        }
+      }
+
+      // Write manifest (only if at least one indexer ran)
+      if (indexerNames.length > 0) {
+        const manifest: McpManifest = {
+          version: resolvedOptions.server.version,
+          buildTime: new Date().toISOString(),
+          docCount: validDocs.length,
+          serverName: resolvedOptions.server.name,
+          baseUrl: context.siteConfig.url,
+          indexers: indexerNames,
+        };
+
+        await fs.writeJson(path.join(mcpOutputDir, 'manifest.json'), manifest, { spaces: 2 });
+      }
 
       const elapsed = Date.now() - startTime;
       console.log(`[MCP] Artifacts written to ${mcpOutputDir}`);

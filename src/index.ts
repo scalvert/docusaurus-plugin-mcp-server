@@ -21,6 +21,21 @@ export type {
 
 export { DEFAULT_OPTIONS } from './types/index.js';
 
+// Provider types and loader
+export type {
+  ProviderContext,
+  ContentIndexer,
+  SearchProvider,
+  SearchProviderInitData,
+  SearchOptions,
+  ContentIndexerModule,
+  SearchProviderModule,
+} from './providers/types.js';
+
+export { loadIndexer, loadSearchProvider } from './providers/loader.js';
+export { FlexSearchIndexer } from './providers/indexers/flexsearch-indexer.js';
+export { FlexSearchProvider } from './providers/search/flexsearch-provider.js';
+
 export { docsSearchTool } from './mcp/tools/docs-search.js';
 export { docsGetPageTool } from './mcp/tools/docs-get-page.js';
 export { docsGetSectionTool } from './mcp/tools/docs-get-section.js';
