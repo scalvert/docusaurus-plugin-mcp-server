@@ -2,6 +2,8 @@
  * Netlify adapter for MCP server
  *
  * Creates a Netlify serverless function handler for the MCP server.
+ * Converts Netlify's AWS Lambda-style events to Web Standard Request
+ * and uses the MCP SDK's transport for proper protocol handling.
  *
  * @example
  * // netlify/functions/mcp.js
@@ -24,8 +26,11 @@ import type { McpServerConfig } from '../types/index.js';
  */
 export interface NetlifyEvent {
   httpMethod: string;
+  headers: Record<string, string | undefined>;
   body: string | null;
   isBase64Encoded?: boolean;
+  path?: string;
+  rawUrl?: string;
 }
 
 /**
@@ -52,7 +57,54 @@ interface NetlifyResponse {
 }
 
 /**
+ * Convert a Netlify event to a Web Standard Request
+ */
+function eventToRequest(event: NetlifyEvent): Request {
+  const url = event.rawUrl || `https://localhost${event.path || '/'}`;
+
+  const headers = new Headers();
+  for (const [key, value] of Object.entries(event.headers)) {
+    if (value) {
+      headers.set(key, value);
+    }
+  }
+
+  // Decode body if base64 encoded
+  let body: string | null = event.body;
+  if (body && event.isBase64Encoded) {
+    body = Buffer.from(body, 'base64').toString('utf-8');
+  }
+
+  return new Request(url, {
+    method: event.httpMethod,
+    headers,
+    body: event.httpMethod !== 'GET' && event.httpMethod !== 'HEAD' ? body : undefined,
+  });
+}
+
+/**
+ * Convert a Web Standard Response to a Netlify response
+ */
+async function responseToNetlify(response: Response): Promise<NetlifyResponse> {
+  const headers: Record<string, string> = {};
+  response.headers.forEach((value, key) => {
+    headers[key] = value;
+  });
+
+  const body = await response.text();
+
+  return {
+    statusCode: response.status,
+    headers,
+    body: body || undefined,
+  };
+}
+
+/**
  * Create a Netlify serverless function handler for the MCP server
+ *
+ * Uses the MCP SDK's WebStandardStreamableHTTPServerTransport for
+ * proper protocol handling.
  */
 export function createNetlifyHandler(config: McpServerConfig) {
   let server: McpDocsServer | null = null;
@@ -72,7 +124,18 @@ export function createNetlifyHandler(config: McpServerConfig) {
       'Content-Type': 'application/json',
     };
 
-    // Only allow POST requests
+    // Handle GET requests for health check
+    if (event.httpMethod === 'GET') {
+      const mcpServer = getServer();
+      const status = await mcpServer.getStatus();
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify(status),
+      };
+    }
+
+    // Only allow POST requests for MCP
     if (event.httpMethod !== 'POST') {
       return {
         statusCode: 405,
@@ -82,47 +145,23 @@ export function createNetlifyHandler(config: McpServerConfig) {
           id: null,
           error: {
             code: -32600,
-            message: 'Method not allowed. Use POST.',
+            message: 'Method not allowed. Use POST for MCP requests, GET for status.',
           },
         }),
       };
     }
 
     try {
-      // Parse the request body
-      let body: unknown;
-      try {
-        body = event.body ? JSON.parse(event.body) : null;
-      } catch {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({
-            jsonrpc: '2.0',
-            id: null,
-            error: {
-              code: -32700,
-              message: 'Parse error: Invalid JSON',
-            },
-          }),
-        };
-      }
-
       const mcpServer = getServer();
-      const response = await mcpServer.handleRequest(body);
 
-      // Handle notifications (null response)
-      if (response === null) {
-        return {
-          statusCode: 204,
-        };
-      }
+      // Convert Netlify event to Web Standard Request
+      const request = eventToRequest(event);
 
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify(response),
-      };
+      // Use the SDK's Web Standard transport to handle the request
+      const response = await mcpServer.handleWebRequest(request);
+
+      // Convert back to Netlify response format
+      return await responseToNetlify(response);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error('MCP Server Error:', error);

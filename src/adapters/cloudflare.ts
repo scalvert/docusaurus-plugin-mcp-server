@@ -5,6 +5,9 @@
  * Since Workers can't access the filesystem, this adapter requires
  * pre-loaded docs and search index data.
  *
+ * Uses the MCP SDK's WebStandardStreamableHTTPServerTransport for proper
+ * protocol handling with Web Standard Request/Response.
+ *
  * @example
  * // src/worker.js
  * import { createCloudflareHandler } from 'docusaurus-plugin-mcp-server/adapters';
@@ -42,6 +45,9 @@ export interface CloudflareAdapterConfig {
 
 /**
  * Create a Cloudflare Workers fetch handler for the MCP server
+ *
+ * Uses the MCP SDK's WebStandardStreamableHTTPServerTransport for
+ * proper protocol handling.
  */
 export function createCloudflareHandler(config: CloudflareAdapterConfig) {
   let server: McpDocsServer | null = null;
@@ -63,9 +69,8 @@ export function createCloudflareHandler(config: CloudflareAdapterConfig) {
 
   return async function fetch(request: Request): Promise<Response> {
     const headers = {
-      'Content-Type': 'application/json',
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
     };
 
@@ -74,7 +79,17 @@ export function createCloudflareHandler(config: CloudflareAdapterConfig) {
       return new Response(null, { status: 204, headers });
     }
 
-    // Only allow POST requests
+    // Handle GET requests for health check
+    if (request.method === 'GET') {
+      const mcpServer = getServer();
+      const status = await mcpServer.getStatus();
+      return new Response(JSON.stringify(status), {
+        status: 200,
+        headers: { ...headers, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Only allow POST requests for MCP
     if (request.method !== 'POST') {
       return new Response(
         JSON.stringify({
@@ -82,41 +97,32 @@ export function createCloudflareHandler(config: CloudflareAdapterConfig) {
           id: null,
           error: {
             code: -32600,
-            message: 'Method not allowed. Use POST.',
+            message: 'Method not allowed. Use POST for MCP requests, GET for status.',
           },
         }),
-        { status: 405, headers }
+        {
+          status: 405,
+          headers: { ...headers, 'Content-Type': 'application/json' },
+        }
       );
     }
 
     try {
-      // Parse the request body
-      let body: unknown;
-      try {
-        body = await request.json();
-      } catch {
-        return new Response(
-          JSON.stringify({
-            jsonrpc: '2.0',
-            id: null,
-            error: {
-              code: -32700,
-              message: 'Parse error: Invalid JSON',
-            },
-          }),
-          { status: 400, headers }
-        );
-      }
-
       const mcpServer = getServer();
-      const response = await mcpServer.handleRequest(body);
+      // Use the SDK's Web Standard transport to handle the request
+      const response = await mcpServer.handleWebRequest(request);
 
-      // Handle notifications (null response)
-      if (response === null) {
-        return new Response(null, { status: 204, headers });
-      }
+      // Add CORS headers to the response
+      const newHeaders = new Headers(response.headers);
+      Object.entries(headers).forEach(([key, value]) => {
+        newHeaders.set(key, value);
+      });
 
-      return new Response(JSON.stringify(response), { status: 200, headers });
+      return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: newHeaders,
+      });
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error('MCP Server Error:', error);
@@ -129,7 +135,10 @@ export function createCloudflareHandler(config: CloudflareAdapterConfig) {
             message: `Internal server error: ${errorMessage}`,
           },
         }),
-        { status: 500, headers }
+        {
+          status: 500,
+          headers: { ...headers, 'Content-Type': 'application/json' },
+        }
       );
     }
   };

@@ -95,6 +95,19 @@ export default function mcpServerPlugin(
   return {
     name: 'docusaurus-plugin-mcp-server',
 
+    // Expose configuration to theme components via globalData
+    async contentLoaded({ actions }) {
+      const { setGlobalData } = actions;
+
+      // Construct server URL from site URL + output directory
+      const serverUrl = `${context.siteConfig.url}/${resolvedOptions.outputDir}`;
+
+      setGlobalData({
+        serverUrl,
+        serverName: resolvedOptions.server.name,
+      });
+    },
+
     async postBuild({ outDir }) {
       console.log('[MCP] Starting MCP artifact generation...');
       const startTime = Date.now();

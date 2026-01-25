@@ -16,28 +16,29 @@
  * });
  */
 
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import { McpDocsServer } from '../mcp/server.js';
 import type { McpServerConfig } from '../types/index.js';
 
 /**
- * Vercel request object (simplified interface)
+ * Vercel request object (extends Node.js IncomingMessage)
  */
-export interface VercelRequest {
-  method?: string;
+export interface VercelRequest extends IncomingMessage {
   body?: unknown;
 }
 
 /**
- * Vercel response object (simplified interface)
+ * Vercel response object (extends Node.js ServerResponse)
  */
-export interface VercelResponse {
+export interface VercelResponse extends ServerResponse {
   status(code: number): VercelResponse;
   json(data: unknown): void;
-  end(): void;
 }
 
 /**
  * Create a Vercel serverless function handler for the MCP server
+ *
+ * Uses the MCP SDK's StreamableHTTPServerTransport for proper protocol handling.
  */
 export function createVercelHandler(config: McpServerConfig) {
   let server: McpDocsServer | null = null;
@@ -50,28 +51,29 @@ export function createVercelHandler(config: McpServerConfig) {
   }
 
   return async function handler(req: VercelRequest, res: VercelResponse) {
-    // Only allow POST requests
+    // Handle GET requests for health check
+    if (req.method === 'GET') {
+      const mcpServer = getServer();
+      const status = await mcpServer.getStatus();
+      return res.status(200).json(status);
+    }
+
+    // Only allow POST requests for MCP
     if (req.method !== 'POST') {
       return res.status(405).json({
         jsonrpc: '2.0',
         id: null,
         error: {
           code: -32600,
-          message: 'Method not allowed. Use POST.',
+          message: 'Method not allowed. Use POST for MCP requests, GET for status.',
         },
       });
     }
 
     try {
       const mcpServer = getServer();
-      const response = await mcpServer.handleRequest(req.body);
-
-      // Handle notifications (null response)
-      if (response === null) {
-        return res.status(204).end();
-      }
-
-      return res.status(200).json(response);
+      // Use the SDK transport to handle the request
+      await mcpServer.handleHttpRequest(req, res, req.body);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error('MCP Server Error:', error);

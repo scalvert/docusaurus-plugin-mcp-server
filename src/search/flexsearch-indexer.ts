@@ -5,16 +5,90 @@ import type { IndexableDocument } from './types.js';
 export type FlexSearchDocument = FlexSearch.Document<IndexableDocument, string[]>;
 
 /**
- * Create a FlexSearch document index
+ * Field weights for search ranking
+ * Higher values = more importance
+ */
+const FIELD_WEIGHTS = {
+  title: 3.0,
+  headings: 2.0,
+  description: 1.5,
+  content: 1.0,
+} as const;
+
+/**
+ * Simple English stemmer
+ * Handles common suffixes for better matching
+ */
+function englishStemmer(word: string): string {
+  // Only process words longer than 3 characters
+  if (word.length <= 3) return word;
+
+  return (
+    word
+      // -ing endings
+      .replace(/ing$/, '')
+      // -tion, -sion endings -> t, s
+      .replace(/tion$/, 't')
+      .replace(/sion$/, 's')
+      // -ed endings (careful with short words)
+      .replace(/([^aeiou])ed$/, '$1')
+      // -es endings
+      .replace(/([^aeiou])es$/, '$1')
+      // -ly endings
+      .replace(/ly$/, '')
+      // -ment endings
+      .replace(/ment$/, '')
+      // -ness endings
+      .replace(/ness$/, '')
+      // -ies -> y
+      .replace(/ies$/, 'y')
+      // -s endings (simple plural)
+      .replace(/([^s])s$/, '$1')
+  );
+}
+
+/**
+ * Create a FlexSearch document index with enhanced configuration
+ *
+ * Features:
+ * - Full substring matching (finds "auth" in "authentication")
+ * - English stemming (finds "authenticate" when searching "authentication")
+ * - Context-aware scoring for phrase matching
+ * - Optimized resolution for relevance ranking
  */
 export function createSearchIndex(): FlexSearchDocument {
   return new FlexSearch.Document<IndexableDocument, string[]>({
-    tokenize: 'forward',
-    cache: true,
+    // Use 'full' tokenization for substring matching
+    // This allows "auth" to match "authentication"
+    tokenize: 'full',
+
+    // Enable caching for faster repeated queries
+    cache: 100,
+
+    // Higher resolution = more granular ranking (1-9)
     resolution: 9,
+
+    // Enable context for phrase/proximity matching
+    context: {
+      resolution: 2,
+      depth: 2,
+      bidirectional: true,
+    },
+
+    // Apply stemming to normalize word forms
+    encode: (str: string) => {
+      // Normalize to lowercase and split into words
+      const words = str.toLowerCase().split(/[\s\-_.,;:!?'"()\[\]{}]+/);
+      // Apply stemmer to each word
+      return words.filter(Boolean).map(englishStemmer);
+    },
+
+    // Document schema
     document: {
       id: 'id',
+      // Index these fields for searching
       index: ['title', 'content', 'headings', 'description'],
+      // Store these fields in results (for enriched queries)
       store: ['title', 'description'],
     },
   });
@@ -49,7 +123,11 @@ export function buildSearchIndex(docs: ProcessedDoc[]): FlexSearchDocument {
 }
 
 /**
- * Search the index and return results
+ * Search the index and return results with weighted ranking
+ *
+ * Ranking combines:
+ * - Field importance (title > headings > description > content)
+ * - Position in results (earlier = more relevant)
  */
 export function searchIndex(
   index: FlexSearchDocument,
@@ -61,28 +139,40 @@ export function searchIndex(
 
   // Search across all fields
   const rawResults = index.search(query, {
-    limit: limit * 2, // Get extra results for ranking
+    limit: limit * 3, // Get extra results for better ranking after weighting
     enrich: true,
   });
 
+  // Aggregate scores across fields with weighting
   const docScores = new Map<string, number>();
 
   for (const fieldResult of rawResults) {
+    // Determine which field this result is from
+    const field = fieldResult.field as keyof typeof FIELD_WEIGHTS;
+    const fieldWeight = FIELD_WEIGHTS[field] ?? 1.0;
+
     // With enrich: true, results are objects with id property
-    // Cast through unknown to handle FlexSearch's complex types
     const results = fieldResult.result as unknown as Array<{ id: string } | string>;
+
     for (let i = 0; i < results.length; i++) {
       const item = results[i];
       if (!item) continue;
-      // Handle both enriched (object) and non-enriched (string) results
+
       const docId = typeof item === 'string' ? item : item.id;
-      // Higher score for earlier results
-      const score = (results.length - i) / results.length;
+
+      // Position-based score (earlier = higher)
+      const positionScore = (results.length - i) / results.length;
+
+      // Apply field weight to position score
+      const weightedScore = positionScore * fieldWeight;
+
+      // Combine with existing score (additive for multi-field matches)
       const existingScore = docScores.get(docId) ?? 0;
-      docScores.set(docId, Math.max(existingScore, score));
+      docScores.set(docId, existingScore + weightedScore);
     }
   }
 
+  // Build results array
   const results: SearchResult[] = [];
 
   for (const [docId, score] of docScores) {
@@ -98,6 +188,7 @@ export function searchIndex(
     });
   }
 
+  // Sort by score (highest first) and limit
   results.sort((a, b) => b.score - a.score);
   return results.slice(0, limit);
 }
@@ -117,7 +208,10 @@ export function generateSnippet(markdown: string, query: string): string {
   let bestIndex = -1;
   let bestTerm = '';
 
-  for (const term of queryTerms) {
+  // Also try stemmed versions of query terms
+  const allTerms = [...queryTerms, ...queryTerms.map(englishStemmer)];
+
+  for (const term of allTerms) {
     const index = lowerMarkdown.indexOf(term);
     if (index !== -1 && (bestIndex === -1 || index < bestIndex)) {
       bestIndex = index;
@@ -157,15 +251,27 @@ export function generateSnippet(markdown: string, query: string): string {
 }
 
 /**
- * Find headings that match the query
+ * Find headings that match the query (including stemmed forms)
  */
 function findMatchingHeadings(doc: ProcessedDoc, query: string): string[] {
   const queryTerms = query.toLowerCase().split(/\s+/).filter(Boolean);
+  // Include stemmed versions for better matching
+  const allTerms = [...queryTerms, ...queryTerms.map(englishStemmer)];
   const matching: string[] = [];
 
   for (const heading of doc.headings) {
     const headingLower = heading.text.toLowerCase();
-    if (queryTerms.some((term) => headingLower.includes(term))) {
+    const headingStemmed = headingLower
+      .split(/\s+/)
+      .map(englishStemmer)
+      .join(' ');
+
+    // Check if any query term matches the heading or its stemmed form
+    if (
+      allTerms.some(
+        (term) => headingLower.includes(term) || headingStemmed.includes(englishStemmer(term))
+      )
+    ) {
       matching.push(heading.text);
     }
   }

@@ -1,36 +1,26 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   MCPConfigRegistry,
   type ClientId,
   type MCPClientConfig,
 } from '@gleanwork/mcp-config-schema/browser';
+import { useMcpRegistry, createDocsRegistry, type McpConfig } from './McpRegistryContext.js';
 
 /**
  * Props for the McpInstallButton component
  */
 export interface McpInstallButtonProps {
-  /** The URL of your MCP server endpoint */
-  serverUrl: string;
-  /** The name of your MCP server (used in configs) */
-  serverName: string;
+  /** Server URL. If not provided, uses plugin configuration. */
+  serverUrl?: string;
+  /** Server name. If not provided, uses plugin configuration. */
+  serverName?: string;
   /** Button label (default: "Install MCP") */
   label?: string;
   /** Optional className for styling */
   className?: string;
-  /** Clients to show (default: shows all HTTP-capable clients) */
+  /** Clients to show. Defaults to all HTTP-capable clients from registry. */
   clients?: ClientId[];
 }
-
-/**
- * Supported clients that work well with HTTP servers
- */
-const DEFAULT_CLIENTS: ClientId[] = [
-  'claude-code',
-  'cursor',
-  'vscode',
-  'windsurf',
-  'claude-desktop',
-];
 
 /**
  * A dropdown button component for installing MCP servers in various AI tools.
@@ -44,17 +34,38 @@ const DEFAULT_CLIENTS: ClientId[] = [
  * ```
  */
 export function McpInstallButton({
-  serverUrl,
-  serverName,
+  serverUrl: serverUrlProp,
+  serverName: serverNameProp,
   label = 'Install MCP',
   className = '',
-  clients = DEFAULT_CLIENTS,
+  clients: clientsProp,
 }: McpInstallButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [copiedClient, setCopiedClient] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const registry = useRef(new MCPConfigRegistry()).current;
+  // Get pre-configured registry from plugin
+  const pluginMcp = useMcpRegistry();
+
+  // Use props if provided, otherwise fall back to plugin config
+  const { registry, config } = useMemo(() => {
+    // If explicit props provided, create a new registry with those values
+    if (serverUrlProp && serverNameProp) {
+      return createDocsRegistry({
+        serverUrl: serverUrlProp,
+        serverName: serverNameProp,
+      });
+    }
+    // Otherwise use plugin-provided registry
+    if (pluginMcp) {
+      return pluginMcp;
+    }
+    // Fallback: create registry without bound config (will fail validation below)
+    return {
+      registry: new MCPConfigRegistry(),
+      config: { serverUrl: '', serverName: '' } as McpConfig,
+    };
+  }, [serverUrlProp, serverNameProp, pluginMcp]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -68,10 +79,25 @@ export function McpInstallButton({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Get client configs
-  const clientConfigs = clients
-    .map((id) => registry.getConfig(id))
-    .filter((config): config is MCPClientConfig => config !== undefined);
+  // Validate configuration
+  if (!config.serverUrl || !config.serverName) {
+    console.error(
+      '[McpInstallButton] Missing serverUrl or serverName. ' +
+      'Either pass them as props or configure the docusaurus-plugin-mcp-server plugin.'
+    );
+    return null;
+  }
+
+  // Get clients to display - dynamic from registry
+  const clientConfigs = useMemo(() => {
+    if (clientsProp) {
+      return clientsProp
+        .map((id) => registry.getConfig(id))
+        .filter((c): c is MCPClientConfig => c !== undefined);
+    }
+    // Get all HTTP-capable clients dynamically
+    return registry.getNativeHttpClients();
+  }, [registry, clientsProp]);
 
   const copyToClipboard = useCallback(async (text: string, clientId: string) => {
     try {
@@ -86,24 +112,30 @@ export function McpInstallButton({
   const getConfigForClient = useCallback(
     (clientId: ClientId): string => {
       const builder = registry.createBuilder(clientId);
-      const config = builder.buildConfiguration({
-        serverName,
-        serverUrl,
+      const clientConfig = builder.buildConfiguration({
         transport: 'http',
+        serverUrl: config.serverUrl,
+        serverName: config.serverName,
       });
-      return JSON.stringify(config, null, 2);
+      return JSON.stringify(clientConfig, null, 2);
     },
-    [registry, serverName, serverUrl]
+    [registry, config.serverUrl, config.serverName]
   );
 
   const getCommandForClient = useCallback(
     (clientId: ClientId): string | null => {
-      if (clientId === 'claude-code') {
-        return `claude mcp add --transport http ${serverName} ${serverUrl}`;
+      const builder = registry.createBuilder(clientId);
+      const cliStatus = builder.supportsCliInstallation();
+      if (!cliStatus.supported) {
+        return null;
       }
-      return null;
+      return builder.buildCommand({
+        transport: 'http',
+        serverUrl: config.serverUrl,
+        serverName: config.serverName,
+      });
     },
-    [serverName, serverUrl]
+    [registry, config.serverUrl, config.serverName]
   );
 
   return (

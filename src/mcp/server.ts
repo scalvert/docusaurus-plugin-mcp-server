@@ -1,6 +1,9 @@
 import fs from 'fs-extra';
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { CallToolRequestSchema, ListToolsRequestSchema } from '@modelcontextprotocol/sdk/types.js';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
+import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
+import { z } from 'zod';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 import type {
   ProcessedDoc,
   McpServerConfig,
@@ -8,13 +11,9 @@ import type {
   McpServerDataConfig,
 } from '../types/index.js';
 import { importSearchIndex, type FlexSearchDocument } from '../search/flexsearch-indexer.js';
-import { docsSearchTool, executeDocsSearch, formatSearchResults } from './tools/docs-search.js';
-import { docsGetPageTool, executeDocsGetPage, formatPageContent } from './tools/docs-get-page.js';
-import {
-  docsGetSectionTool,
-  executeDocsGetSection,
-  formatSectionContent,
-} from './tools/docs-get-section.js';
+import { executeDocsSearch, formatSearchResults } from './tools/docs-search.js';
+import { executeDocsGetPage, formatPageContent } from './tools/docs-get-page.js';
+import { executeDocsGetSection, formatSectionContent } from './tools/docs-get-section.js';
 
 /**
  * Type guard to check if config uses file-based loading
@@ -39,19 +38,21 @@ function isDataConfig(config: McpServerConfig): config is McpServerDataConfig {
  * Supports two modes:
  * - File-based: Load docs and search index from filesystem (Node.js)
  * - Pre-loaded: Accept docs and search index data directly (Workers)
+ *
+ * Uses the official MCP SDK for proper protocol handling.
  */
 export class McpDocsServer {
   private config: McpServerConfig;
   private docs: Record<string, ProcessedDoc> | null = null;
   private searchIndex: FlexSearchDocument | null = null;
-  private server: Server;
+  private mcpServer: McpServer;
   private initialized = false;
 
   constructor(config: McpServerConfig) {
     this.config = config;
 
-    // Create MCP server
-    this.server = new Server(
+    // Create MCP server using the high-level API
+    this.mcpServer = new McpServer(
       {
         name: config.name,
         version: config.version ?? '1.0.0',
@@ -63,7 +64,112 @@ export class McpDocsServer {
       }
     );
 
-    this.setupHandlers();
+    this.registerTools();
+  }
+
+  /**
+   * Register all MCP tools using the SDK's registerTool API
+   */
+  private registerTools(): void {
+    // docs_search - Search across documentation
+    this.mcpServer.registerTool(
+      'docs_search',
+      {
+        description:
+          'Search the documentation for relevant pages. Returns matching documents with snippets and relevance scores. Use this to find information across all documentation.',
+        inputSchema: {
+          query: z.string().min(1).describe('The search query string'),
+          limit: z
+            .number()
+            .int()
+            .min(1)
+            .max(20)
+            .optional()
+            .default(5)
+            .describe('Maximum number of results to return (1-20, default: 5)'),
+        },
+      },
+      async ({ query, limit }) => {
+        await this.initialize();
+
+        if (!this.docs || !this.searchIndex) {
+          return {
+            content: [{ type: 'text' as const, text: 'Server not initialized. Please try again.' }],
+            isError: true,
+          };
+        }
+
+        const results = executeDocsSearch({ query, limit }, this.searchIndex, this.docs);
+        return {
+          content: [{ type: 'text' as const, text: formatSearchResults(results, this.config.baseUrl) }],
+        };
+      }
+    );
+
+    // docs_get_page - Retrieve full page content
+    this.mcpServer.registerTool(
+      'docs_get_page',
+      {
+        description:
+          'Retrieve the complete content of a documentation page as markdown. Use this when you need the full content of a specific page.',
+        inputSchema: {
+          route: z
+            .string()
+            .min(1)
+            .describe('The page route path (e.g., "/docs/getting-started" or "/api/reference")'),
+        },
+      },
+      async ({ route }) => {
+        await this.initialize();
+
+        if (!this.docs) {
+          return {
+            content: [{ type: 'text' as const, text: 'Server not initialized. Please try again.' }],
+            isError: true,
+          };
+        }
+
+        const doc = executeDocsGetPage({ route }, this.docs);
+        return {
+          content: [{ type: 'text' as const, text: formatPageContent(doc, this.config.baseUrl) }],
+        };
+      }
+    );
+
+    // docs_get_section - Retrieve a specific section
+    this.mcpServer.registerTool(
+      'docs_get_section',
+      {
+        description:
+          'Retrieve a specific section from a documentation page by its heading ID. Use this when you need only a portion of a page rather than the entire content.',
+        inputSchema: {
+          route: z.string().min(1).describe('The page route path'),
+          headingId: z
+            .string()
+            .min(1)
+            .describe(
+              'The heading ID of the section to extract (e.g., "installation", "api-reference")'
+            ),
+        },
+      },
+      async ({ route, headingId }) => {
+        await this.initialize();
+
+        if (!this.docs) {
+          return {
+            content: [{ type: 'text' as const, text: 'Server not initialized. Please try again.' }],
+            isError: true,
+          };
+        }
+
+        const result = executeDocsGetSection({ route, headingId }, this.docs);
+        return {
+          content: [
+            { type: 'text' as const, text: formatSectionContent(result, headingId, this.config.baseUrl) },
+          ],
+        };
+      }
+    );
   }
 
   /**
@@ -108,280 +214,98 @@ export class McpDocsServer {
   }
 
   /**
-   * Set up MCP request handlers
-   */
-  private setupHandlers(): void {
-    // List available tools
-    this.server.setRequestHandler(ListToolsRequestSchema, async () => {
-      return {
-        tools: [docsSearchTool, docsGetPageTool, docsGetSectionTool],
-      };
-    });
-
-    // Handle tool calls
-    this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
-      await this.initialize();
-
-      if (!this.docs || !this.searchIndex) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: 'Server not initialized. Please try again.',
-            },
-          ],
-          isError: true,
-        };
-      }
-
-      const { name, arguments: args } = request.params;
-
-      try {
-        switch (name) {
-          case 'docs_search': {
-            const params = args as {
-              query: string;
-              limit?: number;
-            };
-            const results = executeDocsSearch(params, this.searchIndex, this.docs);
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: formatSearchResults(results, this.config.baseUrl),
-                },
-              ],
-            };
-          }
-
-          case 'docs_get_page': {
-            const params = args as { route: string };
-            const doc = executeDocsGetPage(params, this.docs);
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: formatPageContent(doc, this.config.baseUrl),
-                },
-              ],
-            };
-          }
-
-          case 'docs_get_section': {
-            const params = args as { route: string; headingId: string };
-            const result = executeDocsGetSection(params, this.docs);
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: formatSectionContent(result, params.headingId, this.config.baseUrl),
-                },
-              ],
-            };
-          }
-
-          default:
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: `Unknown tool: ${name}`,
-                },
-              ],
-              isError: true,
-            };
-        }
-      } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Error executing tool ${name}: ${errorMessage}`,
-            },
-          ],
-          isError: true,
-        };
-      }
-    });
-  }
-
-  /**
-   * Handle an MCP JSON-RPC request
+   * Handle an HTTP request using the MCP SDK's transport
    *
-   * This method can be used with any HTTP framework.
-   * It takes the request body and returns the response body.
+   * This method is designed for serverless environments (Vercel, Netlify).
+   * It creates a stateless transport instance and processes the request.
+   *
+   * @param req - Node.js IncomingMessage or compatible request object
+   * @param res - Node.js ServerResponse or compatible response object
+   * @param parsedBody - Optional pre-parsed request body
    */
-  async handleRequest(body: unknown): Promise<unknown> {
+  async handleHttpRequest(
+    req: IncomingMessage,
+    res: ServerResponse,
+    parsedBody?: unknown
+  ): Promise<void> {
     await this.initialize();
 
-    // The MCP SDK Server doesn't have a direct handleRequest method,
-    // so we need to create a simple JSON-RPC handler
+    // Create a stateless transport for this request
+    // enableJsonResponse: true means we get simple JSON responses instead of SSE
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: undefined, // Stateless mode - no session tracking
+      enableJsonResponse: true, // Return JSON instead of SSE streams
+    });
 
-    if (!body || typeof body !== 'object') {
-      return {
-        jsonrpc: '2.0',
-        id: null,
-        error: {
-          code: -32600,
-          message: 'Invalid Request',
-        },
-      };
-    }
-
-    const request = body as {
-      jsonrpc?: string;
-      id?: number | string | null;
-      method?: string;
-      params?: unknown;
-    };
-
-    if (request.jsonrpc !== '2.0' || !request.method) {
-      return {
-        jsonrpc: '2.0',
-        id: request.id ?? null,
-        error: {
-          code: -32600,
-          message: 'Invalid Request',
-        },
-      };
-    }
+    // Connect the server to this transport
+    await this.mcpServer.connect(transport);
 
     try {
-      // Handle standard MCP methods
-      switch (request.method) {
-        case 'initialize':
-          return {
-            jsonrpc: '2.0',
-            id: request.id,
-            result: {
-              protocolVersion: '2024-11-05',
-              capabilities: {
-                tools: {},
-              },
-              serverInfo: {
-                name: this.config.name,
-                version: this.config.version ?? '1.0.0',
-              },
-            },
-          };
-
-        case 'tools/list':
-          return {
-            jsonrpc: '2.0',
-            id: request.id,
-            result: {
-              tools: [docsSearchTool, docsGetPageTool, docsGetSectionTool],
-            },
-          };
-
-        case 'tools/call': {
-          await this.initialize();
-
-          if (!this.docs || !this.searchIndex) {
-            return {
-              jsonrpc: '2.0',
-              id: request.id,
-              error: {
-                code: -32603,
-                message: 'Server not initialized',
-              },
-            };
-          }
-
-          const params = request.params as { name: string; arguments?: unknown };
-          const toolName = params.name;
-          const toolArgs = params.arguments ?? {};
-
-          let resultText: string;
-
-          switch (toolName) {
-            case 'docs_search': {
-              const searchParams = toolArgs as {
-                query: string;
-                limit?: number;
-              };
-              const results = executeDocsSearch(searchParams, this.searchIndex, this.docs);
-              resultText = formatSearchResults(results, this.config.baseUrl);
-              break;
-            }
-
-            case 'docs_get_page': {
-              const pageParams = toolArgs as { route: string };
-              const doc = executeDocsGetPage(pageParams, this.docs);
-              resultText = formatPageContent(doc, this.config.baseUrl);
-              break;
-            }
-
-            case 'docs_get_section': {
-              const sectionParams = toolArgs as { route: string; headingId: string };
-              const result = executeDocsGetSection(sectionParams, this.docs);
-              resultText = formatSectionContent(
-                result,
-                sectionParams.headingId,
-                this.config.baseUrl
-              );
-              break;
-            }
-
-            default:
-              return {
-                jsonrpc: '2.0',
-                id: request.id,
-                error: {
-                  code: -32602,
-                  message: `Unknown tool: ${toolName}`,
-                },
-              };
-          }
-
-          return {
-            jsonrpc: '2.0',
-            id: request.id,
-            result: {
-              content: [
-                {
-                  type: 'text',
-                  text: resultText,
-                },
-              ],
-            },
-          };
-        }
-
-        case 'notifications/initialized':
-        case 'notifications/cancelled':
-          // These are notifications, no response needed
-          return null;
-
-        default:
-          return {
-            jsonrpc: '2.0',
-            id: request.id,
-            error: {
-              code: -32601,
-              message: `Method not found: ${request.method}`,
-            },
-          };
-      }
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      return {
-        jsonrpc: '2.0',
-        id: request.id,
-        error: {
-          code: -32603,
-          message: `Internal error: ${errorMessage}`,
-        },
-      };
+      // Let the transport handle the request
+      await transport.handleRequest(req, res, parsedBody);
+    } finally {
+      // Clean up the transport after request
+      await transport.close();
     }
   }
 
   /**
-   * Get the underlying MCP Server instance
-   * Useful for advanced use cases like stdio transport
+   * Handle a Web Standard Request (Cloudflare Workers, Deno, Bun)
+   *
+   * This method is designed for Web Standard environments that use
+   * the Fetch API Request/Response pattern.
+   *
+   * @param request - Web Standard Request object
+   * @returns Web Standard Response object
    */
-  getServer(): Server {
-    return this.server;
+  async handleWebRequest(request: Request): Promise<Response> {
+    await this.initialize();
+
+    // Create a stateless transport for Web Standards
+    const transport = new WebStandardStreamableHTTPServerTransport({
+      sessionIdGenerator: undefined, // Stateless mode
+      enableJsonResponse: true,
+    });
+
+    // Connect the server to this transport
+    await this.mcpServer.connect(transport);
+
+    try {
+      // Let the transport handle the request and return the response
+      return await transport.handleRequest(request);
+    } finally {
+      // Clean up the transport after request
+      await transport.close();
+    }
+  }
+
+  /**
+   * Get server status information
+   *
+   * Useful for health checks and debugging
+   */
+  async getStatus(): Promise<{
+    name: string;
+    version: string;
+    initialized: boolean;
+    docCount: number;
+    baseUrl?: string;
+  }> {
+    return {
+      name: this.config.name,
+      version: this.config.version ?? '1.0.0',
+      initialized: this.initialized,
+      docCount: this.docs ? Object.keys(this.docs).length : 0,
+      baseUrl: this.config.baseUrl,
+    };
+  }
+
+  /**
+   * Get the underlying McpServer instance
+   *
+   * Useful for advanced use cases like custom transports
+   */
+  getMcpServer(): McpServer {
+    return this.mcpServer;
   }
 }

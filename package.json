@@ -2,19 +2,28 @@
   "name": "docusaurus-plugin-mcp-server",
   "version": "0.1.0",
   "description": "A Docusaurus plugin that exposes an MCP server endpoint for AI agents to search and retrieve documentation",
-  "author": "Steve Calvert",
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/scalvert/docusaurus-plugin-mcp-server.git"
-  },
+  "keywords": [
+    "docusaurus",
+    "docusaurus-plugin",
+    "mcp",
+    "model-context-protocol",
+    "documentation",
+    "ai",
+    "search",
+    "llm",
+    "claude",
+    "cursor"
+  ],
   "homepage": "https://github.com/scalvert/docusaurus-plugin-mcp-server#readme",
   "bugs": {
     "url": "https://github.com/scalvert/docusaurus-plugin-mcp-server/issues"
   },
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.ts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/scalvert/docusaurus-plugin-mcp-server.git"
+  },
+  "license": "MIT",
+  "author": "Steve Calvert",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -32,46 +41,27 @@
       "require": "./dist/theme/index.js"
     }
   },
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "docusaurus-mcp-verify": "./dist/cli/verify.mjs"
+  },
   "files": [
     "dist"
   ],
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
     "lint": "eslint src/ tests/ && prettier --check .",
     "lint:fix": "eslint src/ tests/ --fix && prettier --write .",
-    "format": "prettier --write .",
+    "prepublishOnly": "npm run build",
     "test": "vitest run",
-    "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
     "test:all": "npm run lint && npm run typecheck && npm run test",
-    "prepublishOnly": "npm run build"
-  },
-  "keywords": [
-    "docusaurus",
-    "docusaurus-plugin",
-    "mcp",
-    "model-context-protocol",
-    "documentation",
-    "ai",
-    "search",
-    "llm",
-    "claude",
-    "cursor"
-  ],
-  "peerDependencies": {
-    "@docusaurus/types": "^3.0.0",
-    "react": "^18.0.0 || ^19.0.0",
-    "react-dom": "^18.0.0 || ^19.0.0"
-  },
-  "peerDependenciesMeta": {
-    "react": {
-      "optional": true
-    },
-    "react-dom": {
-      "optional": true
-    }
+    "test:coverage": "vitest run --coverage",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@gleanwork/mcp-config-schema": "^4.1.0",
@@ -89,7 +79,9 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@docusaurus/core": "^3.9.2",
     "@docusaurus/types": "^3.9.2",
+    "@release-it-plugins/lerna-changelog": "^5.0.0",
     "@types/fs-extra": "^11.0.0",
     "@types/node": "^20.0.0",
     "@types/react": "^18.0.0",
@@ -101,14 +93,50 @@
     "eslint-import-resolver-typescript": "^3.0.0",
     "eslint-plugin-import": "^2.29.0",
     "prettier": "^3.0.0",
+    "release-it": "^15.5.0",
     "tsup": "^8.0.0",
     "typescript": "^5.0.0",
     "vitest": "^2.0.0"
+  },
+  "peerDependencies": {
+    "@docusaurus/core": "^3.0.0",
+    "@docusaurus/types": "^3.0.0",
+    "react": "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@docusaurus/core": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    },
+    "react-dom": {
+      "optional": true
+    }
   },
   "engines": {
     "node": ">=18.0.0"
   },
   "volta": {
     "node": "22.11.0"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org"
+  },
+  "release-it": {
+    "plugins": {
+      "@release-it-plugins/lerna-changelog": {
+        "infile": "CHANGELOG.md",
+        "launchEditor": true
+      }
+    },
+    "git": {
+      "tagName": "v${version}"
+    },
+    "github": {
+      "release": true,
+      "tokenRef": "GITHUB_AUTH"
+    }
   }
 }
