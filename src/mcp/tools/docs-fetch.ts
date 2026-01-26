@@ -1,12 +1,12 @@
 import type { ProcessedDoc, DocsGetPageParams } from '../../types/index.js';
 
 /**
- * Tool definition for docs_get_page
+ * Tool definition for docs_fetch
  */
-export const docsGetPageTool = {
-  name: 'docs_get_page',
+export const docsFetchTool = {
+  name: 'docs_fetch',
   description:
-    'Retrieve the full content of a documentation page as markdown. Use this after searching to get complete page content.',
+    'Fetch the complete content of a documentation page. Use this after searching to get full page content.',
   inputSchema: {
     type: 'object' as const,
     properties: {
