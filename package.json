@@ -1,6 +1,6 @@
 {
   "name": "docusaurus-plugin-mcp-server",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "A Docusaurus plugin that exposes an MCP server endpoint for AI agents to search and retrieve documentation",
   "keywords": [
     "docusaurus",
