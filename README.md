@@ -184,11 +184,11 @@ The button shows a dropdown with copy-to-clipboard configurations for all suppor
 
 ## MCP Tools
 
-The server exposes three tools for AI agents:
+The server exposes two tools for AI agents:
 
 ### `docs_search`
 
-Search across documentation with relevance ranking.
+Search across documentation with relevance ranking. Returns matching documents with URLs, snippets, and relevance scores.
 
 ```json
 {
@@ -205,41 +205,33 @@ Search across documentation with relevance ranking.
 | `query` | `string` | required | Search query |
 | `limit` | `number` | `5` | Max results (1-20) |
 
-### `docs_get_page`
+**Response includes:**
+- Full URL for each result (use with `docs_fetch`)
+- Title and relevance score
+- Snippet of matching content
+- Matching headings
 
-Retrieve full page content as markdown.
+### `docs_fetch`
+
+Retrieve full page content as markdown. Use this after searching to get the complete content of a specific page.
 
 ```json
 {
-  "name": "docs_get_page",
+  "name": "docs_fetch",
   "arguments": {
-    "route": "/docs/authentication"
+    "url": "https://docs.example.com/docs/authentication"
   }
 }
 ```
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `route` | `string` | Page route path |
+| `url` | `string` | Full URL of the page (from search results) |
 
-### `docs_get_section`
-
-Retrieve a specific section by heading ID.
-
-```json
-{
-  "name": "docs_get_section",
-  "arguments": {
-    "route": "/docs/authentication",
-    "headingId": "oauth-configuration"
-  }
-}
-```
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `route` | `string` | Page route path |
-| `headingId` | `string` | Heading ID to extract |
+**Response includes:**
+- Page title and description
+- Table of contents with anchor links
+- Full markdown content
 
 ## Plugin Options
 
@@ -398,8 +390,8 @@ The plugin operates in two phases:
 
 - **Full-text Search** - FlexSearch-powered search with relevance ranking
 - **Page Retrieval** - Get complete page content as clean markdown
-- **Section Extraction** - Retrieve specific sections by heading ID
 - **Platform Adapters** - Pre-built adapters for Vercel, Netlify, and Cloudflare Workers
+- **CORS Support** - All adapters include CORS headers for browser-based clients
 - **Build-time Processing** - Extracts content from rendered HTML, capturing React component output
 - **Zero Runtime Docusaurus Dependency** - The MCP server runs independently
 
@@ -424,19 +416,23 @@ const server = new McpDocsServer({
 });
 
 http.createServer(async (req, res) => {
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204, {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    });
+    res.end();
+    return;
+  }
+
   if (req.method !== 'POST') {
     res.writeHead(405);
     res.end();
     return;
   }
 
-  let body = '';
-  req.on('data', (chunk) => (body += chunk));
-  req.on('end', async () => {
-    const response = await server.handleRequest(JSON.parse(body));
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(response));
-  });
+  await server.handleHttpRequest(req, res);
 }).listen(3456, () => {
   console.log('MCP server at http://localhost:3456');
 });
@@ -461,14 +457,19 @@ import {
 
   // Tool definitions
   docsSearchTool,
-  docsGetPageTool,
-  docsGetSectionTool,
+  docsFetchTool,
 
   // Utilities
   htmlToMarkdown,
   extractContent,
   extractHeadingsFromMarkdown,
   buildSearchIndex,
+
+  // Provider types (for custom implementations)
+  loadIndexer,
+  loadSearchProvider,
+  FlexSearchIndexer,
+  FlexSearchProvider,
 
   // Default options
   DEFAULT_OPTIONS,
