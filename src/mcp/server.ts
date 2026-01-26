@@ -1,4 +1,3 @@
-import fs from 'fs-extra';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
@@ -10,10 +9,17 @@ import type {
   McpServerFileConfig,
   McpServerDataConfig,
 } from '../types/index.js';
-import { importSearchIndex, type FlexSearchDocument } from '../search/flexsearch-indexer.js';
-import { executeDocsSearch, formatSearchResults } from './tools/docs-search.js';
-import { executeDocsGetPage, formatPageContent } from './tools/docs-get-page.js';
-import { executeDocsGetSection, formatSectionContent } from './tools/docs-get-section.js';
+import { loadSearchProvider } from '../providers/loader.js';
+import { FlexSearchProvider } from '../providers/search/flexsearch-provider.js';
+import type {
+  SearchProvider,
+  ProviderContext,
+  SearchProviderInitData,
+} from '../providers/types.js';
+import { formatSearchResults } from './tools/docs-search.js';
+import { formatPageContent } from './tools/docs-get-page.js';
+import { formatSectionContent } from './tools/docs-get-section.js';
+import { extractSection } from '../processing/heading-extractor.js';
 
 /**
  * Type guard to check if config uses file-based loading
@@ -43,8 +49,7 @@ function isDataConfig(config: McpServerConfig): config is McpServerDataConfig {
  */
 export class McpDocsServer {
   private config: McpServerConfig;
-  private docs: Record<string, ProcessedDoc> | null = null;
-  private searchIndex: FlexSearchDocument | null = null;
+  private searchProvider: SearchProvider | null = null;
   private mcpServer: McpServer;
   private initialized = false;
 
@@ -92,19 +97,27 @@ export class McpDocsServer {
       async ({ query, limit }) => {
         await this.initialize();
 
-        if (!this.docs || !this.searchIndex) {
+        if (!this.searchProvider || !this.searchProvider.isReady()) {
           return {
             content: [{ type: 'text' as const, text: 'Server not initialized. Please try again.' }],
             isError: true,
           };
         }
 
-        const results = executeDocsSearch({ query, limit }, this.searchIndex, this.docs);
-        return {
-          content: [
-            { type: 'text' as const, text: formatSearchResults(results, this.config.baseUrl) },
-          ],
-        };
+        try {
+          const results = await this.searchProvider.search(query, { limit });
+          return {
+            content: [
+              { type: 'text' as const, text: formatSearchResults(results, this.config.baseUrl) },
+            ],
+          };
+        } catch (error) {
+          console.error('[MCP] Search error:', error);
+          return {
+            content: [{ type: 'text' as const, text: `Search error: ${String(error)}` }],
+            isError: true,
+          };
+        }
       }
     );
 
@@ -124,17 +137,25 @@ export class McpDocsServer {
       async ({ route }) => {
         await this.initialize();
 
-        if (!this.docs) {
+        if (!this.searchProvider || !this.searchProvider.isReady()) {
           return {
             content: [{ type: 'text' as const, text: 'Server not initialized. Please try again.' }],
             isError: true,
           };
         }
 
-        const doc = executeDocsGetPage({ route }, this.docs);
-        return {
-          content: [{ type: 'text' as const, text: formatPageContent(doc, this.config.baseUrl) }],
-        };
+        try {
+          const doc = await this.getDocument(route);
+          return {
+            content: [{ type: 'text' as const, text: formatPageContent(doc, this.config.baseUrl) }],
+          };
+        } catch (error) {
+          console.error('[MCP] Get page error:', error);
+          return {
+            content: [{ type: 'text' as const, text: `Error getting page: ${String(error)}` }],
+            isError: true,
+          };
+        }
       }
     );
 
@@ -157,28 +178,116 @@ export class McpDocsServer {
       async ({ route, headingId }) => {
         await this.initialize();
 
-        if (!this.docs) {
+        if (!this.searchProvider || !this.searchProvider.isReady()) {
           return {
             content: [{ type: 'text' as const, text: 'Server not initialized. Please try again.' }],
             isError: true,
           };
         }
 
-        const result = executeDocsGetSection({ route, headingId }, this.docs);
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text: formatSectionContent(result, headingId, this.config.baseUrl),
-            },
-          ],
-        };
+        try {
+          const doc = await this.getDocument(route);
+          if (!doc) {
+            return {
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatSectionContent(
+                    { content: null, doc: null, headingText: null, availableHeadings: [] },
+                    headingId,
+                    this.config.baseUrl
+                  ),
+                },
+              ],
+            };
+          }
+
+          // Get available headings
+          const availableHeadings = doc.headings.map((h) => ({
+            id: h.id,
+            text: h.text,
+            level: h.level,
+          }));
+
+          // Find the heading
+          const heading = doc.headings.find((h) => h.id === headingId.trim());
+
+          if (!heading) {
+            return {
+              content: [
+                {
+                  type: 'text' as const,
+                  text: formatSectionContent(
+                    { content: null, doc, headingText: null, availableHeadings },
+                    headingId,
+                    this.config.baseUrl
+                  ),
+                },
+              ],
+            };
+          }
+
+          // Extract the section content
+          const sectionContent = extractSection(doc.markdown, headingId.trim(), doc.headings);
+
+          return {
+            content: [
+              {
+                type: 'text' as const,
+                text: formatSectionContent(
+                  { content: sectionContent, doc, headingText: heading.text, availableHeadings },
+                  headingId,
+                  this.config.baseUrl
+                ),
+              },
+            ],
+          };
+        } catch (error) {
+          console.error('[MCP] Get section error:', error);
+          return {
+            content: [{ type: 'text' as const, text: `Error getting section: ${String(error)}` }],
+            isError: true,
+          };
+        }
       }
     );
   }
 
   /**
-   * Load docs and search index
+   * Get a document by route using the search provider
+   */
+  private async getDocument(route: string): Promise<ProcessedDoc | null> {
+    if (!this.searchProvider) {
+      return null;
+    }
+
+    // Use the provider's getDocument if available
+    if (this.searchProvider.getDocument) {
+      return this.searchProvider.getDocument(route);
+    }
+
+    // For FlexSearchProvider, we can access docs directly
+    if (this.searchProvider instanceof FlexSearchProvider) {
+      const docs = this.searchProvider.getDocs();
+      if (!docs) return null;
+
+      // Try exact match first
+      if (docs[route]) {
+        return docs[route];
+      }
+
+      // Try with/without leading slash
+      const normalizedRoute = route.startsWith('/') ? route : `/${route}`;
+      const withoutSlash = route.startsWith('/') ? route.slice(1) : route;
+
+      return docs[normalizedRoute] ?? docs[withoutSlash] ?? null;
+    }
+
+    return null;
+  }
+
+  /**
+   * Load docs and search index using the configured search provider
    *
    * For file-based config: reads from disk
    * For data config: uses pre-loaded data directly
@@ -189,27 +298,35 @@ export class McpDocsServer {
     }
 
     try {
+      // Load the search provider
+      const searchSpecifier = this.config.search ?? 'flexsearch';
+      this.searchProvider = await loadSearchProvider(searchSpecifier);
+
+      // Build provider context
+      const providerContext: ProviderContext = {
+        baseUrl: this.config.baseUrl ?? '',
+        serverName: this.config.name,
+        serverVersion: this.config.version ?? '1.0.0',
+        outputDir: '', // Not relevant for runtime
+      };
+
+      // Build init data based on config type
+      const initData: SearchProviderInitData = {};
+
       if (isDataConfig(this.config)) {
         // Pre-loaded data mode (Cloudflare Workers, etc.)
-        this.docs = this.config.docs;
-        this.searchIndex = await importSearchIndex(this.config.searchIndexData);
+        initData.docs = this.config.docs;
+        initData.indexData = this.config.searchIndexData;
       } else if (isFileConfig(this.config)) {
         // File-based mode (Node.js)
-        if (await fs.pathExists(this.config.docsPath)) {
-          this.docs = await fs.readJson(this.config.docsPath);
-        } else {
-          throw new Error(`Docs file not found: ${this.config.docsPath}`);
-        }
-
-        if (await fs.pathExists(this.config.indexPath)) {
-          const indexData = await fs.readJson(this.config.indexPath);
-          this.searchIndex = await importSearchIndex(indexData);
-        } else {
-          throw new Error(`Search index not found: ${this.config.indexPath}`);
-        }
+        initData.docsPath = this.config.docsPath;
+        initData.indexPath = this.config.indexPath;
       } else {
         throw new Error('Invalid server config: must provide either file paths or pre-loaded data');
       }
+
+      // Initialize the search provider
+      await this.searchProvider.initialize(providerContext, initData);
 
       this.initialized = true;
     } catch (error) {
@@ -295,13 +412,23 @@ export class McpDocsServer {
     initialized: boolean;
     docCount: number;
     baseUrl?: string;
+    searchProvider?: string;
   }> {
+    let docCount = 0;
+
+    // Get doc count from FlexSearchProvider if available
+    if (this.searchProvider instanceof FlexSearchProvider) {
+      const docs = this.searchProvider.getDocs();
+      docCount = docs ? Object.keys(docs).length : 0;
+    }
+
     return {
       name: this.config.name,
       version: this.config.version ?? '1.0.0',
       initialized: this.initialized,
-      docCount: this.docs ? Object.keys(this.docs).length : 0,
+      docCount,
       baseUrl: this.config.baseUrl,
+      searchProvider: this.searchProvider?.name,
     };
   }
 

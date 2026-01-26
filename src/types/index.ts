@@ -19,6 +19,31 @@ export interface McpServerPluginOptions {
   };
   /** Routes to exclude from processing (glob patterns) */
   excludeRoutes?: string[];
+
+  /**
+   * Indexers to run during build.
+   *
+   * - undefined (default): runs 'flexsearch' for backward compatibility
+   * - ['flexsearch']: same as default, produces docs.json + search-index.json
+   * - ['./my-indexer.js']: runs only custom indexer(s)
+   * - false: disables all indexing, no artifacts produced
+   *
+   * Each string can be:
+   * - 'flexsearch' (built-in)
+   * - './path/to/indexer.js' (relative path)
+   * - '@myorg/custom-indexer' (npm package)
+   */
+  indexers?: string[] | false;
+
+  /**
+   * Search provider module. Default: 'flexsearch'
+   *
+   * Can be:
+   * - 'flexsearch' (built-in, requires FlexSearch indexer to have run)
+   * - './path/to/search.js' (relative path)
+   * - '@myorg/glean-search' (npm package)
+   */
+  search?: string;
 }
 
 /**
@@ -34,6 +59,10 @@ export interface ResolvedPluginOptions {
     version: string;
   };
   excludeRoutes: string[];
+  /** Indexers to run. undefined means ['flexsearch'], false disables indexing */
+  indexers: string[] | false | undefined;
+  /** Search provider module */
+  search: string;
 }
 
 /**
@@ -108,6 +137,8 @@ export interface McpManifest {
   serverName: string;
   /** Base URL of the documentation site */
   baseUrl?: string;
+  /** Names of indexers that ran during build */
+  indexers?: string[];
 }
 
 /**
@@ -124,6 +155,8 @@ export interface McpServerFileConfig {
   version?: string;
   /** Base URL for constructing full page URLs (e.g., https://docs.example.com) */
   baseUrl?: string;
+  /** Search provider module. Default: 'flexsearch' */
+  search?: string;
 }
 
 /**
@@ -140,6 +173,8 @@ export interface McpServerDataConfig {
   version?: string;
   /** Base URL for constructing full page URLs (e.g., https://docs.example.com) */
   baseUrl?: string;
+  /** Search provider module. Default: 'flexsearch' */
+  search?: string;
 }
 
 /**
@@ -218,4 +253,6 @@ export const DEFAULT_OPTIONS: ResolvedPluginOptions = {
     version: '1.0.0',
   },
   excludeRoutes: ['/404*', '/search*'],
+  indexers: undefined, // Default: ['flexsearch'] applied at runtime
+  search: 'flexsearch',
 };
