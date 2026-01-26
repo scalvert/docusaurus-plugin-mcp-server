@@ -47,4 +47,4 @@ export {
   exportSearchIndex,
   importSearchIndex,
   type FlexSearchDocument,
-} from './search/flexsearch-indexer.js';
+} from './search/flexsearch-core.js';

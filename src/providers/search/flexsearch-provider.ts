@@ -10,7 +10,7 @@ import {
   importSearchIndex,
   searchIndex,
   type FlexSearchDocument,
-} from '../../search/flexsearch-indexer.js';
+} from '../../search/flexsearch-core.js';
 
 /**
  * Built-in FlexSearch search provider.
