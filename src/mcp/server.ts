@@ -17,9 +17,7 @@ import type {
   SearchProviderInitData,
 } from '../providers/types.js';
 import { formatSearchResults } from './tools/docs-search.js';
-import { formatPageContent } from './tools/docs-get-page.js';
-import { formatSectionContent } from './tools/docs-get-section.js';
-import { extractSection } from '../processing/heading-extractor.js';
+import { formatPageContent } from './tools/docs-fetch.js';
 
 /**
  * Type guard to check if config uses file-based loading
@@ -56,7 +54,6 @@ export class McpDocsServer {
   constructor(config: McpServerConfig) {
     this.config = config;
 
-    // Create MCP server using the high-level API
     this.mcpServer = new McpServer(
       {
         name: config.name,
@@ -76,7 +73,6 @@ export class McpDocsServer {
    * Register all MCP tools using the SDK's registerTool API
    */
   private registerTools(): void {
-    // docs_search - Search across documentation
     this.mcpServer.registerTool(
       'docs_search',
       {
@@ -121,12 +117,11 @@ export class McpDocsServer {
       }
     );
 
-    // docs_get_page - Retrieve full page content
     this.mcpServer.registerTool(
-      'docs_get_page',
+      'docs_fetch',
       {
         description:
-          'Retrieve the complete content of a documentation page as markdown. Use this when you need the full content of a specific page.',
+          'Fetch the complete content of a documentation page. Use this when you need the full content of a specific page.',
         inputSchema: {
           route: z
             .string()
@@ -153,99 +148,6 @@ export class McpDocsServer {
           console.error('[MCP] Get page error:', error);
           return {
             content: [{ type: 'text' as const, text: `Error getting page: ${String(error)}` }],
-            isError: true,
-          };
-        }
-      }
-    );
-
-    // docs_get_section - Retrieve a specific section
-    this.mcpServer.registerTool(
-      'docs_get_section',
-      {
-        description:
-          'Retrieve a specific section from a documentation page by its heading ID. Use this when you need only a portion of a page rather than the entire content.',
-        inputSchema: {
-          route: z.string().min(1).describe('The page route path'),
-          headingId: z
-            .string()
-            .min(1)
-            .describe(
-              'The heading ID of the section to extract (e.g., "installation", "api-reference")'
-            ),
-        },
-      },
-      async ({ route, headingId }) => {
-        await this.initialize();
-
-        if (!this.searchProvider || !this.searchProvider.isReady()) {
-          return {
-            content: [{ type: 'text' as const, text: 'Server not initialized. Please try again.' }],
-            isError: true,
-          };
-        }
-
-        try {
-          const doc = await this.getDocument(route);
-          if (!doc) {
-            return {
-              content: [
-                {
-                  type: 'text' as const,
-                  text: formatSectionContent(
-                    { content: null, doc: null, headingText: null, availableHeadings: [] },
-                    headingId,
-                    this.config.baseUrl
-                  ),
-                },
-              ],
-            };
-          }
-
-          // Get available headings
-          const availableHeadings = doc.headings.map((h) => ({
-            id: h.id,
-            text: h.text,
-            level: h.level,
-          }));
-
-          // Find the heading
-          const heading = doc.headings.find((h) => h.id === headingId.trim());
-
-          if (!heading) {
-            return {
-              content: [
-                {
-                  type: 'text' as const,
-                  text: formatSectionContent(
-                    { content: null, doc, headingText: null, availableHeadings },
-                    headingId,
-                    this.config.baseUrl
-                  ),
-                },
-              ],
-            };
-          }
-
-          // Extract the section content
-          const sectionContent = extractSection(doc.markdown, headingId.trim(), doc.headings);
-
-          return {
-            content: [
-              {
-                type: 'text' as const,
-                text: formatSectionContent(
-                  { content: sectionContent, doc, headingText: heading.text, availableHeadings },
-                  headingId,
-                  this.config.baseUrl
-                ),
-              },
-            ],
-          };
-        } catch (error) {
-          console.error('[MCP] Get section error:', error);
-          return {
-            content: [{ type: 'text' as const, text: `Error getting section: ${String(error)}` }],
             isError: true,
           };
         }

@@ -9,10 +9,6 @@
 
 import { test, expect } from '@gleanwork/mcp-server-tester';
 
-// ============================================================================
-// MCP Protocol Conformance Tests
-// ============================================================================
-
 test.describe('MCP Protocol Conformance', () => {
   test('should return valid server info', async ({ mcp }) => {
     const info = mcp.getServerInfo();
@@ -24,12 +20,11 @@ test.describe('MCP Protocol Conformance', () => {
   test('should list available tools', async ({ mcp }) => {
     const tools = await mcp.listTools();
     expect(Array.isArray(tools)).toBe(true);
-    expect(tools.length).toBe(3);
+    expect(tools.length).toBe(2);
 
     const toolNames = tools.map((t) => t.name);
     expect(toolNames).toContain('docs_search');
-    expect(toolNames).toContain('docs_get_page');
-    expect(toolNames).toContain('docs_get_section');
+    expect(toolNames).toContain('docs_fetch');
   });
 
   test('should handle invalid tool gracefully', async ({ mcp }) => {
@@ -37,10 +32,6 @@ test.describe('MCP Protocol Conformance', () => {
     expect(result.isError).toBe(true);
   });
 });
-
-// ============================================================================
-// docs_search Tool Tests
-// ============================================================================
 
 test.describe('docs_search Tool', () => {
   test('finds documents by title keywords', async ({ mcp }) => {
@@ -71,50 +62,21 @@ test.describe('docs_search Tool', () => {
   });
 });
 
-// ============================================================================
-// docs_get_page Tool Tests
-// ============================================================================
-
-test.describe('docs_get_page Tool', () => {
+test.describe('docs_fetch Tool', () => {
   test('retrieves full page content', async ({ mcp }) => {
-    const result = await mcp.callTool('docs_get_page', { route: '/docs/intro' });
+    const result = await mcp.callTool('docs_fetch', { route: '/docs/intro' });
     expect(result).not.toBeToolError();
     expect(result).toContainToolText('Introduction');
     expect(result).toContainToolText('Welcome to the documentation');
   });
 
   test('returns page with markdown content', async ({ mcp }) => {
-    const result = await mcp.callTool('docs_get_page', { route: '/docs/installation' });
+    const result = await mcp.callTool('docs_fetch', { route: '/docs/installation' });
     expect(result).toContainToolText('npm install my-platform');
   });
 
   test('returns error for non-existent page', async ({ mcp }) => {
-    const result = await mcp.callTool('docs_get_page', { route: '/docs/nonexistent' });
+    const result = await mcp.callTool('docs_fetch', { route: '/docs/nonexistent' });
     expect(result).toContainToolText('Page not found');
-  });
-});
-
-// ============================================================================
-// docs_get_section Tool Tests
-// ============================================================================
-
-test.describe('docs_get_section Tool', () => {
-  test('retrieves specific section by heading ID', async ({ mcp }) => {
-    const result = await mcp.callTool('docs_get_section', {
-      route: '/docs/intro',
-      headingId: 'overview',
-    });
-    expect(result).not.toBeToolError();
-    // The section should contain content from the Overview heading
-    expect(result).toContainToolText('Overview');
-  });
-
-  test('returns error for non-existent section', async ({ mcp }) => {
-    const result = await mcp.callTool('docs_get_section', {
-      route: '/docs/intro',
-      headingId: 'nonexistent-section',
-    });
-    // The error message includes the heading id and lists available sections
-    expect(result).toContainToolText('not found');
   });
 });

@@ -36,8 +36,7 @@ export { FlexSearchIndexer } from './providers/indexers/flexsearch-indexer.js';
 export { FlexSearchProvider } from './providers/search/flexsearch-provider.js';
 
 export { docsSearchTool } from './mcp/tools/docs-search.js';
-export { docsGetPageTool } from './mcp/tools/docs-get-page.js';
-export { docsGetSectionTool } from './mcp/tools/docs-get-section.js';
+export { docsFetchTool } from './mcp/tools/docs-fetch.js';
 
 export { htmlToMarkdown } from './processing/html-to-markdown.js';
 export { extractContent, parseHtml, parseHtmlFile } from './processing/html-parser.js';
