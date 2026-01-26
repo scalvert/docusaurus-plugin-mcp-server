@@ -1,4 +1,4 @@
-export { default, mcpServerPlugin } from './plugin/docusaurus-plugin.js';
+export { default as mcpServerPlugin } from './plugin/docusaurus-plugin.js';
 export { McpDocsServer } from './mcp/server.js';
 
 export type {
