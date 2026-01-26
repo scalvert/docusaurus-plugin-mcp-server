@@ -111,7 +111,9 @@ export interface FlattenedRoute {
  * Search result from FlexSearch
  */
 export interface SearchResult {
-  /** Route of the matching document */
+  /** Full URL of the matching document (use this with docs_fetch) */
+  url: string;
+  /** Route path of the matching document */
   route: string;
   /** Title of the document */
   title: string;

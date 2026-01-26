@@ -103,9 +103,7 @@ export class McpDocsServer {
         try {
           const results = await this.searchProvider.search(query, { limit });
           return {
-            content: [
-              { type: 'text' as const, text: formatSearchResults(results, this.config.baseUrl) },
-            ],
+            content: [{ type: 'text' as const, text: formatSearchResults(results) }],
           };
         } catch (error) {
           console.error('[MCP] Search error:', error);

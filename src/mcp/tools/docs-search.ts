@@ -53,7 +53,7 @@ export function executeDocsSearch(
 /**
  * Format search results for MCP response
  */
-export function formatSearchResults(results: SearchResult[], baseUrl?: string): string {
+export function formatSearchResults(results: SearchResult[]): string {
   if (results.length === 0) {
     return 'No matching documents found.';
   }
@@ -65,14 +65,7 @@ export function formatSearchResults(results: SearchResult[], baseUrl?: string): 
     if (!result) continue;
 
     lines.push(`${i + 1}. **${result.title}**`);
-
-    // Include full URL if baseUrl is provided
-    if (baseUrl) {
-      const fullUrl = `${baseUrl.replace(/\/$/, '')}${result.route}`;
-      lines.push(`   URL: ${fullUrl}`);
-    }
-
-    lines.push(`   Route: ${result.route}`);
+    lines.push(`   URL: ${result.url}`);
 
     if (result.matchingHeadings && result.matchingHeadings.length > 0) {
       lines.push(`   Matching sections: ${result.matchingHeadings.join(', ')}`);
@@ -81,6 +74,8 @@ export function formatSearchResults(results: SearchResult[], baseUrl?: string): 
     lines.push(`   ${result.snippet}`);
     lines.push('');
   }
+
+  lines.push('Use docs_fetch with the URL to retrieve the full page content.');
 
   return lines.join('\n');
 }

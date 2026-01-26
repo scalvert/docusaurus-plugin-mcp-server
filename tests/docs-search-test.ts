@@ -40,19 +40,23 @@ describe('executeDocsSearch', () => {
     },
   ];
 
-  // Convert to Record for lookups
+  const BASE_URL = 'https://docs.example.com';
+
+  // Convert to Record for lookups (keyed by full URL)
   const sampleDocs: Record<string, ProcessedDoc> = {};
   for (const doc of sampleDocsArray) {
-    sampleDocs[doc.route] = doc;
+    const fullUrl = `${BASE_URL}${doc.route}`;
+    sampleDocs[fullUrl] = doc;
   }
 
-  // Build search index from array
-  const searchIndex = buildSearchIndex(sampleDocsArray);
+  // Build search index from array with baseUrl
+  const searchIndex = buildSearchIndex(sampleDocsArray, BASE_URL);
 
   it('finds documents matching query', () => {
     const results = executeDocsSearch({ query: 'getting started' }, searchIndex, sampleDocs);
 
     expect(results.length).toBeGreaterThan(0);
+    expect(results.some((r) => r.url === `${BASE_URL}/guides/getting-started`)).toBe(true);
     expect(results.some((r) => r.route === '/guides/getting-started')).toBe(true);
   });
 
@@ -60,6 +64,7 @@ describe('executeDocsSearch', () => {
     const results = executeDocsSearch({ query: 'OAuth' }, searchIndex, sampleDocs);
 
     expect(results.length).toBeGreaterThan(0);
+    expect(results.some((r) => r.url === `${BASE_URL}/api/authentication`)).toBe(true);
     expect(results.some((r) => r.route === '/api/authentication')).toBe(true);
   });
 
@@ -83,9 +88,10 @@ describe('executeDocsSearch', () => {
 });
 
 describe('formatSearchResults', () => {
-  it('formats results with URLs when baseUrl provided', () => {
+  it('formats results with URL prominently displayed', () => {
     const results = [
       {
+        url: 'https://docs.example.com/guides/getting-started',
         route: '/guides/getting-started',
         title: 'Getting Started',
         score: 1.0,
@@ -94,28 +100,12 @@ describe('formatSearchResults', () => {
       },
     ];
 
-    const formatted = formatSearchResults(results, 'https://docs.example.com');
+    const formatted = formatSearchResults(results);
 
     expect(formatted).toContain('URL: https://docs.example.com/guides/getting-started');
     expect(formatted).toContain('**Getting Started**');
-    expect(formatted).toContain('Route: /guides/getting-started');
     expect(formatted).toContain('Matching sections: Installation');
-  });
-
-  it('formats results without URLs when baseUrl not provided', () => {
-    const results = [
-      {
-        route: '/guides/getting-started',
-        title: 'Getting Started',
-        score: 1.0,
-        snippet: 'Learn how to get started...',
-      },
-    ];
-
-    const formatted = formatSearchResults(results);
-
-    expect(formatted).not.toContain('URL:');
-    expect(formatted).toContain('Route: /guides/getting-started');
+    expect(formatted).toContain('Use docs_fetch with the URL');
   });
 
   it('handles empty results', () => {
@@ -123,9 +113,10 @@ describe('formatSearchResults', () => {
     expect(formatted).toBe('No matching documents found.');
   });
 
-  it('strips trailing slash from baseUrl', () => {
+  it('handles results without matching headings', () => {
     const results = [
       {
+        url: 'https://docs.example.com/guides/test',
         route: '/guides/test',
         title: 'Test',
         score: 1.0,
@@ -133,9 +124,10 @@ describe('formatSearchResults', () => {
       },
     ];
 
-    const formatted = formatSearchResults(results, 'https://docs.example.com/');
+    const formatted = formatSearchResults(results);
 
     expect(formatted).toContain('URL: https://docs.example.com/guides/test');
-    expect(formatted).not.toContain('https://docs.example.com//');
+    expect(formatted).toContain('**Test**');
+    expect(formatted).not.toContain('Matching sections');
   });
 });

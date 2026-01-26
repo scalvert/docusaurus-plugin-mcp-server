@@ -194,6 +194,7 @@ export function searchIndex(
     if (!doc) continue;
 
     results.push({
+      url: docId, // docId is the full URL when indexed with baseUrl
       route: doc.route,
       title: doc.title,
       score,
