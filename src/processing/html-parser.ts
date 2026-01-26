@@ -3,6 +3,7 @@ import { unified } from 'unified';
 import rehypeParse from 'rehype-parse';
 import { select } from 'hast-util-select';
 import { toString } from 'hast-util-to-string';
+import { toHtml } from 'hast-util-to-html';
 import type { Root, Element } from 'hast';
 import type { ExtractedContent } from '../types/index.js';
 
@@ -180,8 +181,8 @@ export async function extractContent(
   let contentHtml = '';
   if (contentElement) {
     const cleanedElement = cleanContentElement(contentElement, options.excludeSelectors);
-    // Serialize back to HTML string for markdown conversion
-    contentHtml = serializeElement(cleanedElement);
+    // Serialize back to HTML string using hast-util-to-html
+    contentHtml = toHtml(cleanedElement);
   }
 
   return {
@@ -189,78 +190,4 @@ export async function extractContent(
     description,
     contentHtml,
   };
-}
-
-/**
- * Simple serialization of HAST element to HTML string
- */
-function serializeElement(element: Element): string {
-  const voidElements = new Set([
-    'area',
-    'base',
-    'br',
-    'col',
-    'embed',
-    'hr',
-    'img',
-    'input',
-    'link',
-    'meta',
-    'param',
-    'source',
-    'track',
-    'wbr',
-  ]);
-
-  function serialize(node: unknown): string {
-    if (!node || typeof node !== 'object') return '';
-
-    const n = node as {
-      type?: string;
-      value?: string;
-      tagName?: string;
-      properties?: Record<string, unknown>;
-      children?: unknown[];
-    };
-
-    if (n.type === 'text') {
-      return n.value ?? '';
-    }
-
-    if (n.type === 'element' && n.tagName) {
-      const tagName = n.tagName;
-      const props = n.properties ?? {};
-
-      // Build attributes string
-      const attrs: string[] = [];
-      for (const [key, value] of Object.entries(props)) {
-        if (key === 'className' && Array.isArray(value)) {
-          attrs.push(`class="${value.join(' ')}"`);
-        } else if (typeof value === 'boolean') {
-          if (value) attrs.push(key);
-        } else if (value !== undefined && value !== null) {
-          attrs.push(`${key}="${String(value)}"`);
-        }
-      }
-
-      const attrStr = attrs.length > 0 ? ' ' + attrs.join(' ') : '';
-
-      if (voidElements.has(tagName)) {
-        return `<${tagName}${attrStr} />`;
-      }
-
-      const children = n.children ?? [];
-      const childrenHtml = children.map(serialize).join('');
-
-      return `<${tagName}${attrStr}>${childrenHtml}</${tagName}>`;
-    }
-
-    if (n.type === 'root' && n.children) {
-      return n.children.map(serialize).join('');
-    }
-
-    return '';
-  }
-
-  return serialize(element);
 }
