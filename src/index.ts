@@ -15,7 +15,6 @@ export type {
   DocsIndex,
   DocsSearchParams,
   DocsFetchParams,
-  DocsGetPageParams,
   ExtractedContent,
 } from './types/index.js';
 

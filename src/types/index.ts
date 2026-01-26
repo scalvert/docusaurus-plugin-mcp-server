@@ -206,16 +206,8 @@ export interface DocsSearchParams {
  * Input parameters for docs_fetch tool
  */
 export interface DocsFetchParams {
-  /** Page to fetch - either a route path or full URL */
-  page: string;
-}
-
-/**
- * @deprecated Use DocsFetchParams instead
- */
-export interface DocsGetPageParams {
-  /** Route path of the page */
-  route: string;
+  /** Full URL of the page to fetch */
+  url: string;
 }
 
 /**

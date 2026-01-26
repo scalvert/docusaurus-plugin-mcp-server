@@ -6,12 +6,13 @@ import { buildSearchIndex, exportSearchIndex } from '../../search/flexsearch-ind
  * Built-in FlexSearch content indexer.
  *
  * This indexer builds a local FlexSearch index and produces:
- * - docs.json: All processed documents keyed by route
+ * - docs.json: All processed documents keyed by full URL
  * - search-index.json: Exported FlexSearch index for runtime search
  */
 export class FlexSearchIndexer implements ContentIndexer {
   readonly name = 'flexsearch';
 
+  private baseUrl = '';
   private docsIndex: Record<string, ProcessedDoc> = {};
   private exportedIndex: unknown = null;
   private docCount = 0;
@@ -24,8 +25,9 @@ export class FlexSearchIndexer implements ContentIndexer {
     return true;
   }
 
-  async initialize(_context: ProviderContext): Promise<void> {
+  async initialize(context: ProviderContext): Promise<void> {
     // Reset state for fresh indexing
+    this.baseUrl = context.baseUrl.replace(/\/$/, '');
     this.docsIndex = {};
     this.exportedIndex = null;
     this.docCount = 0;
@@ -34,14 +36,15 @@ export class FlexSearchIndexer implements ContentIndexer {
   async indexDocuments(docs: ProcessedDoc[]): Promise<void> {
     this.docCount = docs.length;
 
-    // Build docs index (keyed by route)
+    // Build docs index (keyed by full URL)
     for (const doc of docs) {
-      this.docsIndex[doc.route] = doc;
+      const fullUrl = `${this.baseUrl}${doc.route}`;
+      this.docsIndex[fullUrl] = doc;
     }
 
-    // Build and export FlexSearch index
+    // Build and export FlexSearch index (use full URLs as document IDs)
     console.log('[FlexSearch] Building search index...');
-    const searchIndex = buildSearchIndex(docs);
+    const searchIndex = buildSearchIndex(docs, this.baseUrl);
     this.exportedIndex = await exportSearchIndex(searchIndex);
     console.log(`[FlexSearch] Indexed ${this.docCount} documents`);
   }

@@ -123,15 +123,15 @@ export class McpDocsServer {
         description:
           'Fetch the complete content of a documentation page. Use this when you need the full content of a specific page.',
         inputSchema: {
-          page: z
+          url: z
             .string()
-            .min(1)
+            .url()
             .describe(
-              'The page to fetch - either a route path (e.g., "/docs/getting-started") or a full URL (e.g., "https://docs.example.com/docs/getting-started")'
+              'The full URL of the page to fetch (e.g., "https://docs.example.com/docs/getting-started")'
             ),
         },
       },
-      async ({ page }) => {
+      async ({ url }) => {
         await this.initialize();
 
         if (!this.searchProvider || !this.searchProvider.isReady()) {
@@ -142,9 +142,9 @@ export class McpDocsServer {
         }
 
         try {
-          const doc = await this.getDocument(page);
+          const doc = await this.getDocument(url);
           return {
-            content: [{ type: 'text' as const, text: formatPageContent(doc, this.config.baseUrl) }],
+            content: [{ type: 'text' as const, text: formatPageContent(doc) }],
           };
         } catch (error) {
           console.error('[MCP] Get page error:', error);
@@ -158,16 +158,15 @@ export class McpDocsServer {
   }
 
   /**
-   * Get a document by page identifier (route or URL) using the search provider
+   * Get a document by URL using the search provider
    */
-  private async getDocument(page: string): Promise<ProcessedDoc | null> {
+  private async getDocument(url: string): Promise<ProcessedDoc | null> {
     if (!this.searchProvider) {
       return null;
     }
 
-    // Use the provider's getDocument if available (handles both URLs and routes)
     if (this.searchProvider.getDocument) {
-      return this.searchProvider.getDocument(page);
+      return this.searchProvider.getDocument(url);
     }
 
     return null;

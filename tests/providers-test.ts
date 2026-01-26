@@ -70,11 +70,11 @@ describe('FlexSearchIndexer', () => {
     expect(artifacts.has('docs.json')).toBe(true);
     expect(artifacts.has('search-index.json')).toBe(true);
 
-    // Check docs.json structure
+    // Check docs.json structure - docs are keyed by full URL
     const docsJson = artifacts.get('docs.json') as Record<string, ProcessedDoc>;
-    expect(docsJson['/docs/getting-started']).toBeDefined();
-    expect(docsJson['/docs/api-reference']).toBeDefined();
-    const gettingStartedDoc = docsJson['/docs/getting-started'];
+    expect(docsJson['https://docs.example.com/docs/getting-started']).toBeDefined();
+    expect(docsJson['https://docs.example.com/docs/api-reference']).toBeDefined();
+    const gettingStartedDoc = docsJson['https://docs.example.com/docs/getting-started'];
     expect(gettingStartedDoc?.title).toBe('Getting Started');
   });
 
@@ -140,36 +140,12 @@ describe('FlexSearchProvider', () => {
     expect(results.length).toBeLessThanOrEqual(1);
   });
 
-  it('should get document by route', async () => {
-    await provider.initialize(mockProviderContext, {
-      docs: artifacts.get('docs.json') as Record<string, ProcessedDoc>,
-      indexData: artifacts.get('search-index.json') as Record<string, unknown>,
-    });
-
-    const doc = await provider.getDocument('/docs/getting-started');
-    expect(doc).toBeDefined();
-    expect(doc?.title).toBe('Getting Started');
-  });
-
-  it('should get document with normalized route', async () => {
-    await provider.initialize(mockProviderContext, {
-      docs: artifacts.get('docs.json') as Record<string, ProcessedDoc>,
-      indexData: artifacts.get('search-index.json') as Record<string, unknown>,
-    });
-
-    // Without leading slash
-    const doc = await provider.getDocument('docs/getting-started');
-    expect(doc).toBeDefined();
-    expect(doc?.title).toBe('Getting Started');
-  });
-
   it('should get document by URL', async () => {
     await provider.initialize(mockProviderContext, {
       docs: artifacts.get('docs.json') as Record<string, ProcessedDoc>,
       indexData: artifacts.get('search-index.json') as Record<string, unknown>,
     });
 
-    // Full URL should extract pathname and find document
     const doc = await provider.getDocument('https://docs.example.com/docs/getting-started');
     expect(doc).toBeDefined();
     expect(doc?.title).toBe('Getting Started');
@@ -181,7 +157,7 @@ describe('FlexSearchProvider', () => {
       indexData: artifacts.get('search-index.json') as Record<string, unknown>,
     });
 
-    const doc = await provider.getDocument('/docs/non-existent');
+    const doc = await provider.getDocument('https://docs.example.com/docs/non-existent');
     expect(doc).toBeNull();
   });
 
