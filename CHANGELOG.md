@@ -1,6 +1,19 @@
 
 
 
+
+## v0.9.0 (2026-01-26)
+
+#### :rocket: Enhancement
+* [#5](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/5) refactor: codebase cleanup and consistency improvements ([@scalvert](https://github.com/scalvert))
+
+#### :memo: Documentation
+* [#5](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/5) refactor: codebase cleanup and consistency improvements ([@scalvert](https://github.com/scalvert))
+
+#### Committers: 1
+- Steve Calvert ([@scalvert](https://github.com/scalvert))
+
+
 ## v0.8.0 (2026-01-26)
 
 #### :boom: Breaking Change
