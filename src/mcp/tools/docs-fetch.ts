@@ -1,4 +1,17 @@
+import { z } from 'zod';
 import type { ProcessedDoc } from '../../types/index.js';
+
+/**
+ * Zod schema for docs_fetch input parameters
+ */
+export const docsFetchInputSchema = {
+  url: z
+    .string()
+    .url()
+    .describe(
+      'The full URL of the page to fetch (e.g., "https://docs.example.com/docs/getting-started")'
+    ),
+};
 
 /**
  * Tool definition for docs_fetch
@@ -6,19 +19,8 @@ import type { ProcessedDoc } from '../../types/index.js';
 export const docsFetchTool = {
   name: 'docs_fetch',
   description:
-    'Fetch the complete content of a documentation page. Use this after searching to get full page content.',
-  inputSchema: {
-    type: 'object' as const,
-    properties: {
-      url: {
-        type: 'string',
-        format: 'uri',
-        description:
-          'The full URL of the page to fetch (e.g., "https://docs.example.com/docs/getting-started")',
-      },
-    },
-    required: ['url'],
-  },
+    'Fetch the complete content of a documentation page. Use this after searching to get the full markdown content of a specific page.',
+  inputSchema: docsFetchInputSchema,
 };
 
 /**
@@ -40,9 +42,6 @@ export function formatPageContent(doc: ProcessedDoc | null): string {
     lines.push(`> ${doc.description}`);
     lines.push('');
   }
-
-  lines.push(`**Route:** ${doc.route}`);
-  lines.push('');
 
   // Table of contents (if there are headings)
   if (doc.headings.length > 0) {

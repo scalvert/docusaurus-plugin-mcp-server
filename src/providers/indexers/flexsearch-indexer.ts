@@ -1,6 +1,6 @@
 import type { ProcessedDoc } from '../../types/index.js';
 import type { ContentIndexer, ProviderContext } from '../types.js';
-import { buildSearchIndex, exportSearchIndex } from '../../search/flexsearch-indexer.js';
+import { buildSearchIndex, exportSearchIndex } from '../../search/flexsearch-core.js';
 
 /**
  * Built-in FlexSearch content indexer.
@@ -52,7 +52,7 @@ export class FlexSearchIndexer implements ContentIndexer {
   async finalize(): Promise<Map<string, unknown>> {
     const artifacts = new Map<string, unknown>();
 
-    // docs.json - all documents keyed by route
+    // docs.json - all documents keyed by full URL
     artifacts.set('docs.json', this.docsIndex);
 
     // search-index.json - exported FlexSearch index

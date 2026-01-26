@@ -20,6 +20,7 @@
 
 import { McpDocsServer } from '../mcp/server.js';
 import type { McpServerConfig } from '../types/index.js';
+import { getCorsHeaders } from './cors.js';
 
 /**
  * Netlify event object (simplified interface)
@@ -85,8 +86,11 @@ function eventToRequest(event: NetlifyEvent): Request {
 /**
  * Convert a Web Standard Response to a Netlify response
  */
-async function responseToNetlify(response: Response): Promise<NetlifyResponse> {
-  const headers: Record<string, string> = {};
+async function responseToNetlify(
+  response: Response,
+  additionalHeaders: Record<string, string>
+): Promise<NetlifyResponse> {
+  const headers: Record<string, string> = { ...additionalHeaders };
   response.headers.forEach((value, key) => {
     headers[key] = value;
   });
@@ -120,9 +124,19 @@ export function createNetlifyHandler(config: McpServerConfig) {
     event: NetlifyEvent,
     _context: NetlifyContext
   ): Promise<NetlifyResponse> {
+    const corsHeaders = getCorsHeaders();
     const headers = {
       'Content-Type': 'application/json',
+      ...corsHeaders,
     };
+
+    // Handle CORS preflight
+    if (event.httpMethod === 'OPTIONS') {
+      return {
+        statusCode: 204,
+        headers: corsHeaders,
+      };
+    }
 
     // Handle GET requests for health check
     if (event.httpMethod === 'GET') {
@@ -160,8 +174,8 @@ export function createNetlifyHandler(config: McpServerConfig) {
       // Use the SDK's Web Standard transport to handle the request
       const response = await mcpServer.handleWebRequest(request);
 
-      // Convert back to Netlify response format
-      return await responseToNetlify(response);
+      // Convert back to Netlify response format with CORS headers
+      return await responseToNetlify(response, corsHeaders);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error('MCP Server Error:', error);

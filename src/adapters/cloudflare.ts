@@ -26,6 +26,7 @@
 
 import { McpDocsServer } from '../mcp/server.js';
 import type { ProcessedDoc, McpServerDataConfig } from '../types/index.js';
+import { getCorsHeaders } from './cors.js';
 
 /**
  * Config for Cloudflare Workers adapter
@@ -68,15 +69,11 @@ export function createCloudflareHandler(config: CloudflareAdapterConfig) {
   }
 
   return async function fetch(request: Request): Promise<Response> {
-    const headers = {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    };
+    const corsHeaders = getCorsHeaders();
 
     // Handle CORS preflight
     if (request.method === 'OPTIONS') {
-      return new Response(null, { status: 204, headers });
+      return new Response(null, { status: 204, headers: corsHeaders });
     }
 
     // Handle GET requests for health check
@@ -85,7 +82,7 @@ export function createCloudflareHandler(config: CloudflareAdapterConfig) {
       const status = await mcpServer.getStatus();
       return new Response(JSON.stringify(status), {
         status: 200,
-        headers: { ...headers, 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -102,7 +99,7 @@ export function createCloudflareHandler(config: CloudflareAdapterConfig) {
         }),
         {
           status: 405,
-          headers: { ...headers, 'Content-Type': 'application/json' },
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
     }
@@ -114,7 +111,7 @@ export function createCloudflareHandler(config: CloudflareAdapterConfig) {
 
       // Add CORS headers to the response
       const newHeaders = new Headers(response.headers);
-      Object.entries(headers).forEach(([key, value]) => {
+      Object.entries(corsHeaders).forEach(([key, value]) => {
         newHeaders.set(key, value);
       });
 
@@ -137,7 +134,7 @@ export function createCloudflareHandler(config: CloudflareAdapterConfig) {
         }),
         {
           status: 500,
-          headers: { ...headers, 'Content-Type': 'application/json' },
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
     }

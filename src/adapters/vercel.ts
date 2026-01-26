@@ -19,6 +19,7 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { McpDocsServer } from '../mcp/server.js';
 import type { McpServerConfig } from '../types/index.js';
+import { getCorsHeaders } from './cors.js';
 
 /**
  * Vercel request object (extends Node.js IncomingMessage)
@@ -51,8 +52,20 @@ export function createVercelHandler(config: McpServerConfig) {
   }
 
   return async function handler(req: VercelRequest, res: VercelResponse) {
+    const corsHeaders = getCorsHeaders();
+
+    // Handle CORS preflight
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204, corsHeaders);
+      res.end();
+      return;
+    }
+
     // Handle GET requests for health check
     if (req.method === 'GET') {
+      Object.entries(corsHeaders).forEach(([key, value]) => {
+        res.setHeader(key, value);
+      });
       const mcpServer = getServer();
       const status = await mcpServer.getStatus();
       return res.status(200).json(status);
@@ -60,6 +73,9 @@ export function createVercelHandler(config: McpServerConfig) {
 
     // Only allow POST requests for MCP
     if (req.method !== 'POST') {
+      Object.entries(corsHeaders).forEach(([key, value]) => {
+        res.setHeader(key, value);
+      });
       return res.status(405).json({
         jsonrpc: '2.0',
         id: null,
@@ -71,6 +87,11 @@ export function createVercelHandler(config: McpServerConfig) {
     }
 
     try {
+      // Set CORS headers before handling
+      Object.entries(corsHeaders).forEach(([key, value]) => {
+        res.setHeader(key, value);
+      });
+
       const mcpServer = getServer();
       // Use the SDK transport to handle the request
       await mcpServer.handleHttpRequest(req, res, req.body);

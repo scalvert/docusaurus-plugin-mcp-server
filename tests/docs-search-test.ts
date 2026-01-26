@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { executeDocsSearch, formatSearchResults } from '../src/mcp/tools/docs-search.js';
-import { buildSearchIndex } from '../src/search/flexsearch-indexer.js';
+import { buildSearchIndex } from '../src/search/flexsearch-core.js';
 import type { ProcessedDoc } from '../src/types/index.js';
 
 describe('executeDocsSearch', () => {

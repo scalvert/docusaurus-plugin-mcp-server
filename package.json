@@ -70,6 +70,7 @@
     "flexsearch": "^0.7.43",
     "fs-extra": "^11.0.0",
     "hast-util-select": "^6.0.0",
+    "hast-util-to-html": "^9.0.5",
     "hast-util-to-string": "^3.0.0",
     "p-map": "^7.0.0",
     "rehype-parse": "^9.0.0",
