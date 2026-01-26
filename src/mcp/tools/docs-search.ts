@@ -1,5 +1,21 @@
+import { z } from 'zod';
 import type { ProcessedDoc, SearchResult, DocsSearchParams } from '../../types/index.js';
-import { searchIndex, type FlexSearchDocument } from '../../search/flexsearch-indexer.js';
+import { searchIndex, type FlexSearchDocument } from '../../search/flexsearch-core.js';
+
+/**
+ * Zod schema for docs_search input parameters
+ */
+export const docsSearchInputSchema = {
+  query: z.string().min(1).describe('The search query string'),
+  limit: z
+    .number()
+    .int()
+    .min(1)
+    .max(20)
+    .optional()
+    .default(5)
+    .describe('Maximum number of results to return (1-20, default: 5)'),
+};
 
 /**
  * Tool definition for docs_search
@@ -7,22 +23,8 @@ import { searchIndex, type FlexSearchDocument } from '../../search/flexsearch-in
 export const docsSearchTool = {
   name: 'docs_search',
   description:
-    'Search across developer documentation. Returns ranked results with snippets and matching headings.',
-  inputSchema: {
-    type: 'object' as const,
-    properties: {
-      query: {
-        type: 'string',
-        description: 'Search query string',
-      },
-      limit: {
-        type: 'number',
-        description: 'Maximum number of results to return (default: 5, max: 20)',
-        default: 5,
-      },
-    },
-    required: ['query'],
-  },
+    'Search the documentation for relevant pages. Returns matching documents with URLs, snippets, and relevance scores. Use this to find information across all documentation.',
+  inputSchema: docsSearchInputSchema,
 };
 
 /**

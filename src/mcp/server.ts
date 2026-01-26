@@ -1,7 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
-import { z } from 'zod';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type {
   ProcessedDoc,
@@ -16,8 +15,8 @@ import type {
   ProviderContext,
   SearchProviderInitData,
 } from '../providers/types.js';
-import { formatSearchResults } from './tools/docs-search.js';
-import { formatPageContent } from './tools/docs-fetch.js';
+import { docsSearchTool, formatSearchResults } from './tools/docs-search.js';
+import { docsFetchTool, formatPageContent } from './tools/docs-fetch.js';
 
 /**
  * Type guard to check if config uses file-based loading
@@ -70,25 +69,15 @@ export class McpDocsServer {
   }
 
   /**
-   * Register all MCP tools using the SDK's registerTool API
+   * Register all MCP tools using definitions from tool files
    */
   private registerTools(): void {
+    // Register docs_search tool
     this.mcpServer.registerTool(
-      'docs_search',
+      docsSearchTool.name,
       {
-        description:
-          'Search the documentation for relevant pages. Returns matching documents with snippets and relevance scores. Use this to find information across all documentation.',
-        inputSchema: {
-          query: z.string().min(1).describe('The search query string'),
-          limit: z
-            .number()
-            .int()
-            .min(1)
-            .max(20)
-            .optional()
-            .default(5)
-            .describe('Maximum number of results to return (1-20, default: 5)'),
-        },
+        description: docsSearchTool.description,
+        inputSchema: docsSearchTool.inputSchema,
       },
       async ({ query, limit }) => {
         await this.initialize();
@@ -115,19 +104,12 @@ export class McpDocsServer {
       }
     );
 
+    // Register docs_fetch tool
     this.mcpServer.registerTool(
-      'docs_fetch',
+      docsFetchTool.name,
       {
-        description:
-          'Fetch the complete content of a documentation page. Use this when you need the full content of a specific page.',
-        inputSchema: {
-          url: z
-            .string()
-            .url()
-            .describe(
-              'The full URL of the page to fetch (e.g., "https://docs.example.com/docs/getting-started")'
-            ),
-        },
+        description: docsFetchTool.description,
+        inputSchema: docsFetchTool.inputSchema,
       },
       async ({ url }) => {
         await this.initialize();
@@ -145,9 +127,9 @@ export class McpDocsServer {
             content: [{ type: 'text' as const, text: formatPageContent(doc) }],
           };
         } catch (error) {
-          console.error('[MCP] Get page error:', error);
+          console.error('[MCP] Fetch error:', error);
           return {
-            content: [{ type: 'text' as const, text: `Error getting page: ${String(error)}` }],
+            content: [{ type: 'text' as const, text: `Error fetching page: ${String(error)}` }],
             isError: true,
           };
         }
