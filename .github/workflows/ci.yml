@@ -27,7 +27,7 @@ jobs:
       - name: Setup mise
         uses: jdx/mise-action@v2
         with:
-          install_args: "node@${{ matrix.node }}"
+          install_args: 'node@${{ matrix.node }}'
 
       - name: Install dependencies
         run: npm ci

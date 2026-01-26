@@ -91,15 +91,18 @@ Access tokens are used to authenticate API requests.`,
   },
 ];
 
-// Convert to Record for lookups
+const BASE_URL = 'https://docs.example.com';
+
+// Convert to Record for lookups - keyed by full URL
 const sampleDocs = {};
 for (const doc of sampleDocsArray) {
-  sampleDocs[doc.route] = doc;
+  const fullUrl = `${BASE_URL}${doc.route}`;
+  sampleDocs[fullUrl] = doc;
 }
 
 async function main() {
-  // Build search index
-  const searchIndex = buildSearchIndex(sampleDocsArray);
+  // Build search index with baseUrl so IDs are full URLs
+  const searchIndex = buildSearchIndex(sampleDocsArray, BASE_URL);
   const searchIndexData = await exportSearchIndex(searchIndex);
 
   const mcpServer = new McpDocsServer({
@@ -107,7 +110,7 @@ async function main() {
     version: '1.0.0',
     docs: sampleDocs,
     searchIndexData,
-    baseUrl: 'https://docs.example.com',
+    baseUrl: BASE_URL,
   });
 
   await mcpServer.initialize();

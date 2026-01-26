@@ -96,10 +96,21 @@ export function createSearchIndex(): FlexSearchDocument {
 
 /**
  * Add a document to the search index
+ *
+ * @param index - The FlexSearch index
+ * @param doc - The document to add
+ * @param baseUrl - Optional base URL to construct full URL as document ID
  */
-export function addDocumentToIndex(index: FlexSearchDocument, doc: ProcessedDoc): void {
+export function addDocumentToIndex(
+  index: FlexSearchDocument,
+  doc: ProcessedDoc,
+  baseUrl?: string
+): void {
+  // Use full URL as ID if baseUrl is provided, otherwise use route
+  const id = baseUrl ? `${baseUrl.replace(/\/$/, '')}${doc.route}` : doc.route;
+
   const indexable: IndexableDocument = {
-    id: doc.route,
+    id,
     title: doc.title,
     content: doc.markdown,
     headings: doc.headings.map((h) => h.text).join(' '),
@@ -111,12 +122,15 @@ export function addDocumentToIndex(index: FlexSearchDocument, doc: ProcessedDoc)
 
 /**
  * Build the search index from processed documents
+ *
+ * @param docs - Documents to index
+ * @param baseUrl - Optional base URL to construct full URLs as document IDs
  */
-export function buildSearchIndex(docs: ProcessedDoc[]): FlexSearchDocument {
+export function buildSearchIndex(docs: ProcessedDoc[], baseUrl?: string): FlexSearchDocument {
   const index = createSearchIndex();
 
   for (const doc of docs) {
-    addDocumentToIndex(index, doc);
+    addDocumentToIndex(index, doc, baseUrl);
   }
 
   return index;
@@ -180,6 +194,7 @@ export function searchIndex(
     if (!doc) continue;
 
     results.push({
+      url: docId, // docId is the full URL when indexed with baseUrl
       route: doc.route,
       title: doc.title,
       score,

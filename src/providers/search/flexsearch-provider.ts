@@ -75,21 +75,13 @@ export class FlexSearchProvider implements SearchProvider {
     return searchIndex(this.searchIndex, this.docs, query, { limit });
   }
 
-  async getDocument(route: string): Promise<ProcessedDoc | null> {
+  async getDocument(url: string): Promise<ProcessedDoc | null> {
     if (!this.docs) {
       throw new Error('[FlexSearch] Provider not initialized');
     }
 
-    // Try exact match first
-    if (this.docs[route]) {
-      return this.docs[route];
-    }
-
-    // Try with/without leading slash
-    const normalizedRoute = route.startsWith('/') ? route : `/${route}`;
-    const withoutSlash = route.startsWith('/') ? route.slice(1) : route;
-
-    return this.docs[normalizedRoute] ?? this.docs[withoutSlash] ?? null;
+    // Direct lookup by URL
+    return this.docs[url] ?? null;
   }
 
   async healthCheck(): Promise<{ healthy: boolean; message?: string }> {

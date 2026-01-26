@@ -111,7 +111,9 @@ export interface FlattenedRoute {
  * Search result from FlexSearch
  */
 export interface SearchResult {
-  /** Route of the matching document */
+  /** Full URL of the matching document (use this with docs_fetch) */
+  url: string;
+  /** Route path of the matching document */
   route: string;
   /** Title of the document */
   title: string;
@@ -203,21 +205,11 @@ export interface DocsSearchParams {
 }
 
 /**
- * Input parameters for docs_get_page tool
+ * Input parameters for docs_fetch tool
  */
-export interface DocsGetPageParams {
-  /** Route path of the page */
-  route: string;
-}
-
-/**
- * Input parameters for docs_get_section tool
- */
-export interface DocsGetSectionParams {
-  /** Route path of the page */
-  route: string;
-  /** Heading ID of the section */
-  headingId: string;
+export interface DocsFetchParams {
+  /** Full URL of the page to fetch */
+  url: string;
 }
 
 /**
