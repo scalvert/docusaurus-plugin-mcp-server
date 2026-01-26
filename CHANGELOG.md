@@ -1,5 +1,15 @@
 
 
+
+## v0.8.0 (2026-01-26)
+
+#### :boom: Breaking Change
+* [#3](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/3) refactor: simplify tools to docs_search and docs_fetch ([@scalvert](https://github.com/scalvert))
+
+#### Committers: 1
+- Steve Calvert ([@scalvert](https://github.com/scalvert))
+
+
 ## v0.7.0 (2026-01-26)
 
 #### :rocket: Enhancement
