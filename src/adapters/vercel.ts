@@ -63,9 +63,12 @@ export function createVercelHandler(config: McpServerConfig) {
 
     // Handle GET requests for health check
     if (req.method === 'GET') {
+      Object.entries(corsHeaders).forEach(([key, value]) => {
+        res.setHeader(key, value);
+      });
       const mcpServer = getServer();
       const status = await mcpServer.getStatus();
-      return res.status(200).json({ ...status, ...corsHeaders });
+      return res.status(200).json(status);
     }
 
     // Only allow POST requests for MCP
