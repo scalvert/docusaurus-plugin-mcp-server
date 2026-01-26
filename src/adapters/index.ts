@@ -10,8 +10,4 @@ export { createVercelHandler, type VercelRequest, type VercelResponse } from './
 export { createNetlifyHandler, type NetlifyEvent, type NetlifyContext } from './netlify.js';
 export { createCloudflareHandler } from './cloudflare.js';
 export { generateAdapterFiles } from './generator.js';
-export {
-  createNodeServer,
-  createNodeHandler,
-  type NodeServerOptions,
-} from './node.js';
+export { createNodeServer, createNodeHandler, type NodeServerOptions } from './node.js';

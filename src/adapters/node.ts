@@ -145,7 +145,7 @@ async function parseRequestBody(req: IncomingMessage): Promise<unknown> {
     req.on('end', () => {
       try {
         resolve(body ? JSON.parse(body) : undefined);
-      } catch (error) {
+      } catch {
         reject(new Error('Invalid JSON in request body'));
       }
     });
