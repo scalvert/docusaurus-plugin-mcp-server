@@ -14,8 +14,8 @@ export type {
   McpServerDataConfig,
   DocsIndex,
   DocsSearchParams,
+  DocsFetchParams,
   DocsGetPageParams,
-  DocsGetSectionParams,
   ExtractedContent,
 } from './types/index.js';
 

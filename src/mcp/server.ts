@@ -123,13 +123,15 @@ export class McpDocsServer {
         description:
           'Fetch the complete content of a documentation page. Use this when you need the full content of a specific page.',
         inputSchema: {
-          route: z
+          page: z
             .string()
             .min(1)
-            .describe('The page route path (e.g., "/docs/getting-started" or "/api/reference")'),
+            .describe(
+              'The page to fetch - either a route path (e.g., "/docs/getting-started") or a full URL (e.g., "https://docs.example.com/docs/getting-started")'
+            ),
         },
       },
-      async ({ route }) => {
+      async ({ page }) => {
         await this.initialize();
 
         if (!this.searchProvider || !this.searchProvider.isReady()) {
@@ -140,7 +142,7 @@ export class McpDocsServer {
         }
 
         try {
-          const doc = await this.getDocument(route);
+          const doc = await this.getDocument(page);
           return {
             content: [{ type: 'text' as const, text: formatPageContent(doc, this.config.baseUrl) }],
           };
@@ -156,33 +158,16 @@ export class McpDocsServer {
   }
 
   /**
-   * Get a document by route using the search provider
+   * Get a document by page identifier (route or URL) using the search provider
    */
-  private async getDocument(route: string): Promise<ProcessedDoc | null> {
+  private async getDocument(page: string): Promise<ProcessedDoc | null> {
     if (!this.searchProvider) {
       return null;
     }
 
-    // Use the provider's getDocument if available
+    // Use the provider's getDocument if available (handles both URLs and routes)
     if (this.searchProvider.getDocument) {
-      return this.searchProvider.getDocument(route);
-    }
-
-    // For FlexSearchProvider, we can access docs directly
-    if (this.searchProvider instanceof FlexSearchProvider) {
-      const docs = this.searchProvider.getDocs();
-      if (!docs) return null;
-
-      // Try exact match first
-      if (docs[route]) {
-        return docs[route];
-      }
-
-      // Try with/without leading slash
-      const normalizedRoute = route.startsWith('/') ? route : `/${route}`;
-      const withoutSlash = route.startsWith('/') ? route.slice(1) : route;
-
-      return docs[normalizedRoute] ?? docs[withoutSlash] ?? null;
+      return this.searchProvider.getDocument(page);
     }
 
     return null;

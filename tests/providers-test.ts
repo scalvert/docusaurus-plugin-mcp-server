@@ -163,6 +163,18 @@ describe('FlexSearchProvider', () => {
     expect(doc?.title).toBe('Getting Started');
   });
 
+  it('should get document by URL', async () => {
+    await provider.initialize(mockProviderContext, {
+      docs: artifacts.get('docs.json') as Record<string, ProcessedDoc>,
+      indexData: artifacts.get('search-index.json') as Record<string, unknown>,
+    });
+
+    // Full URL should extract pathname and find document
+    const doc = await provider.getDocument('https://docs.example.com/docs/getting-started');
+    expect(doc).toBeDefined();
+    expect(doc?.title).toBe('Getting Started');
+  });
+
   it('should return null for non-existent document', async () => {
     await provider.initialize(mockProviderContext, {
       docs: artifacts.get('docs.json') as Record<string, ProcessedDoc>,

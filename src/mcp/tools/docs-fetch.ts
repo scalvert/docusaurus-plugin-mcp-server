@@ -10,12 +10,13 @@ export const docsFetchTool = {
   inputSchema: {
     type: 'object' as const,
     properties: {
-      route: {
+      page: {
         type: 'string',
-        description: 'The route path of the page (e.g., /docs/getting-started)',
+        description:
+          'The page to fetch - either a route path (e.g., "/docs/getting-started") or a full URL (e.g., "https://docs.example.com/docs/getting-started")',
       },
     },
-    required: ['route'],
+    required: ['page'],
   },
 };
 

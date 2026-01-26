@@ -63,20 +63,29 @@ test.describe('docs_search Tool', () => {
 });
 
 test.describe('docs_fetch Tool', () => {
-  test('retrieves full page content', async ({ mcp }) => {
-    const result = await mcp.callTool('docs_fetch', { route: '/docs/intro' });
+  test('retrieves full page content by route', async ({ mcp }) => {
+    const result = await mcp.callTool('docs_fetch', { page: '/docs/intro' });
+    expect(result).not.toBeToolError();
+    expect(result).toContainToolText('Introduction');
+    expect(result).toContainToolText('Welcome to the documentation');
+  });
+
+  test('retrieves full page content by URL', async ({ mcp }) => {
+    const result = await mcp.callTool('docs_fetch', {
+      page: 'https://docs.example.com/docs/intro',
+    });
     expect(result).not.toBeToolError();
     expect(result).toContainToolText('Introduction');
     expect(result).toContainToolText('Welcome to the documentation');
   });
 
   test('returns page with markdown content', async ({ mcp }) => {
-    const result = await mcp.callTool('docs_fetch', { route: '/docs/installation' });
+    const result = await mcp.callTool('docs_fetch', { page: '/docs/installation' });
     expect(result).toContainToolText('npm install my-platform');
   });
 
   test('returns error for non-existent page', async ({ mcp }) => {
-    const result = await mcp.callTool('docs_fetch', { route: '/docs/nonexistent' });
+    const result = await mcp.callTool('docs_fetch', { page: '/docs/nonexistent' });
     expect(result).toContainToolText('Page not found');
   });
 });

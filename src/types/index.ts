@@ -203,21 +203,19 @@ export interface DocsSearchParams {
 }
 
 /**
- * Input parameters for docs_get_page tool
+ * Input parameters for docs_fetch tool
+ */
+export interface DocsFetchParams {
+  /** Page to fetch - either a route path or full URL */
+  page: string;
+}
+
+/**
+ * @deprecated Use DocsFetchParams instead
  */
 export interface DocsGetPageParams {
   /** Route path of the page */
   route: string;
-}
-
-/**
- * Input parameters for docs_get_section tool
- */
-export interface DocsGetSectionParams {
-  /** Route path of the page */
-  route: string;
-  /** Heading ID of the section */
-  headingId: string;
 }
 
 /**
