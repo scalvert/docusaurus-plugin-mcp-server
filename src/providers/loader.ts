@@ -27,7 +27,6 @@ export async function loadIndexer(specifier: string): Promise<ContentIndexer> {
     return new FlexSearchIndexer();
   }
 
-  // Dynamic import for external modules
   try {
     const module = await import(specifier);
     const IndexerClass = module.default;
@@ -36,7 +35,6 @@ export async function loadIndexer(specifier: string): Promise<ContentIndexer> {
       // It's a class constructor
       const instance = new IndexerClass();
 
-      // Validate it implements ContentIndexer
       if (!isContentIndexer(instance)) {
         throw new Error(
           `Invalid indexer module "${specifier}": does not implement ContentIndexer interface`
@@ -46,7 +44,6 @@ export async function loadIndexer(specifier: string): Promise<ContentIndexer> {
       return instance;
     }
 
-    // Check if it's already an instance
     if (isContentIndexer(IndexerClass)) {
       return IndexerClass;
     }
@@ -82,21 +79,17 @@ export async function loadIndexer(specifier: string): Promise<ContentIndexer> {
  * ```
  */
 export async function loadSearchProvider(specifier: string): Promise<SearchProvider> {
-  // Built-in FlexSearch provider
   if (specifier === 'flexsearch') {
     return new FlexSearchProvider();
   }
 
-  // Dynamic import for external modules
   try {
     const module = await import(specifier);
     const ProviderClass = module.default;
 
     if (typeof ProviderClass === 'function') {
-      // It's a class constructor
       const instance = new ProviderClass();
 
-      // Validate it implements SearchProvider
       if (!isSearchProvider(instance)) {
         throw new Error(
           `Invalid search provider module "${specifier}": does not implement SearchProvider interface`
@@ -106,7 +99,6 @@ export async function loadSearchProvider(specifier: string): Promise<SearchProvi
       return instance;
     }
 
-    // Check if it's already an instance
     if (isSearchProvider(ProviderClass)) {
       return ProviderClass;
     }

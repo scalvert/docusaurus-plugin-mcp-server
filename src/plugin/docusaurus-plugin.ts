@@ -17,7 +17,7 @@ import { loadIndexer } from '../providers/loader.js';
 import type { ProviderContext } from '../providers/types.js';
 
 /**
- * Resolve plugin options with defaults
+ * Resolve plugin options with defaults.
  */
 function resolveOptions(options: McpServerPluginOptions): ResolvedPluginOptions {
   return {
@@ -27,8 +27,6 @@ function resolveOptions(options: McpServerPluginOptions): ResolvedPluginOptions 
       ...DEFAULT_OPTIONS.server,
       ...options.server,
     },
-    indexers: options.indexers,
-    search: options.search ?? DEFAULT_OPTIONS.search,
   };
 }
 
