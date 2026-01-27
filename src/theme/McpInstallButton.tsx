@@ -350,27 +350,8 @@ export function McpInstallButton({
         </li>
       </ul>
 
-      {/* Scoped styles using CSS variables for customization */}
+      {/* Scoped styles using Docusaurus/Infima CSS variables */}
       <style>{`
-        .mcp-install-dropdown {
-          --mcp-dropdown-width: 520px;
-          /* Light mode: grey code blocks */
-          --mcp-code-bg: #f3f4f6;
-          --mcp-code-color: #374151;
-          --mcp-copy-bg: #e5e7eb;
-          --mcp-copy-bg-hover: #d1d5db;
-          --mcp-copy-color: #6b7280;
-        }
-
-        /* Dark mode: dark code blocks */
-        [data-theme='dark'] .mcp-install-dropdown {
-          --mcp-code-bg: #1e1e1e;
-          --mcp-code-color: #e5e7eb;
-          --mcp-copy-bg: #374151;
-          --mcp-copy-bg-hover: #4b5563;
-          --mcp-copy-color: #9ca3af;
-        }
-
         .mcp-install-dropdown__button {
           display: inline-flex;
           align-items: center;
@@ -383,7 +364,7 @@ export function McpInstallButton({
         }
 
         .mcp-install-dropdown__menu {
-          width: var(--mcp-dropdown-width);
+          width: 520px;
           padding: 0;
           top: calc(100% + 0.25rem);
         }
@@ -392,7 +373,7 @@ export function McpInstallButton({
           padding: 0.75rem 1rem;
           font-size: var(--ifm-font-size-small);
           font-weight: var(--ifm-font-weight-semibold);
-          color: var(--ifm-color-secondary-darkest);
+          color: var(--ifm-color-emphasis-700);
           background-color: var(--ifm-background-color);
           border-bottom: 1px solid var(--ifm-toc-border-color);
         }
@@ -417,7 +398,7 @@ export function McpInstallButton({
         .mcp-install-dropdown__notes {
           margin: 0.5rem 0 0;
           font-size: var(--ifm-font-size-small);
-          color: var(--ifm-color-secondary-darkest);
+          color: var(--ifm-color-emphasis-700);
           line-height: 1.4;
         }
 
@@ -441,16 +422,16 @@ export function McpInstallButton({
           text-decoration: none;
         }
 
-        /* Code block styles */
+        /* Code block styles - uses Docusaurus pre/code variables */
         .mcp-code-block {
           display: flex;
-          border-radius: var(--ifm-code-border-radius, 0.25rem);
+          border-radius: var(--ifm-code-border-radius);
           overflow: hidden;
         }
 
         .mcp-code-block__content {
           flex: 1;
-          background-color: var(--mcp-code-bg);
+          background-color: var(--ifm-pre-background);
           padding: 0.75rem 1rem;
           overflow-x: auto;
         }
@@ -458,7 +439,7 @@ export function McpInstallButton({
         .mcp-code-block__content code {
           font-family: var(--ifm-font-family-monospace);
           font-size: var(--ifm-code-font-size);
-          color: var(--mcp-code-color);
+          color: var(--ifm-pre-color);
           background: none;
           padding: 0;
           border: none;
@@ -481,15 +462,15 @@ export function McpInstallButton({
           align-items: center;
           justify-content: center;
           width: 2.75rem;
-          background-color: var(--mcp-copy-bg);
+          background-color: var(--ifm-color-emphasis-200);
           border: none;
           cursor: pointer;
-          color: var(--mcp-copy-color);
+          color: var(--ifm-color-emphasis-700);
           transition: background-color var(--ifm-transition-fast);
         }
 
         .mcp-code-block__copy:hover {
-          background-color: var(--mcp-copy-bg-hover);
+          background-color: var(--ifm-color-emphasis-300);
         }
 
         .mcp-code-block__icon {
@@ -499,7 +480,7 @@ export function McpInstallButton({
         }
 
         .mcp-code-block__icon--success {
-          color: var(--ifm-color-success, #22c55e);
+          color: var(--ifm-color-success);
         }
       `}</style>
     </div>
