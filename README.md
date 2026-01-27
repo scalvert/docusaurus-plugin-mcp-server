@@ -178,7 +178,8 @@ The button shows a dropdown with copy-to-clipboard configurations for all suppor
 |------|------|---------|-------------|
 | `serverUrl` | `string` | required | Your MCP server endpoint URL |
 | `serverName` | `string` | required | Name for the MCP server |
-| `label` | `string` | `"Install MCP"` | Button label |
+| `label` | `string` | (none) | Button label. If omitted, shows only the MCP icon |
+| `headerText` | `string` | `"Choose your AI tool:"` | Text shown at the top of the dropdown |
 | `className` | `string` | `""` | Optional CSS class |
 | `clients` | `ClientId[]` | All HTTP-capable | Which clients to show |
 
