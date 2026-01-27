@@ -133,12 +133,14 @@ export interface McpInstallButtonProps {
   serverUrl?: string;
   /** Server name. If not provided, uses plugin configuration. */
   serverName?: string;
-  /** Button label (default: "Install docs MCP") */
+  /** Button label. If not provided, shows only the MCP icon. */
   label?: string;
   /** Optional className for styling */
   className?: string;
   /** Clients to show. Defaults to all HTTP-capable clients from registry. */
   clients?: ClientId[];
+  /** Header text shown at top of dropdown (default: "Choose your AI tool:") */
+  headerText?: string;
 }
 
 /**
@@ -156,9 +158,10 @@ export interface McpInstallButtonProps {
 export function McpInstallButton({
   serverUrl: serverUrlProp,
   serverName: serverNameProp,
-  label = 'Install docs MCP',
+  label,
   className = '',
   clients: clientsProp,
+  headerText = 'Choose your AI tool:',
 }: McpInstallButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [copiedClient, setCopiedClient] = useState<string | null>(null);
@@ -281,19 +284,20 @@ export function McpInstallButton({
     <div ref={dropdownRef} className={dropdownClasses}>
       {/* Infima button classes */}
       <button
-        className="button button--primary mcp-install-dropdown__button"
+        className={`button button--primary mcp-install-dropdown__button${label ? '' : ' mcp-install-dropdown__button--icon-only'}`}
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
         aria-haspopup="true"
+        aria-label={label || 'Install MCP'}
       >
         <IconMcp size={16} />
-        <span>{label}</span>
+        {label && <span>{label}</span>}
         <IconChevron isOpen={isOpen} />
       </button>
 
       {/* Dropdown menu using Infima classes */}
       <ul className="dropdown__menu mcp-install-dropdown__menu">
-        <li className="mcp-install-dropdown__header">Choose your AI tool:</li>
+        <li className="mcp-install-dropdown__header">{headerText}</li>
 
         {clientConfigs.map((client) => {
           const command = getCommandForClient(client.id);
@@ -350,15 +354,32 @@ export function McpInstallButton({
       <style>{`
         .mcp-install-dropdown {
           --mcp-dropdown-width: 520px;
-          /* Always use dark code blocks for consistency across themes */
+          /* Light mode: grey code blocks */
+          --mcp-code-bg: #f3f4f6;
+          --mcp-code-color: #374151;
+          --mcp-copy-bg: #e5e7eb;
+          --mcp-copy-bg-hover: #d1d5db;
+          --mcp-copy-color: #6b7280;
+        }
+
+        /* Dark mode: dark code blocks */
+        [data-theme='dark'] .mcp-install-dropdown {
           --mcp-code-bg: #1e1e1e;
           --mcp-code-color: #e5e7eb;
+          --mcp-copy-bg: #374151;
+          --mcp-copy-bg-hover: #4b5563;
+          --mcp-copy-color: #9ca3af;
         }
 
         .mcp-install-dropdown__button {
           display: inline-flex;
           align-items: center;
           gap: 0.5rem;
+        }
+
+        .mcp-install-dropdown__button--icon-only {
+          padding: 0.5rem 0.75rem;
+          gap: 0.25rem;
         }
 
         .mcp-install-dropdown__menu {
@@ -460,15 +481,15 @@ export function McpInstallButton({
           align-items: center;
           justify-content: center;
           width: 2.75rem;
-          background-color: var(--ifm-color-gray-800, #374151);
+          background-color: var(--mcp-copy-bg);
           border: none;
           cursor: pointer;
-          color: var(--ifm-color-gray-400, #9ca3af);
+          color: var(--mcp-copy-color);
           transition: background-color var(--ifm-transition-fast);
         }
 
         .mcp-code-block__copy:hover {
-          background-color: var(--ifm-color-gray-700, #4b5563);
+          background-color: var(--mcp-copy-bg-hover);
         }
 
         .mcp-code-block__icon {
