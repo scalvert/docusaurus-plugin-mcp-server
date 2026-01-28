@@ -1,6 +1,4 @@
-// Default export for Docusaurus plugin loading (requires default export)
 export { default } from './plugin/docusaurus-plugin.js';
-// Named export for explicit imports
 export { default as mcpServerPlugin } from './plugin/docusaurus-plugin.js';
 export { McpDocsServer } from './mcp/server.js';
 
