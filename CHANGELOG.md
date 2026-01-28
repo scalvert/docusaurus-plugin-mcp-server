@@ -2,6 +2,19 @@
 
 
 
+
+## v0.10.0 (2026-01-28)
+
+#### :rocket: Enhancement
+* [#7](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/7) feat(McpInstallButton): add icon-only mode, configurable header, and Docusaurus styling ([@scalvert](https://github.com/scalvert))
+
+#### :bug: Bug Fix
+* [#7](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/7) feat(McpInstallButton): add icon-only mode, configurable header, and Docusaurus styling ([@scalvert](https://github.com/scalvert))
+
+#### Committers: 1
+- Steve Calvert ([@scalvert](https://github.com/scalvert))
+
+
 ## v0.9.0 (2026-01-26)
 
 #### :rocket: Enhancement
