@@ -170,7 +170,11 @@ function NavbarItems() {
 }
 ```
 
-The button shows a dropdown with copy-to-clipboard configurations for all supported MCP clients (Claude Code, Cursor, VS Code, Windsurf, Claude Desktop).
+The button shows a dropdown with copy-to-clipboard configurations for all supported MCP clients.
+
+| Light Mode | Dark Mode |
+|:----------:|:---------:|
+| ![MCP Install Button - Light Mode](./img/mcp-button-light.png) | ![MCP Install Button - Dark Mode](./img/mcp-button-dark.png) |
 
 **Props:**
 
