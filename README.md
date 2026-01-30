@@ -43,10 +43,13 @@ Choose your deployment platform:
 Create `api/mcp.js`:
 
 ```javascript
-const { createVercelHandler } = require('docusaurus-plugin-mcp-server/adapters');
-const path = require('path');
+import { createVercelHandler } from 'docusaurus-plugin-mcp-server/adapters';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-module.exports = createVercelHandler({
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+export default createVercelHandler({
   docsPath: path.join(__dirname, '../build/mcp/docs.json'),
   indexPath: path.join(__dirname, '../build/mcp/search-index.json'),
   name: 'my-docs',
@@ -77,10 +80,13 @@ Add to `vercel.json`:
 Create `netlify/functions/mcp.js`:
 
 ```javascript
-const { createNetlifyHandler } = require('docusaurus-plugin-mcp-server/adapters');
-const path = require('path');
+import { createNetlifyHandler } from 'docusaurus-plugin-mcp-server/adapters';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
-exports.handler = createNetlifyHandler({
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+export const handler = createNetlifyHandler({
   docsPath: path.join(__dirname, '../../build/mcp/docs.json'),
   indexPath: path.join(__dirname, '../../build/mcp/search-index.json'),
   name: 'my-docs',

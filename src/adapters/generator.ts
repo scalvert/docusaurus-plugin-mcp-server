@@ -54,12 +54,14 @@ function generateVercelFiles(name: string, baseUrl: string): GeneratedFile[] {
  * Deploy to Vercel and this will be available at /api/mcp
  */
 
-const { createVercelHandler } = require('docusaurus-plugin-mcp-server/adapters');
-const path = require('path');
+import { createVercelHandler } from 'docusaurus-plugin-mcp-server/adapters';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.join(__dirname, '..');
 
-module.exports = createVercelHandler({
+export default createVercelHandler({
   docsPath: path.join(projectRoot, 'build/mcp/docs.json'),
   indexPath: path.join(projectRoot, 'build/mcp/search-index.json'),
   name: '${name}',
@@ -99,12 +101,14 @@ function generateNetlifyFiles(name: string, baseUrl: string): GeneratedFile[] {
  * Deploy to Netlify and this will be available at /.netlify/functions/mcp
  */
 
-const { createNetlifyHandler } = require('docusaurus-plugin-mcp-server/adapters');
-const path = require('path');
+import { createNetlifyHandler } from 'docusaurus-plugin-mcp-server/adapters';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const projectRoot = path.join(__dirname, '../..');
 
-exports.handler = createNetlifyHandler({
+export const handler = createNetlifyHandler({
   docsPath: path.join(projectRoot, 'build/mcp/docs.json'),
   indexPath: path.join(projectRoot, 'build/mcp/search-index.json'),
   name: '${name}',

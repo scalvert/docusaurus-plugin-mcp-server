@@ -24,28 +24,26 @@
   },
   "license": "MIT",
   "author": "Steve Calvert",
+  "type": "module",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "import": "./dist/index.js"
     },
     "./adapters": {
       "types": "./dist/adapters-entry.d.ts",
-      "import": "./dist/adapters-entry.mjs",
-      "require": "./dist/adapters-entry.js"
+      "import": "./dist/adapters-entry.js"
     },
     "./theme": {
       "types": "./dist/theme/index.d.ts",
-      "import": "./dist/theme/index.mjs",
-      "require": "./dist/theme/index.js"
+      "import": "./dist/theme/index.js"
     }
   },
   "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
+  "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "docusaurus-mcp-verify": "./dist/cli/verify.mjs"
+    "docusaurus-mcp-verify": "./dist/cli/verify.js"
   },
   "files": [
     "dist"

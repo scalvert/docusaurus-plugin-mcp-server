@@ -7,8 +7,8 @@
  */
 
 import http from 'http';
-import { McpDocsServer } from '../dist/index.mjs';
-import { buildSearchIndex, exportSearchIndex } from '../dist/index.mjs';
+import { McpDocsServer } from '../dist/index.js';
+import { buildSearchIndex, exportSearchIndex } from '../dist/index.js';
 
 const PORT = process.env.PORT || 3457;
 
