@@ -28,15 +28,18 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     },
     "./adapters": {
       "types": "./dist/adapters-entry.d.ts",
-      "import": "./dist/adapters-entry.js"
+      "import": "./dist/adapters-entry.js",
+      "default": "./dist/adapters-entry.js"
     },
     "./theme": {
       "types": "./dist/theme/index.d.ts",
-      "import": "./dist/theme/index.js"
+      "import": "./dist/theme/index.js",
+      "default": "./dist/theme/index.js"
     }
   },
   "main": "./dist/index.js",
