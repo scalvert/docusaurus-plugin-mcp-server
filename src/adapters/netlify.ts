@@ -7,10 +7,13 @@
  *
  * @example
  * // netlify/functions/mcp.js
- * const { createNetlifyHandler } = require('docusaurus-plugin-mcp-server/adapters');
- * const path = require('path');
+ * import { createNetlifyHandler } from 'docusaurus-plugin-mcp-server/adapters';
+ * import path from 'path';
+ * import { fileURLToPath } from 'url';
  *
- * exports.handler = createNetlifyHandler({
+ * const __dirname = path.dirname(fileURLToPath(import.meta.url));
+ *
+ * export const handler = createNetlifyHandler({
  *   docsPath: path.join(__dirname, '../../build/mcp/docs.json'),
  *   indexPath: path.join(__dirname, '../../build/mcp/search-index.json'),
  *   name: 'my-docs',
