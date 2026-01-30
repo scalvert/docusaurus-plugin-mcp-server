@@ -4,6 +4,16 @@
 
 
 
+
+## v0.10.2 (2026-01-30)
+
+#### :bug: Bug Fix
+* [#10](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/10) fix: add default export conditions for broader compatibility ([@scalvert](https://github.com/scalvert))
+
+#### Committers: 1
+- Steve Calvert ([@scalvert](https://github.com/scalvert))
+
+
 ## v0.10.1 (2026-01-30)
 
 #### :bug: Bug Fix
