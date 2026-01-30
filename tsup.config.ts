@@ -7,7 +7,7 @@ export default defineConfig({
     'theme/index': 'src/theme/index.ts',
     'cli/verify': 'src/cli/verify.ts',
   },
-  format: ['cjs', 'esm'],
+  format: ['esm'],
   dts: true,
   clean: true,
   sourcemap: true,
