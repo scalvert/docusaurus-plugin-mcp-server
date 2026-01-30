@@ -3,6 +3,19 @@
 
 
 
+
+## v0.10.1 (2026-01-30)
+
+#### :bug: Bug Fix
+* [#9](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/9) chore: switch to ESM-only build output ([@scalvert](https://github.com/scalvert))
+
+#### :memo: Documentation
+* [#8](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/8) docs: add light and dark mode screenshots for McpInstallButton ([@scalvert](https://github.com/scalvert))
+
+#### Committers: 1
+- Steve Calvert ([@scalvert](https://github.com/scalvert))
+
+
 ## v0.10.0 (2026-01-28)
 
 #### :rocket: Enhancement
