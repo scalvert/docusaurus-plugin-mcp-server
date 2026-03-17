@@ -149,7 +149,7 @@ export function searchIndex(
   query: string,
   options: { limit?: number } = {}
 ): SearchResult[] {
-  const { limit = 5 } = options;
+  const { limit = 16 } = options;
 
   // Search across all fields
   const rawResults = index.search(query, {

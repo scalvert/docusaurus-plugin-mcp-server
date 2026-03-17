@@ -13,8 +13,8 @@ export const docsSearchInputSchema = {
     .min(1)
     .max(20)
     .optional()
-    .default(5)
-    .describe('Maximum number of results to return (1-20, default: 5)'),
+    .default(16)
+    .describe('Maximum number of results to return (1-20, default: 16)'),
 };
 
 /**
@@ -35,7 +35,7 @@ export function executeDocsSearch(
   index: FlexSearchDocument,
   docs: Record<string, ProcessedDoc>
 ): SearchResult[] {
-  const { query, limit = 5 } = params;
+  const { query, limit = 16 } = params;
 
   // Validate parameters
   if (!query || typeof query !== 'string' || query.trim().length === 0) {
