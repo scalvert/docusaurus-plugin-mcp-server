@@ -5,6 +5,23 @@
 
 
 
+
+## v0.11.0 (2026-03-17)
+
+#### :rocket: Enhancement
+
+* [#13](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/13) fix: increase default search result limit from 5 to 16 ([@scalvert](https://github.com/scalvert))
+
+#### :bug: Bug Fix
+
+* [#12](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/12) chore: prevent OOM with large doc set ([@bruno-s-freitas](https://github.com/bruno-s-freitas))
+
+#### Committers: 2
+* Steve Calvert ([@scalvert](https://github.com/scalvert))
+* [@bruno-s-freitas](https://github.com/bruno-s-freitas)
+
+
+
 ## v0.10.2 (2026-01-30)
 
 #### :bug: Bug Fix
