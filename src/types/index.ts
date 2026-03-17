@@ -200,7 +200,7 @@ export interface DocsIndex {
 export interface DocsSearchParams {
   /** Search query string */
   query: string;
-  /** Maximum number of results (default: 5, max: 20) */
+  /** Maximum number of results (default: 16, max: 20) */
   limit?: number;
 }
 

@@ -71,7 +71,7 @@ export class FlexSearchProvider implements SearchProvider {
       throw new Error('[FlexSearch] Provider not initialized');
     }
 
-    const limit = options?.limit ?? 5;
+    const limit = options?.limit ?? 16;
     return searchIndex(this.searchIndex, this.docs, query, { limit });
   }
 

@@ -206,7 +206,7 @@ Search across documentation with relevance ranking. Returns matching documents w
   "name": "docs_search",
   "arguments": {
     "query": "authentication",
-    "limit": 5
+    "limit": 16
   }
 }
 ```
@@ -214,7 +214,7 @@ Search across documentation with relevance ranking. Returns matching documents w
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
 | `query` | `string` | required | Search query |
-| `limit` | `number` | `5` | Max results (1-20) |
+| `limit` | `number` | `16` | Max results (1-20) |
 
 **Response includes:**
 - Full URL for each result (use with `docs_fetch`)
