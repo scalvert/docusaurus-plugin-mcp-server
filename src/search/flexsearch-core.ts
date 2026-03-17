@@ -51,16 +51,16 @@ function englishStemmer(word: string): string {
  * Create a FlexSearch document index with enhanced configuration
  *
  * Features:
- * - Full substring matching (finds "auth" in "authentication")
+ * - Forward-prefix tokenization (finds "auth" in "authentication", avoids OOM on large doc sets)
  * - English stemming (finds "authenticate" when searching "authentication")
  * - Context-aware scoring for phrase matching
  * - Optimized resolution for relevance ranking
  */
 export function createSearchIndex(): FlexSearchDocument {
   return new FlexSearch.Document<IndexableDocument, string[]>({
-    // Use 'full' tokenization for substring matching
-    // This allows "auth" to match "authentication"
-    tokenize: 'full',
+    // Use 'forward' tokenization to avoid OOM with large doc sets
+    // See: https://github.com/scalvert/docusaurus-plugin-mcp-server/issues/11
+    tokenize: 'forward',
 
     // Enable caching for faster repeated queries
     cache: 100,
