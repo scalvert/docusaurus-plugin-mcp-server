@@ -67,7 +67,7 @@
   },
   "dependencies": {
     "@gleanwork/mcp-config-schema": "^4.1.0",
-    "@modelcontextprotocol/sdk": "^1.0.0",
+    "@modelcontextprotocol/sdk": "^1.25.0",
     "flexsearch": "^0.7.43",
     "fs-extra": "^11.0.0",
     "hast-util-select": "^6.0.0",
@@ -117,9 +117,6 @@
       "optional": true
     },
     "react-dom": {
-      "optional": true
-    },
-    "zod": {
       "optional": true
     }
   },
