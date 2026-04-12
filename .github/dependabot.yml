@@ -1,0 +1,45 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: '/'
+    schedule:
+      interval: weekly
+    labels:
+      - dependencies
+
+  - package-ecosystem: npm
+    directory: '/'
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    groups:
+      docusaurus:
+        applies-to: version-updates
+        patterns:
+          - '@docusaurus/*'
+      docusaurus-security:
+        applies-to: security-updates
+        patterns:
+          - '@docusaurus/*'
+      unified-ecosystem:
+        patterns:
+          - 'unified'
+          - 'rehype-*'
+          - 'remark-*'
+          - 'hast-util-*'
+      mcp:
+        patterns:
+          - '@modelcontextprotocol/*'
+          - '@gleanwork/*'
+      eslint:
+        patterns:
+          - 'eslint'
+          - '@eslint/*'
+          - 'typescript-eslint'
+      testing:
+        patterns:
+          - 'vitest'
+          - '@vitest/*'
+          - '@playwright/*'
