@@ -51,7 +51,9 @@ export async function loadIndexer(specifier: string): Promise<ContentIndexer> {
     );
   } catch (error) {
     if (error instanceof Error && error.message.includes('Cannot find module')) {
-      throw new Error(`Indexer module not found: "${specifier}". Check the path or package name.`);
+      throw new Error(`Indexer module not found: "${specifier}". Check the path or package name.`, {
+        cause: error,
+      });
     }
     throw error;
   }
@@ -108,7 +110,8 @@ export async function loadSearchProvider(specifier: string): Promise<SearchProvi
   } catch (error) {
     if (error instanceof Error && error.message.includes('Cannot find module')) {
       throw new Error(
-        `Search provider module not found: "${specifier}". Check the path or package name.`
+        `Search provider module not found: "${specifier}". Check the path or package name.`,
+        { cause: error }
       );
     }
     throw error;
