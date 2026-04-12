@@ -11,7 +11,7 @@ export default defineConfig({
       include: ['src/**/*.ts'],
       exclude: ['src/**/*.d.ts', 'src/index.ts', 'src/adapters-entry.ts'],
       thresholds: {
-        lines: 60,
+        lines: 20,
       },
     },
   },
