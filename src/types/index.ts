@@ -227,7 +227,7 @@ export interface ExtractedContent {
 /**
  * Default plugin options
  */
-export const DEFAULT_OPTIONS: ResolvedPluginOptions = {
+export const DEFAULT_PLUGIN_OPTIONS: ResolvedPluginOptions = {
   outputDir: 'mcp',
   contentSelectors: ['article', 'main', '.main-wrapper', '[role="main"]'],
   excludeSelectors: [

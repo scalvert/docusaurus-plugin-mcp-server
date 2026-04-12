@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { ProcessedDoc, SearchResult, DocsSearchParams } from '../../types/index.js';
-import { searchIndex, type FlexSearchDocument } from '../../search/flexsearch-core.js';
+import { querySearchIndex, type FlexSearchDocument } from '../../search/flexsearch-core.js';
 
 /**
  * Zod schema for docs_search input parameters
@@ -45,7 +45,7 @@ export function executeDocsSearch(
   const effectiveLimit = Math.min(Math.max(1, limit), 20);
 
   // Search the index
-  const results = searchIndex(index, docs, query.trim(), {
+  const results = querySearchIndex(index, docs, query.trim(), {
     limit: effectiveLimit,
   });
 

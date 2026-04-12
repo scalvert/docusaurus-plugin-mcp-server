@@ -8,7 +8,7 @@ import type {
 } from '../types.js';
 import {
   importSearchIndex,
-  searchIndex,
+  querySearchIndex,
   type FlexSearchDocument,
 } from '../../search/flexsearch-core.js';
 
@@ -72,7 +72,7 @@ export class FlexSearchProvider implements SearchProvider {
     }
 
     const limit = options?.limit ?? 16;
-    return searchIndex(this.searchIndex, this.docs, query, { limit });
+    return querySearchIndex(this.searchIndex, this.docs, query, { limit });
   }
 
   async getDocument(url: string): Promise<ProcessedDoc | null> {
@@ -94,6 +94,10 @@ export class FlexSearchProvider implements SearchProvider {
       healthy: true,
       message: `FlexSearch provider ready with ${docCount} documents`,
     };
+  }
+
+  getDocCount(): number {
+    return this.docs ? Object.keys(this.docs).length : 0;
   }
 
   /**
