@@ -255,6 +255,8 @@ Retrieve full page content as markdown. Use this after searching to get the comp
 | `server.name` | `string` | `'docs-mcp-server'` | Name of the MCP server |
 | `server.version` | `string` | `'1.0.0'` | Version of the MCP server |
 | `excludeRoutes` | `string[]` | `['/404*', '/search*']` | Routes to exclude (glob patterns) |
+| `indexers` | `string[] \| false` | `['flexsearch']` | Indexers to run during build. Use `false` to disable. Supports built-in (`'flexsearch'`), relative paths, or npm packages. |
+| `search` | `string` | `'flexsearch'` | Search provider module for runtime queries. Supports built-in (`'flexsearch'`), relative paths, or npm packages. |
 
 ### Default Selectors
 
@@ -266,6 +268,90 @@ Retrieve full page content as markdown. Use this after searching to get the comp
 **Exclude selectors**:
 ```javascript
 ['nav', 'header', 'footer', 'aside', '[role="navigation"]', '[role="banner"]', '[role="contentinfo"]']
+```
+
+## Custom Providers
+
+The plugin uses a two-phase provider model: **indexers** run at build time to process documents, and **search providers** handle queries at runtime. Both are pluggable.
+
+### ContentIndexer
+
+Implement `ContentIndexer` to push documents to an external system during build:
+
+```typescript
+import type { ContentIndexer, ProviderContext } from 'docusaurus-plugin-mcp-server';
+import type { ProcessedDoc } from 'docusaurus-plugin-mcp-server';
+
+export default class AlgoliaIndexer implements ContentIndexer {
+  readonly name = 'algolia';
+
+  shouldRun(): boolean {
+    return process.env.ALGOLIA_SYNC === 'true';
+  }
+
+  async initialize(context: ProviderContext): Promise<void> {
+    console.log(`[Algolia] Initializing for ${context.baseUrl}`);
+  }
+
+  async indexDocuments(docs: ProcessedDoc[]): Promise<void> {
+    // Push docs to Algolia
+  }
+
+  async finalize(): Promise<Map<string, unknown>> {
+    // No local artifacts needed
+    return new Map();
+  }
+}
+```
+
+### SearchProvider
+
+Implement `SearchProvider` to delegate runtime search to an external service:
+
+```typescript
+import type { SearchProvider, ProviderContext, SearchOptions } from 'docusaurus-plugin-mcp-server';
+import type { SearchResult } from 'docusaurus-plugin-mcp-server';
+
+export default class GleanSearchProvider implements SearchProvider {
+  readonly name = 'glean';
+
+  private apiEndpoint = process.env.GLEAN_API_ENDPOINT!;
+  private apiToken = process.env.GLEAN_API_TOKEN!;
+
+  async initialize(context: ProviderContext): Promise<void> {
+    if (!this.apiEndpoint || !this.apiToken) {
+      throw new Error('GLEAN_API_ENDPOINT and GLEAN_API_TOKEN required');
+    }
+  }
+
+  isReady(): boolean {
+    return !!this.apiEndpoint && !!this.apiToken;
+  }
+
+  async search(query: string, options?: SearchOptions): Promise<SearchResult[]> {
+    // Call Glean Search API and transform results
+    return [];
+  }
+}
+```
+
+### Configuring Custom Providers
+
+```javascript
+// docusaurus.config.js
+module.exports = {
+  plugins: [
+    [
+      'docusaurus-plugin-mcp-server',
+      {
+        // Run both the built-in FlexSearch indexer and a custom one
+        indexers: ['flexsearch', './my-algolia-indexer.js'],
+        // Use a custom search provider at runtime
+        search: '@myorg/glean-search',
+      },
+    ],
+  ],
+};
 ```
 
 ## Server Configuration
@@ -408,46 +494,23 @@ The plugin operates in two phases:
 
 ## Local Development
 
-Run a local HTTP server for testing:
+Run a local MCP server for testing using the built-in Node adapter:
 
 ```javascript
 // mcp-server.mjs
-import http from 'http';
-import { McpDocsServer } from 'docusaurus-plugin-mcp-server';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { createNodeServer } from 'docusaurus-plugin-mcp-server/adapters';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-const server = new McpDocsServer({
-  docsPath: path.join(__dirname, 'build/mcp/docs.json'),
-  indexPath: path.join(__dirname, 'build/mcp/search-index.json'),
+createNodeServer({
+  docsPath: './build/mcp/docs.json',
+  indexPath: './build/mcp/search-index.json',
   name: 'my-docs',
   baseUrl: 'http://localhost:3000',
-});
-
-http.createServer(async (req, res) => {
-  if (req.method === 'OPTIONS') {
-    res.writeHead(204, {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    });
-    res.end();
-    return;
-  }
-
-  if (req.method !== 'POST') {
-    res.writeHead(405);
-    res.end();
-    return;
-  }
-
-  await server.handleHttpRequest(req, res);
 }).listen(3456, () => {
   console.log('MCP server at http://localhost:3456');
 });
 ```
+
+The Node adapter handles CORS, preflight requests, and health checks (GET) automatically.
 
 Connect Claude Code:
 ```bash
@@ -494,9 +557,14 @@ import {
   createVercelHandler,
   createNetlifyHandler,
   createCloudflareHandler,
+  createNodeServer,
+  createNodeHandler,
   generateAdapterFiles,
 } from 'docusaurus-plugin-mcp-server/adapters';
 ```
+
+- `createNodeServer(options)` — Creates a complete Node.js HTTP server for local development. Returns an `http.Server` ready to `.listen()`.
+- `createNodeHandler(options)` — Creates a request handler function compatible with `http.createServer()`. Use this when you need to integrate with an existing server.
 
 ### Theme Exports
 
@@ -504,8 +572,18 @@ import {
 import {
   McpInstallButton,
   type McpInstallButtonProps,
+  useMcpRegistry,
+  createDocsRegistry,
+  createDocsRegistryOptions,
+  type McpConfig,
 } from 'docusaurus-plugin-mcp-server/theme';
 ```
+
+- `McpInstallButton` — Dropdown button for users to install the MCP server in their AI tool.
+- `useMcpRegistry()` — React hook that returns the MCP config registry from plugin global data. Returns `undefined` if the plugin is not installed.
+- `createDocsRegistry(config)` — Creates a pre-configured `MCPConfigRegistry` for documentation servers.
+- `createDocsRegistryOptions(config)` — Returns registry options without creating the registry.
+- `McpConfig` — Type for `{ serverUrl: string; serverName: string }`.
 
 ## Requirements
 
