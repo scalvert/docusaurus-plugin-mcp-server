@@ -7,8 +7,7 @@
  */
 
 import http from 'http';
-import { McpDocsServer } from '../dist/index.js';
-import { buildSearchIndex, exportSearchIndex } from '../dist/index.js';
+import { McpDocsServer, loadIndexer } from '../dist/index.js';
 
 const PORT = process.env.PORT || 3457;
 
@@ -93,23 +92,23 @@ Access tokens are used to authenticate API requests.`,
 
 const BASE_URL = 'https://docs.example.com';
 
-// Convert to Record for lookups - keyed by full URL
-const sampleDocs = {};
-for (const doc of sampleDocsArray) {
-  const fullUrl = `${BASE_URL}${doc.route}`;
-  sampleDocs[fullUrl] = doc;
-}
-
 async function main() {
-  // Build search index with baseUrl so IDs are full URLs
-  const searchIndex = buildSearchIndex(sampleDocsArray, BASE_URL);
-  const searchIndexData = await exportSearchIndex(searchIndex);
+  // Build search index using the provider API
+  const indexer = await loadIndexer('flexsearch');
+  await indexer.initialize({
+    baseUrl: BASE_URL,
+    serverName: 'test-docs',
+    serverVersion: '1.0.0',
+    outputDir: '',
+  });
+  await indexer.indexDocuments(sampleDocsArray);
+  const artifacts = await indexer.finalize();
 
   const mcpServer = new McpDocsServer({
     name: 'test-docs',
     version: '1.0.0',
-    docs: sampleDocs,
-    searchIndexData,
+    docs: artifacts.get('docs.json'),
+    searchIndexData: artifacts.get('search-index.json'),
     baseUrl: BASE_URL,
   });
 
