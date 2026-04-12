@@ -6,6 +6,32 @@
 
 
 
+
+## v0.12.0 (2026-04-12)
+
+#### :boom: Breaking Change
+
+* [#20](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/20) refactor: reduce public API surface for 1.0.0 ([@scalvert](https://github.com/scalvert))
+
+#### :bug: Bug Fix
+
+* [#27](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/27) fix: improve adapter correctness and safety ([@scalvert](https://github.com/scalvert))
+* [#26](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/26) fix: improve McpDocsServer concurrency, lifecycle, and error handling ([@scalvert](https://github.com/scalvert))
+
+#### :memo: Documentation
+
+* [#28](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/28) docs: complete README documentation for 1.0.0 ([@scalvert](https://github.com/scalvert))
+
+#### :house: Internal
+
+* [#25](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/25) test: add unit tests for McpDocsServer and formatPageContent ([@scalvert](https://github.com/scalvert))
+* [#29](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/29) chore: narrow MCP SDK range, add dependabot, coverage thresholds, CONTRIBUTING.md ([@scalvert](https://github.com/scalvert))
+
+#### Committers: 1
+* Steve Calvert ([@scalvert](https://github.com/scalvert))
+
+
+
 ## v0.11.0 (2026-03-17)
 
 #### :rocket: Enhancement
