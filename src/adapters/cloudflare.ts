@@ -42,6 +42,8 @@ export interface CloudflareAdapterConfig {
   version?: string;
   /** Base URL for constructing full page URLs */
   baseUrl?: string;
+  /** CORS origin to allow. Defaults to '*' (all origins). */
+  corsOrigin?: string;
 }
 
 /**
@@ -52,13 +54,14 @@ export interface CloudflareAdapterConfig {
  */
 export function createCloudflareHandler(config: CloudflareAdapterConfig) {
   let server: McpDocsServer | null = null;
+  const { corsOrigin, ...rest } = config;
 
   const serverConfig: McpServerDataConfig = {
-    docs: config.docs,
-    searchIndexData: config.searchIndexData,
-    name: config.name,
-    version: config.version,
-    baseUrl: config.baseUrl,
+    docs: rest.docs,
+    searchIndexData: rest.searchIndexData,
+    name: rest.name,
+    version: rest.version,
+    baseUrl: rest.baseUrl,
   };
 
   function getServer(): McpDocsServer {
@@ -69,7 +72,7 @@ export function createCloudflareHandler(config: CloudflareAdapterConfig) {
   }
 
   return async function fetch(request: Request): Promise<Response> {
-    const corsHeaders = getCorsHeaders();
+    const corsHeaders = getCorsHeaders(corsOrigin);
 
     // Handle CORS preflight
     if (request.method === 'OPTIONS') {
@@ -121,7 +124,6 @@ export function createCloudflareHandler(config: CloudflareAdapterConfig) {
         headers: newHeaders,
       });
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
       console.error('MCP Server Error:', error);
       return new Response(
         JSON.stringify({
@@ -129,7 +131,7 @@ export function createCloudflareHandler(config: CloudflareAdapterConfig) {
           id: null,
           error: {
             code: -32603,
-            message: `Internal server error: ${errorMessage}`,
+            message: 'Internal server error',
           },
         }),
         {

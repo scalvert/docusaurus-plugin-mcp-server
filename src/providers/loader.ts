@@ -1,6 +1,4 @@
 import type { ContentIndexer, SearchProvider } from './types.js';
-import { FlexSearchIndexer } from './indexers/flexsearch-indexer.js';
-import { FlexSearchProvider } from './search/flexsearch-provider.js';
 
 /**
  * Load an indexer by name or module path.
@@ -22,8 +20,8 @@ import { FlexSearchProvider } from './search/flexsearch-provider.js';
  * ```
  */
 export async function loadIndexer(specifier: string): Promise<ContentIndexer> {
-  // Built-in FlexSearch indexer
   if (specifier === 'flexsearch') {
+    const { FlexSearchIndexer } = await import('./indexers/flexsearch-indexer.js');
     return new FlexSearchIndexer();
   }
 
@@ -80,6 +78,7 @@ export async function loadIndexer(specifier: string): Promise<ContentIndexer> {
  */
 export async function loadSearchProvider(specifier: string): Promise<SearchProvider> {
   if (specifier === 'flexsearch') {
+    const { FlexSearchProvider } = await import('./search/flexsearch-provider.js');
     return new FlexSearchProvider();
   }
 

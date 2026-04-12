@@ -106,8 +106,23 @@ export function createNodeHandler(options: NodeServerOptions) {
       const mcpServer = getServer();
       await mcpServer.handleHttpRequest(req, res, body);
     } catch (error) {
-      const message = error instanceof Error ? error.message : String(error);
       console.error('[MCP] Request error:', error);
+
+      if (error instanceof Error && error.message === 'Request body too large') {
+        res.writeHead(413, { 'Content-Type': 'application/json' });
+        res.end(
+          JSON.stringify({
+            jsonrpc: '2.0',
+            id: null,
+            error: {
+              code: -32600,
+              message: 'Request body too large',
+            },
+          })
+        );
+        return;
+      }
+
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(
         JSON.stringify({
@@ -115,7 +130,7 @@ export function createNodeHandler(options: NodeServerOptions) {
           id: null,
           error: {
             code: -32603,
-            message: `Internal server error: ${message}`,
+            message: 'Internal server error',
           },
         })
       );
@@ -133,14 +148,24 @@ export function createNodeServer(options: NodeServerOptions): Server {
   return createServer(handler);
 }
 
+const MAX_BODY_SIZE = 1024 * 1024; // 1MB
+
 /**
  * Parse the request body as JSON
  */
 async function parseRequestBody(req: IncomingMessage): Promise<unknown> {
   return new Promise((resolve, reject) => {
     let body = '';
-    req.on('data', (chunk) => {
-      body += chunk;
+    let size = 0;
+
+    req.on('data', (chunk: Buffer | string) => {
+      size += typeof chunk === 'string' ? Buffer.byteLength(chunk) : chunk.length;
+      if (size > MAX_BODY_SIZE) {
+        req.destroy();
+        reject(new Error('Request body too large'));
+        return;
+      }
+      body += chunk.toString();
     });
     req.on('end', () => {
       try {

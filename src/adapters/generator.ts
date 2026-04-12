@@ -145,31 +145,21 @@ function generateCloudflareFiles(name: string, baseUrl: string): GeneratedFile[]
       content: `/**
  * Cloudflare Worker for MCP server
  *
- * Note: This requires bundling docs.json and search-index.json with the worker,
- * or using Cloudflare KV/R2 for storage.
- *
- * For bundling, use wrangler with custom build configuration.
+ * Workers cannot access the filesystem, so docs and search index
+ * are imported as JSON modules and passed as pre-loaded data.
  */
 
 import { createCloudflareHandler } from 'docusaurus-plugin-mcp-server/adapters';
-
-// Option 1: Import bundled data (requires bundler configuration)
-// import docs from '../build/mcp/docs.json';
-// import searchIndex from '../build/mcp/search-index.json';
-
-// Option 2: Use KV bindings (requires KV namespace configuration)
-// const docs = await env.MCP_KV.get('docs', { type: 'json' });
-// const searchIndex = await env.MCP_KV.get('search-index', { type: 'json' });
+import docs from '../build/mcp/docs.json';
+import searchIndex from '../build/mcp/search-index.json';
 
 export default {
   fetch: createCloudflareHandler({
+    docs,
+    searchIndexData: searchIndex,
     name: '${name}',
     version: '1.0.0',
     baseUrl: '${baseUrl}',
-    // docsPath and indexPath are used for file-based loading
-    // For Workers, you'll need to configure data loading differently
-    docsPath: './mcp/docs.json',
-    indexPath: './mcp/search-index.json',
   }),
 };
 `,
@@ -181,14 +171,10 @@ export default {
 main = "workers/mcp.js"
 compatibility_date = "2024-01-01"
 
-# Uncomment to use KV for storing docs
-# [[kv_namespaces]]
-# binding = "MCP_KV"
-# id = "your-kv-namespace-id"
-
-# Static assets (the Docusaurus build)
-# [site]
-# bucket = "./build"
+# Allow importing JSON files as modules
+[[rules]]
+type = "Data"
+globs = ["**/*.json"]
 `,
     },
   ];
