@@ -143,7 +143,7 @@ export function buildSearchIndex(docs: ProcessedDoc[], baseUrl?: string): FlexSe
  * - Field importance (title > headings > description > content)
  * - Position in results (earlier = more relevant)
  */
-export function searchIndex(
+export function querySearchIndex(
   index: FlexSearchDocument,
   docs: Record<string, ProcessedDoc>,
   query: string,

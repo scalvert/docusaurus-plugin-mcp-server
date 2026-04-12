@@ -8,7 +8,7 @@ import type {
   ProcessedDoc,
   McpManifest,
 } from '../types/index.js';
-import { DEFAULT_OPTIONS } from '../types/index.js';
+import { DEFAULT_PLUGIN_OPTIONS } from '../types/index.js';
 import { collectRoutes } from './route-collector.js';
 import { extractContent, type ExtractContentOptions } from '../processing/html-parser.js';
 import { htmlToMarkdown } from '../processing/html-to-markdown.js';
@@ -21,10 +21,10 @@ import type { ProviderContext } from '../providers/types.js';
  */
 function resolveOptions(options: McpServerPluginOptions): ResolvedPluginOptions {
   return {
-    ...DEFAULT_OPTIONS,
+    ...DEFAULT_PLUGIN_OPTIONS,
     ...options,
     server: {
-      ...DEFAULT_OPTIONS.server,
+      ...DEFAULT_PLUGIN_OPTIONS.server,
       ...options.server,
     },
   };
