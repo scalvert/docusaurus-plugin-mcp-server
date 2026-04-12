@@ -9,7 +9,6 @@ import type {
   McpServerDataConfig,
 } from '../types/index.js';
 import { loadSearchProvider } from '../providers/loader.js';
-import { FlexSearchProvider } from '../providers/search/flexsearch-provider.js';
 import type {
   SearchProvider,
   ProviderContext,
@@ -47,16 +46,24 @@ function isDataConfig(config: McpServerConfig): config is McpServerDataConfig {
 export class McpDocsServer {
   private config: McpServerConfig;
   private searchProvider: SearchProvider | null = null;
-  private mcpServer: McpServer;
   private initialized = false;
+  private initPromise: Promise<void> | null = null;
+  private initError: Error | null = null;
 
   constructor(config: McpServerConfig) {
     this.config = config;
+  }
 
-    this.mcpServer = new McpServer(
+  /**
+   * Create a fresh McpServer instance with tools registered.
+   * Each request gets its own server to avoid concurrency issues
+   * with the SDK's transport reassignment.
+   */
+  private createMcpServer(): McpServer {
+    const server = new McpServer(
       {
-        name: config.name,
-        version: config.version ?? '1.0.0',
+        name: this.config.name,
+        version: this.config.version ?? '1.0.0',
       },
       {
         capabilities: {
@@ -65,23 +72,22 @@ export class McpDocsServer {
       }
     );
 
-    this.registerTools();
+    this.registerTools(server);
+    return server;
   }
 
   /**
    * Register all MCP tools using definitions from tool files
    */
-  private registerTools(): void {
+  private registerTools(server: McpServer): void {
     // Register docs_search tool
-    this.mcpServer.registerTool(
+    server.registerTool(
       docsSearchTool.name,
       {
         description: docsSearchTool.description,
         inputSchema: docsSearchTool.inputSchema,
       },
       async ({ query, limit }) => {
-        await this.initialize();
-
         if (!this.searchProvider || !this.searchProvider.isReady()) {
           return {
             content: [{ type: 'text' as const, text: 'Server not initialized. Please try again.' }],
@@ -97,7 +103,12 @@ export class McpDocsServer {
         } catch (error) {
           console.error('[MCP] Search error:', error);
           return {
-            content: [{ type: 'text' as const, text: `Search error: ${String(error)}` }],
+            content: [
+              {
+                type: 'text' as const,
+                text: 'An error occurred while searching. Please try again.',
+              },
+            ],
             isError: true,
           };
         }
@@ -105,15 +116,13 @@ export class McpDocsServer {
     );
 
     // Register docs_fetch tool
-    this.mcpServer.registerTool(
+    server.registerTool(
       docsFetchTool.name,
       {
         description: docsFetchTool.description,
         inputSchema: docsFetchTool.inputSchema,
       },
       async ({ url }) => {
-        await this.initialize();
-
         if (!this.searchProvider || !this.searchProvider.isReady()) {
           return {
             content: [{ type: 'text' as const, text: 'Server not initialized. Please try again.' }],
@@ -129,7 +138,12 @@ export class McpDocsServer {
         } catch (error) {
           console.error('[MCP] Fetch error:', error);
           return {
-            content: [{ type: 'text' as const, text: `Error fetching page: ${String(error)}` }],
+            content: [
+              {
+                type: 'text' as const,
+                text: 'An error occurred while fetching the page. Please try again.',
+              },
+            ],
             isError: true,
           };
         }
@@ -157,55 +171,69 @@ export class McpDocsServer {
    *
    * For file-based config: reads from disk
    * For data config: uses pre-loaded data directly
+   *
+   * Uses promise-based locking to prevent concurrent initialization.
+   * Caches initialization errors so repeated calls fail fast.
    */
   async initialize(): Promise<void> {
+    if (this.initError) {
+      throw this.initError;
+    }
+
     if (this.initialized) {
       return;
     }
 
-    try {
-      // Load the search provider
-      const searchSpecifier = this.config.search ?? 'flexsearch';
-      this.searchProvider = await loadSearchProvider(searchSpecifier);
-
-      // Build provider context
-      const providerContext: ProviderContext = {
-        baseUrl: this.config.baseUrl ?? '',
-        serverName: this.config.name,
-        serverVersion: this.config.version ?? '1.0.0',
-        outputDir: '', // Not relevant for runtime
-      };
-
-      // Build init data based on config type
-      const initData: SearchProviderInitData = {};
-
-      if (isDataConfig(this.config)) {
-        // Pre-loaded data mode (Cloudflare Workers, etc.)
-        initData.docs = this.config.docs;
-        initData.indexData = this.config.searchIndexData;
-      } else if (isFileConfig(this.config)) {
-        // File-based mode (Node.js)
-        initData.docsPath = this.config.docsPath;
-        initData.indexPath = this.config.indexPath;
-      } else {
-        throw new Error('Invalid server config: must provide either file paths or pre-loaded data');
-      }
-
-      // Initialize the search provider
-      await this.searchProvider.initialize(providerContext, initData);
-
-      this.initialized = true;
-    } catch (error) {
-      console.error('[MCP] Failed to initialize:', error);
-      throw error;
+    if (!this.initPromise) {
+      this.initPromise = this._doInitialize().catch((error) => {
+        this.initError = error instanceof Error ? error : new Error(String(error));
+        this.initPromise = null;
+        throw this.initError;
+      });
     }
+
+    return this.initPromise;
+  }
+
+  private async _doInitialize(): Promise<void> {
+    // Load the search provider
+    const searchSpecifier = this.config.search ?? 'flexsearch';
+    this.searchProvider = await loadSearchProvider(searchSpecifier);
+
+    // Build provider context
+    const providerContext: ProviderContext = {
+      baseUrl: this.config.baseUrl ?? '',
+      serverName: this.config.name,
+      serverVersion: this.config.version ?? '1.0.0',
+      outputDir: '', // Not relevant for runtime
+    };
+
+    // Build init data based on config type
+    const initData: SearchProviderInitData = {};
+
+    if (isDataConfig(this.config)) {
+      // Pre-loaded data mode (Cloudflare Workers, etc.)
+      initData.docs = this.config.docs;
+      initData.indexData = this.config.searchIndexData;
+    } else if (isFileConfig(this.config)) {
+      // File-based mode (Node.js)
+      initData.docsPath = this.config.docsPath;
+      initData.indexPath = this.config.indexPath;
+    } else {
+      throw new Error('Invalid server config: must provide either file paths or pre-loaded data');
+    }
+
+    // Initialize the search provider
+    await this.searchProvider.initialize(providerContext, initData);
+
+    this.initialized = true;
   }
 
   /**
    * Handle an HTTP request using the MCP SDK's transport
    *
    * This method is designed for serverless environments (Vercel, Netlify).
-   * It creates a stateless transport instance and processes the request.
+   * Creates a fresh McpServer per request to avoid concurrency issues.
    *
    * @param req - Node.js IncomingMessage or compatible request object
    * @param res - Node.js ServerResponse or compatible response object
@@ -218,6 +246,8 @@ export class McpDocsServer {
   ): Promise<void> {
     await this.initialize();
 
+    const server = this.createMcpServer();
+
     // Create a stateless transport for this request
     // enableJsonResponse: true means we get simple JSON responses instead of SSE
     const transport = new StreamableHTTPServerTransport({
@@ -226,7 +256,7 @@ export class McpDocsServer {
     });
 
     // Connect the server to this transport
-    await this.mcpServer.connect(transport);
+    await server.connect(transport);
 
     try {
       // Let the transport handle the request
@@ -242,12 +272,15 @@ export class McpDocsServer {
    *
    * This method is designed for Web Standard environments that use
    * the Fetch API Request/Response pattern.
+   * Creates a fresh McpServer per request to avoid concurrency issues.
    *
    * @param request - Web Standard Request object
    * @returns Web Standard Response object
    */
   async handleWebRequest(request: Request): Promise<Response> {
     await this.initialize();
+
+    const server = this.createMcpServer();
 
     // Create a stateless transport for Web Standards
     const transport = new WebStandardStreamableHTTPServerTransport({
@@ -256,7 +289,7 @@ export class McpDocsServer {
     });
 
     // Connect the server to this transport
-    await this.mcpServer.connect(transport);
+    await server.connect(transport);
 
     try {
       // Let the transport handle the request and return the response
@@ -282,10 +315,8 @@ export class McpDocsServer {
   }> {
     let docCount = 0;
 
-    // Get doc count from FlexSearchProvider if available
-    if (this.searchProvider instanceof FlexSearchProvider) {
-      const docs = this.searchProvider.getDocs();
-      docCount = docs ? Object.keys(docs).length : 0;
+    if (this.searchProvider?.getDocCount) {
+      docCount = this.searchProvider.getDocCount();
     }
 
     return {
@@ -296,14 +327,5 @@ export class McpDocsServer {
       baseUrl: this.config.baseUrl,
       searchProvider: this.searchProvider?.name,
     };
-  }
-
-  /**
-   * Get the underlying McpServer instance
-   *
-   * Useful for advanced use cases like custom transports
-   */
-  getMcpServer(): McpServer {
-    return this.mcpServer;
   }
 }
