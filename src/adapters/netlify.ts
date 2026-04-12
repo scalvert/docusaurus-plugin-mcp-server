@@ -22,7 +22,7 @@
  */
 
 import { McpDocsServer } from '../mcp/server.js';
-import type { McpServerConfig } from '../types/index.js';
+import type { McpServerFileConfig } from '../types/index.js';
 import { getCorsHeaders } from './cors.js';
 
 /**
@@ -113,12 +113,13 @@ async function responseToNetlify(
  * Uses the MCP SDK's WebStandardStreamableHTTPServerTransport for
  * proper protocol handling.
  */
-export function createNetlifyHandler(config: McpServerConfig) {
+export function createNetlifyHandler(config: McpServerFileConfig & { corsOrigin?: string }) {
   let server: McpDocsServer | null = null;
+  const { corsOrigin, ...serverConfig } = config;
 
   function getServer(): McpDocsServer {
     if (!server) {
-      server = new McpDocsServer(config);
+      server = new McpDocsServer(serverConfig);
     }
     return server;
   }
@@ -127,7 +128,7 @@ export function createNetlifyHandler(config: McpServerConfig) {
     event: NetlifyEvent,
     _context: NetlifyContext
   ): Promise<NetlifyResponse> {
-    const corsHeaders = getCorsHeaders();
+    const corsHeaders = getCorsHeaders(corsOrigin);
     const headers = {
       'Content-Type': 'application/json',
       ...corsHeaders,
@@ -180,7 +181,6 @@ export function createNetlifyHandler(config: McpServerConfig) {
       // Convert back to Netlify response format with CORS headers
       return await responseToNetlify(response, corsHeaders);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
       console.error('MCP Server Error:', error);
       return {
         statusCode: 500,
@@ -190,7 +190,7 @@ export function createNetlifyHandler(config: McpServerConfig) {
           id: null,
           error: {
             code: -32603,
-            message: `Internal server error: ${errorMessage}`,
+            message: 'Internal server error',
           },
         }),
       };

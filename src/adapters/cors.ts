@@ -12,6 +12,10 @@ export const CORS_HEADERS = {
 /**
  * Get CORS headers as a plain object (for JSON responses)
  */
-export function getCorsHeaders(): Record<string, string> {
-  return { ...CORS_HEADERS };
+export function getCorsHeaders(origin: string = '*'): Record<string, string> {
+  return {
+    'Access-Control-Allow-Origin': origin,
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+  };
 }
