@@ -176,6 +176,12 @@ export interface SearchProvider {
   getDocument?(route: string): Promise<ProcessedDoc | null>;
 
   /**
+   * Get the number of indexed documents.
+   * Used for status reporting and health checks.
+   */
+  getDocCount?(): number;
+
+  /**
    * Check if the provider is healthy.
    * Used for health checks and debugging.
    */
