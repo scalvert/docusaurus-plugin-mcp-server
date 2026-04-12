@@ -21,7 +21,7 @@
 
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { McpDocsServer } from '../mcp/server.js';
-import type { McpServerConfig } from '../types/index.js';
+import type { McpServerFileConfig } from '../types/index.js';
 import { getCorsHeaders } from './cors.js';
 
 /**
@@ -44,18 +44,19 @@ export interface VercelResponse extends ServerResponse {
  *
  * Uses the MCP SDK's StreamableHTTPServerTransport for proper protocol handling.
  */
-export function createVercelHandler(config: McpServerConfig) {
+export function createVercelHandler(config: McpServerFileConfig & { corsOrigin?: string }) {
   let server: McpDocsServer | null = null;
+  const { corsOrigin, ...serverConfig } = config;
 
   function getServer(): McpDocsServer {
     if (!server) {
-      server = new McpDocsServer(config);
+      server = new McpDocsServer(serverConfig);
     }
     return server;
   }
 
   return async function handler(req: VercelRequest, res: VercelResponse) {
-    const corsHeaders = getCorsHeaders();
+    const corsHeaders = getCorsHeaders(corsOrigin);
 
     // Handle CORS preflight
     if (req.method === 'OPTIONS') {
@@ -99,14 +100,13 @@ export function createVercelHandler(config: McpServerConfig) {
       // Use the SDK transport to handle the request
       await mcpServer.handleHttpRequest(req, res, req.body);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
       console.error('MCP Server Error:', error);
       return res.status(500).json({
         jsonrpc: '2.0',
         id: null,
         error: {
           code: -32603,
-          message: `Internal server error: ${errorMessage}`,
+          message: 'Internal server error',
         },
       });
     }
