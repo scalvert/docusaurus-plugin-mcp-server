@@ -1,0 +1,9 @@
+[
+  'nav',
+  'header',
+  'footer',
+  'aside',
+  '[role="navigation"]',
+  '[role="banner"]',
+  '[role="contentinfo"]',
+];
