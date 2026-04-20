@@ -16,7 +16,7 @@ npm install docusaurus-plugin-mcp-server
 
 ### 1. Add the Plugin
 
-```javascript
+```javascript snippet=readme/snippet-01.js
 // docusaurus.config.js
 module.exports = {
   plugins: [
@@ -42,7 +42,7 @@ Choose your deployment platform:
 
 Create `api/mcp.js`:
 
-```javascript
+```javascript snippet=readme/snippet-02.js
 import { createVercelHandler } from 'docusaurus-plugin-mcp-server/adapters';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -59,16 +59,14 @@ export default createVercelHandler({
 
 Add to `vercel.json`:
 
-```json
+```json snippet=readme/snippet-03.json
 {
   "functions": {
     "api/mcp.js": {
       "includeFiles": "build/mcp/**"
     }
   },
-  "rewrites": [
-    { "source": "/mcp", "destination": "/api/mcp" }
-  ]
+  "rewrites": [{ "source": "/mcp", "destination": "/api/mcp" }]
 }
 ```
 
@@ -79,7 +77,7 @@ Add to `vercel.json`:
 
 Create `netlify/functions/mcp.js`:
 
-```javascript
+```javascript snippet=readme/snippet-04.js
 import { createNetlifyHandler } from 'docusaurus-plugin-mcp-server/adapters';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -96,7 +94,7 @@ export const handler = createNetlifyHandler({
 
 Add to `netlify.toml`:
 
-```toml
+```toml snippet=readme/snippet-05.toml
 [build]
   publish = "build"
 
@@ -117,7 +115,7 @@ Add to `netlify.toml`:
 
 Cloudflare Workers can't access the filesystem, so you need to import the data directly:
 
-```javascript
+```javascript snippet=readme/snippet-06.js
 import { createCloudflareHandler } from 'docusaurus-plugin-mcp-server/adapters';
 import docs from '../build/mcp/docs.json';
 import searchIndex from '../build/mcp/search-index.json';
@@ -149,7 +147,7 @@ claude mcp add --transport http my-docs https://docs.example.com/mcp
 ```
 
 **Cursor / VS Code:**
-```json
+```json snippet=readme/snippet-07.json
 {
   "mcpServers": {
     "my-docs": {
@@ -163,16 +161,11 @@ claude mcp add --transport http my-docs https://docs.example.com/mcp
 
 Add a dropdown button to your docs site so users can easily install the MCP server in their AI tool:
 
-```tsx
+```tsx snippet=readme/snippet-08.tsx
 import { McpInstallButton } from 'docusaurus-plugin-mcp-server/theme';
 
 function NavbarItems() {
-  return (
-    <McpInstallButton
-      serverUrl="https://docs.example.com/mcp"
-      serverName="my-docs"
-    />
-  );
+  return <McpInstallButton serverUrl="https://docs.example.com/mcp" serverName="my-docs" />;
 }
 ```
 
@@ -201,7 +194,7 @@ The server exposes two tools for AI agents:
 
 Search across documentation with relevance ranking. Returns matching documents with URLs, snippets, and relevance scores.
 
-```json
+```json snippet=readme/snippet-09.json
 {
   "name": "docs_search",
   "arguments": {
@@ -226,7 +219,7 @@ Search across documentation with relevance ranking. Returns matching documents w
 
 Retrieve full page content as markdown. Use this after searching to get the complete content of a specific page.
 
-```json
+```json snippet=readme/snippet-10.json
 {
   "name": "docs_fetch",
   "arguments": {
@@ -261,13 +254,21 @@ Retrieve full page content as markdown. Use this after searching to get the comp
 ### Default Selectors
 
 **Content selectors** (in priority order):
-```javascript
-['article', 'main', '.main-wrapper', '[role="main"]']
+```javascript snippet=readme/snippet-11.js
+['article', 'main', '.main-wrapper', '[role="main"]'];
 ```
 
 **Exclude selectors**:
-```javascript
-['nav', 'header', 'footer', 'aside', '[role="navigation"]', '[role="banner"]', '[role="contentinfo"]']
+```javascript snippet=readme/snippet-12.js
+[
+  'nav',
+  'header',
+  'footer',
+  'aside',
+  '[role="navigation"]',
+  '[role="banner"]',
+  '[role="contentinfo"]',
+];
 ```
 
 ## Custom Providers
@@ -278,7 +279,7 @@ The plugin uses a two-phase provider model: **indexers** run at build time to pr
 
 Implement `ContentIndexer` to push documents to an external system during build:
 
-```typescript
+```typescript snippet=readme/snippet-13.ts
 import type { ContentIndexer, ProviderContext, ProcessedDoc } from 'docusaurus-plugin-mcp-server';
 
 export default class AlgoliaIndexer implements ContentIndexer {
@@ -307,8 +308,13 @@ export default class AlgoliaIndexer implements ContentIndexer {
 
 Implement `SearchProvider` to delegate runtime search to an external service:
 
-```typescript
-import type { SearchProvider, ProviderContext, SearchOptions, SearchResult } from 'docusaurus-plugin-mcp-server';
+```typescript snippet=readme/snippet-14.ts
+import type {
+  SearchProvider,
+  ProviderContext,
+  SearchOptions,
+  SearchResult,
+} from 'docusaurus-plugin-mcp-server';
 
 export default class GleanSearchProvider implements SearchProvider {
   readonly name = 'glean';
@@ -335,7 +341,7 @@ export default class GleanSearchProvider implements SearchProvider {
 
 ### Configuring Custom Providers
 
-```javascript
+```javascript snippet=readme/snippet-15.js
 // docusaurus.config.js
 module.exports = {
   plugins: [
@@ -464,7 +470,7 @@ The plugin operates in two phases:
 
 Run a local MCP server for testing using the built-in Node adapter:
 
-```javascript
+```javascript snippet=readme/snippet-16.js
 // mcp-server.mjs
 import { createNodeServer } from 'docusaurus-plugin-mcp-server/adapters';
 
@@ -489,7 +495,7 @@ claude mcp add --transport http my-docs http://localhost:3456
 
 ### Main Exports
 
-```javascript
+```javascript snippet=readme/snippet-17.js
 import {
   // Docusaurus plugin (default export)
   mcpServerPlugin,
@@ -520,7 +526,7 @@ import {
 
 ### Adapter Exports
 
-```javascript
+```javascript snippet=readme/snippet-18.js
 import {
   createVercelHandler,
   createNetlifyHandler,
@@ -536,7 +542,7 @@ import {
 
 ### Theme Exports
 
-```tsx
+```tsx snippet=readme/snippet-19.tsx
 import {
   McpInstallButton,
   type McpInstallButtonProps,

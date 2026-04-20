@@ -1,0 +1,7 @@
+{
+  "name": "docs_search",
+  "arguments": {
+    "query": "authentication",
+    "limit": 16
+  }
+}

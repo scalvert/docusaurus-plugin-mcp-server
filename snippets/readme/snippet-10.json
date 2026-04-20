@@ -1,0 +1,6 @@
+{
+  "name": "docs_fetch",
+  "arguments": {
+    "url": "https://docs.example.com/docs/authentication"
+  }
+}

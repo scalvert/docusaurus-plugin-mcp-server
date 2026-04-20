@@ -1,0 +1,11 @@
+[build]
+  publish = "build"
+
+[functions]
+  directory = "netlify/functions"
+  included_files = ["build/mcp/**"]
+
+[[redirects]]
+  from = "/mcp"
+  to = "/.netlify/functions/mcp"
+  status = 200
