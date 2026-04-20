@@ -279,8 +279,7 @@ The plugin uses a two-phase provider model: **indexers** run at build time to pr
 Implement `ContentIndexer` to push documents to an external system during build:
 
 ```typescript
-import type { ContentIndexer, ProviderContext } from 'docusaurus-plugin-mcp-server';
-import type { ProcessedDoc } from 'docusaurus-plugin-mcp-server';
+import type { ContentIndexer, ProviderContext, ProcessedDoc } from 'docusaurus-plugin-mcp-server';
 
 export default class AlgoliaIndexer implements ContentIndexer {
   readonly name = 'algolia';
@@ -309,8 +308,7 @@ export default class AlgoliaIndexer implements ContentIndexer {
 Implement `SearchProvider` to delegate runtime search to an external service:
 
 ```typescript
-import type { SearchProvider, ProviderContext, SearchOptions } from 'docusaurus-plugin-mcp-server';
-import type { SearchResult } from 'docusaurus-plugin-mcp-server';
+import type { SearchProvider, ProviderContext, SearchOptions, SearchResult } from 'docusaurus-plugin-mcp-server';
 
 export default class GleanSearchProvider implements SearchProvider {
   readonly name = 'glean';
@@ -445,37 +443,7 @@ curl -X POST https://docs.example.com/mcp \
 
 ## How It Works
 
-```mermaid
-flowchart LR
-    subgraph Build["Build Time"]
-        A[Docusaurus Build] --> B[postBuild Hook]
-        B --> C[Extract Content]
-        C --> D[Build Search Index]
-        D --> E[Write Artifacts]
-    end
-
-    subgraph Artifacts["build/mcp/"]
-        F[docs.json]
-        G[search-index.json]
-        H[manifest.json]
-    end
-
-    subgraph Runtime["Runtime"]
-        I[Serverless Function]
-        J[MCP Server]
-    end
-
-    subgraph Clients["AI Agents"]
-        K[Claude]
-        L[Cursor]
-        M[Other MCP Clients]
-    end
-
-    E --> F & G & H
-    F & G --> I
-    I --> J
-    K & L & M <-->|MCP Protocol| J
-```
+![How It Works](./img/how-it-works.svg)
 
 The plugin operates in two phases:
 
