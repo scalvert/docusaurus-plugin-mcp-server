@@ -92,7 +92,7 @@
     "@types/fs-extra": "^11.0.0",
     "@types/node": "^25.6.0",
     "@types/react": "^19.2.14",
-    "@types/react-dom": "^18.0.0",
+    "@types/react-dom": "^19.2.3",
     "@vitest/coverage-v8": "^4.0.18",
     "eslint": "^10.2.0",
     "globals": "^17.1.0",
