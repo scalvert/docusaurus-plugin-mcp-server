@@ -86,7 +86,7 @@
     "@docusaurus/core": "^3.9.2",
     "@docusaurus/types": "^3.9.2",
     "@eslint/js": "^10.0.1",
-    "@gleanwork/mcp-server-tester": "^0.12.0",
+    "@gleanwork/mcp-server-tester": "^1.0.0",
     "@playwright/test": "^1.58.0",
     "@release-it-plugins/lerna-changelog": "^8.0.1",
     "@types/fs-extra": "^11.0.0",
