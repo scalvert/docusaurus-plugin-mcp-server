@@ -69,6 +69,7 @@ export class McpDocsServer {
         capabilities: {
           tools: {},
         },
+        instructions: this.config.instructions,
       }
     );
 
@@ -80,11 +81,13 @@ export class McpDocsServer {
    * Register all MCP tools using definitions from tool files
    */
   private registerTools(server: McpServer): void {
+    const toolOverrides = this.config.tools;
+
     // Register docs_search tool
     server.registerTool(
       docsSearchTool.name,
       {
-        description: docsSearchTool.description,
+        description: toolOverrides?.docs_search?.description ?? docsSearchTool.description,
         inputSchema: docsSearchTool.inputSchema,
       },
       async ({ query, limit }) => {
@@ -119,7 +122,7 @@ export class McpDocsServer {
     server.registerTool(
       docsFetchTool.name,
       {
-        description: docsFetchTool.description,
+        description: toolOverrides?.docs_fetch?.description ?? docsFetchTool.description,
         inputSchema: docsFetchTool.inputSchema,
       },
       async ({ url }) => {

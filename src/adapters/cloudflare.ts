@@ -25,23 +25,17 @@
  */
 
 import { McpDocsServer } from '../mcp/server.js';
-import type { ProcessedDoc, McpServerDataConfig } from '../types/index.js';
+import type { ProcessedDoc, McpServerBaseConfig, McpServerDataConfig } from '../types/index.js';
 import { getCorsHeaders } from './cors.js';
 
 /**
  * Config for Cloudflare Workers adapter
  */
-export interface CloudflareAdapterConfig {
+export interface CloudflareAdapterConfig extends McpServerBaseConfig {
   /** Pre-loaded docs data (imported from docs.json) */
   docs: Record<string, ProcessedDoc>;
   /** Pre-loaded search index data (imported from search-index.json) */
   searchIndexData: Record<string, unknown>;
-  /** Server name */
-  name: string;
-  /** Server version */
-  version?: string;
-  /** Base URL for constructing full page URLs */
-  baseUrl?: string;
   /** CORS origin to allow. Defaults to '*' (all origins). */
   corsOrigin?: string;
 }
@@ -54,19 +48,11 @@ export interface CloudflareAdapterConfig {
  */
 export function createCloudflareHandler(config: CloudflareAdapterConfig) {
   let server: McpDocsServer | null = null;
-  const { corsOrigin, ...rest } = config;
-
-  const serverConfig: McpServerDataConfig = {
-    docs: rest.docs,
-    searchIndexData: rest.searchIndexData,
-    name: rest.name,
-    version: rest.version,
-    baseUrl: rest.baseUrl,
-  };
+  const { corsOrigin, ...serverConfig } = config;
 
   function getServer(): McpDocsServer {
     if (!server) {
-      server = new McpDocsServer(serverConfig);
+      server = new McpDocsServer(serverConfig satisfies McpServerDataConfig);
     }
     return server;
   }

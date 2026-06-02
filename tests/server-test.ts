@@ -39,6 +39,35 @@ async function buildArtifacts() {
   return indexer.finalize();
 }
 
+/**
+ * Send a JSON-RPC request through the server's public Web Standard path
+ * and return the parsed JSON-RPC result.
+ */
+async function callMcp(
+  server: McpDocsServer,
+  method: string,
+  params: Record<string, unknown>
+): Promise<Record<string, unknown>> {
+  const request = new Request('https://localhost/mcp', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json, text/event-stream',
+    },
+    body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
+  });
+
+  const response = await server.handleWebRequest(request);
+  const body = (await response.json()) as { result?: Record<string, unknown> };
+  return body.result ?? {};
+}
+
+const initializeParams = {
+  protocolVersion: '2025-06-18',
+  capabilities: {},
+  clientInfo: { name: 'test-client', version: '1.0.0' },
+};
+
 describe('McpDocsServer', () => {
   let artifacts: Map<string, unknown>;
   let dataConfig: McpServerDataConfig;
@@ -118,6 +147,79 @@ describe('McpDocsServer', () => {
 
       expect(status.initialized).toBe(false);
       expect(status.docCount).toBe(0);
+    });
+  });
+
+  describe('instructions', () => {
+    it('surfaces configured instructions in the initialize result', async () => {
+      const server = new McpDocsServer({
+        ...dataConfig,
+        instructions: 'Use docs_search first, then docs_fetch for full content.',
+      });
+
+      const result = await callMcp(server, 'initialize', initializeParams);
+
+      expect(result.instructions).toBe('Use docs_search first, then docs_fetch for full content.');
+    });
+
+    it('omits instructions when not configured', async () => {
+      const server = new McpDocsServer(dataConfig);
+
+      const result = await callMcp(server, 'initialize', initializeParams);
+
+      expect(result.instructions).toBeUndefined();
+    });
+  });
+
+  describe('tool description overrides', () => {
+    it('applies custom descriptions to both tools', async () => {
+      const server = new McpDocsServer({
+        ...dataConfig,
+        tools: {
+          docs_search: { description: 'Custom search description' },
+          docs_fetch: { description: 'Custom fetch description' },
+        },
+      });
+
+      const result = await callMcp(server, 'tools/list', {});
+      const tools = result.tools as Array<{ name: string; description: string }>;
+
+      const search = tools.find((t) => t.name === 'docs_search');
+      const fetch = tools.find((t) => t.name === 'docs_fetch');
+
+      expect(search?.description).toBe('Custom search description');
+      expect(fetch?.description).toBe('Custom fetch description');
+    });
+
+    it('falls back to default descriptions when not overridden', async () => {
+      const server = new McpDocsServer(dataConfig);
+
+      const result = await callMcp(server, 'tools/list', {});
+      const tools = result.tools as Array<{ name: string; description: string }>;
+
+      const search = tools.find((t) => t.name === 'docs_search');
+      const fetch = tools.find((t) => t.name === 'docs_fetch');
+
+      expect(search?.description).toContain('Search the documentation');
+      expect(fetch?.description).toContain('Fetch the complete content');
+    });
+
+    it('overrides only the specified tool, leaving the other default', async () => {
+      const server = new McpDocsServer({
+        ...dataConfig,
+        tools: {
+          docs_search: { description: 'Only search is custom' },
+        },
+      });
+
+      const result = await callMcp(server, 'tools/list', {});
+      const tools = result.tools as Array<{ name: string; description: string }>;
+
+      const search = tools.find((t) => t.name === 'docs_search');
+      const fetch = tools.find((t) => t.name === 'docs_fetch');
+
+      expect(search?.description).toBe('Only search is custom');
+      expect(fetch?.description).toContain('Fetch the complete content');
     });
   });
 });
