@@ -144,13 +144,27 @@ export interface McpManifest {
 }
 
 /**
- * MCP Server configuration for file-based loading
+ * Per-tool configuration overrides
  */
-export interface McpServerFileConfig {
-  /** Path to docs.json file */
-  docsPath: string;
-  /** Path to search-index.json file */
-  indexPath: string;
+export interface McpToolConfig {
+  /** Override the default tool description shown to MCP clients */
+  description?: string;
+}
+
+/**
+ * Overrides for the built-in MCP tools, keyed by tool name
+ */
+export interface McpServerToolsConfig {
+  /** Overrides for the docs_search tool */
+  docs_search?: McpToolConfig;
+  /** Overrides for the docs_fetch tool */
+  docs_fetch?: McpToolConfig;
+}
+
+/**
+ * Common MCP server configuration shared by all loading modes
+ */
+export interface McpServerBaseConfig {
   /** Server name */
   name: string;
   /** Server version */
@@ -159,24 +173,33 @@ export interface McpServerFileConfig {
   baseUrl?: string;
   /** Search provider module. Default: 'flexsearch' */
   search?: string;
+  /**
+   * Instructions describing how to use the server and its tools.
+   * Surfaced to MCP clients in the initialize response.
+   */
+  instructions?: string;
+  /** Per-tool overrides, such as custom descriptions */
+  tools?: McpServerToolsConfig;
+}
+
+/**
+ * MCP Server configuration for file-based loading
+ */
+export interface McpServerFileConfig extends McpServerBaseConfig {
+  /** Path to docs.json file */
+  docsPath: string;
+  /** Path to search-index.json file */
+  indexPath: string;
 }
 
 /**
  * MCP Server configuration for pre-loaded data (e.g., Cloudflare Workers)
  */
-export interface McpServerDataConfig {
+export interface McpServerDataConfig extends McpServerBaseConfig {
   /** Pre-loaded docs data */
   docs: Record<string, ProcessedDoc>;
   /** Pre-loaded search index data (exported from FlexSearch via exportSearchIndex) */
   searchIndexData: Record<string, unknown>;
-  /** Server name */
-  name: string;
-  /** Server version */
-  version?: string;
-  /** Base URL for constructing full page URLs (e.g., https://docs.example.com) */
-  baseUrl?: string;
-  /** Search provider module. Default: 'flexsearch' */
-  search?: string;
 }
 
 /**

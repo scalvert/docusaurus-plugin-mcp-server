@@ -371,8 +371,26 @@ For the runtime adapters:
 | `name` | `string` | Yes | Server name |
 | `version` | `string` | No | Server version |
 | `baseUrl` | `string` | No | Base URL for full page URLs in responses |
+| `instructions` | `string` | No | Instructions describing how to use the server, surfaced to MCP clients in the `initialize` response |
+| `tools` | `object` | No | Per-tool overrides. Supports `docs_search.description` and `docs_fetch.description` to customize tool descriptions |
 
 *Use either file paths (Node.js) or pre-loaded data (Workers).
+
+Example with extended configuration:
+
+```javascript
+export default createVercelHandler({
+  docsPath: path.join(__dirname, '../build/mcp/docs.json'),
+  indexPath: path.join(__dirname, '../build/mcp/search-index.json'),
+  name: 'my-docs',
+  baseUrl: 'https://docs.example.com',
+  instructions: 'Search the Acme product docs. Use docs_search to find pages, then docs_fetch for full content.',
+  tools: {
+    docs_search: { description: 'Search the Acme product documentation.' },
+    docs_fetch: { description: 'Fetch the full markdown of an Acme docs page.' },
+  },
+});
+```
 
 ## Verifying Your Build
 
