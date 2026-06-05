@@ -154,8 +154,9 @@ export default function mcpServerPlugin(
 
       // Create provider context
       const mcpOutputDir = path.join(outDir, resolvedOptions.outputDir);
+      const baseUrl = `${context.siteConfig.url}${context.siteConfig.baseUrl ?? ''}`;
       const providerContext: ProviderContext = {
-        baseUrl: context.siteConfig.url,
+        baseUrl,
         serverName: resolvedOptions.server.name,
         serverVersion: resolvedOptions.server.version,
         outputDir: mcpOutputDir,
