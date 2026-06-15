@@ -7,7 +7,7 @@
 export {
   createVercelHandler,
   createNetlifyHandler,
-  createCloudflareHandler,
+  createWebRequestHandler,
   createNodeServer,
   createNodeHandler,
   generateAdapterFiles,
@@ -16,7 +16,10 @@ export {
   type NetlifyEvent,
   type NetlifyContext,
   type NodeServerOptions,
+  type WebRequestAdapterConfig,
+  // Deprecated aliases, kept for one release.
+  createCloudflareHandler,
+  type CloudflareAdapterConfig,
 } from './adapters/index.js';
 
 export type { Platform, GeneratorOptions, GeneratedFile } from './adapters/generator.js';
-export type { CloudflareAdapterConfig } from './adapters/cloudflare.js';

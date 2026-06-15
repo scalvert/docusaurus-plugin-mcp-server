@@ -1,21 +1,23 @@
 /**
- * Cloudflare Workers adapter for MCP server
+ * Web-standard fetch handler for the MCP server
  *
- * Creates a Cloudflare Workers fetch handler for the MCP server.
- * Since Workers can't access the filesystem, this adapter requires
- * pre-loaded docs and search index data.
+ * Creates a handler with the standard `(request: Request) => Promise<Response>`
+ * signature, so it runs on any web-standard runtime — Cloudflare Workers,
+ * Netlify (modern web-standard functions), Deno, Bun, and others. Because these
+ * runtimes can't access the filesystem, this adapter requires pre-loaded docs
+ * and search index data.
  *
  * Uses the MCP SDK's WebStandardStreamableHTTPServerTransport for proper
  * protocol handling with Web Standard Request/Response.
  *
  * @example
- * // src/worker.js
- * import { createCloudflareHandler } from 'docusaurus-plugin-mcp-server/adapters';
+ * // Cloudflare Workers — src/worker.js
+ * import { createWebRequestHandler } from 'docusaurus-plugin-mcp-server/adapters';
  * import docs from '../build/mcp/docs.json';
  * import searchIndex from '../build/mcp/search-index.json';
  *
  * export default {
- *   fetch: createCloudflareHandler({
+ *   fetch: createWebRequestHandler({
  *     docs,
  *     searchIndexData: searchIndex,
  *     name: 'my-docs',
@@ -29,9 +31,9 @@ import type { ProcessedDoc, McpServerBaseConfig, McpServerDataConfig } from '../
 import { getCorsHeaders } from './cors.js';
 
 /**
- * Config for Cloudflare Workers adapter
+ * Config for the web-standard request handler
  */
-export interface CloudflareAdapterConfig extends McpServerBaseConfig {
+export interface WebRequestAdapterConfig extends McpServerBaseConfig {
   /** Pre-loaded docs data (imported from docs.json) */
   docs: Record<string, ProcessedDoc>;
   /** Pre-loaded search index data (imported from search-index.json) */
@@ -41,12 +43,14 @@ export interface CloudflareAdapterConfig extends McpServerBaseConfig {
 }
 
 /**
- * Create a Cloudflare Workers fetch handler for the MCP server
+ * Create a web-standard `(request: Request) => Promise<Response>` handler for
+ * the MCP server, suitable for any web-standard runtime (Cloudflare Workers,
+ * modern Netlify functions, Deno, Bun, etc).
  *
  * Uses the MCP SDK's WebStandardStreamableHTTPServerTransport for
  * proper protocol handling.
  */
-export function createCloudflareHandler(config: CloudflareAdapterConfig) {
+export function createWebRequestHandler(config: WebRequestAdapterConfig) {
   let server: McpDocsServer | null = null;
   const { corsOrigin, ...serverConfig } = config;
 
@@ -128,3 +132,16 @@ export function createCloudflareHandler(config: CloudflareAdapterConfig) {
     }
   };
 }
+
+/**
+ * @deprecated Renamed to `createWebRequestHandler`. The handler is not
+ * Cloudflare-specific — it works on any web-standard runtime. This alias will
+ * be removed in a future release.
+ */
+export const createCloudflareHandler = createWebRequestHandler;
+
+/**
+ * @deprecated Renamed to `WebRequestAdapterConfig`. This alias will be removed
+ * in a future release.
+ */
+export type CloudflareAdapterConfig = WebRequestAdapterConfig;

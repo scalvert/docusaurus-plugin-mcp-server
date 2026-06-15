@@ -113,15 +113,15 @@ Add to `netlify.toml`:
 <details>
 <summary><strong>Cloudflare Workers</strong></summary>
 
-Cloudflare Workers can't access the filesystem, so you need to import the data directly:
+Cloudflare Workers can't access the filesystem, so you need to import the data directly. `createWebRequestHandler` returns a standard `(request: Request) => Promise<Response>` handler, so the same code works on any web-standard runtime (Cloudflare Workers, modern Netlify functions, Deno, Bun):
 
 ```javascript snippet=readme/snippet-06.js
-import { createCloudflareHandler } from 'docusaurus-plugin-mcp-server/adapters';
+import { createWebRequestHandler } from 'docusaurus-plugin-mcp-server/adapters';
 import docs from '../build/mcp/docs.json';
 import searchIndex from '../build/mcp/search-index.json';
 
 export default {
-  fetch: createCloudflareHandler({
+  fetch: createWebRequestHandler({
     docs,
     searchIndexData: searchIndex,
     name: 'my-docs',
@@ -548,7 +548,7 @@ import {
 import {
   createVercelHandler,
   createNetlifyHandler,
-  createCloudflareHandler,
+  createWebRequestHandler,
   createNodeServer,
   createNodeHandler,
   generateAdapterFiles,

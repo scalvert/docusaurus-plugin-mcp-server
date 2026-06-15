@@ -59,7 +59,7 @@ describe('generateAdapterFiles', () => {
 
       const workerFile = files.find((f) => f.path === 'workers/mcp.js');
       expect(workerFile).toBeDefined();
-      expect(workerFile?.content).toContain('createCloudflareHandler');
+      expect(workerFile?.content).toContain('createWebRequestHandler');
       expect(workerFile?.content).toContain("name: 'my-docs'");
 
       const configFile = files.find((f) => f.path === 'wrangler.toml');

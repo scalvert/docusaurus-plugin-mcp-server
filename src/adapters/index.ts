@@ -8,7 +8,13 @@
 
 export { createVercelHandler, type VercelRequest, type VercelResponse } from './vercel.js';
 export { createNetlifyHandler, type NetlifyEvent, type NetlifyContext } from './netlify.js';
-export { createCloudflareHandler, type CloudflareAdapterConfig } from './cloudflare.js';
+export {
+  createWebRequestHandler,
+  type WebRequestAdapterConfig,
+  // Deprecated aliases, kept for one release.
+  createCloudflareHandler,
+  type CloudflareAdapterConfig,
+} from './web-request.js';
 export { generateAdapterFiles } from './generator.js';
 export { createNodeServer, createNodeHandler } from './node.js';
 export type { NodeServerOptions } from './node.js';
