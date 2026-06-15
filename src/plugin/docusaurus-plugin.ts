@@ -154,7 +154,10 @@ export default function mcpServerPlugin(
 
       // Create provider context
       const mcpOutputDir = path.join(outDir, resolvedOptions.outputDir);
-      const baseUrl = `${context.siteConfig.url}${context.siteConfig.baseUrl ?? ''}`;
+      // Resolve the site's baseUrl (e.g. "/docs/") against the origin so document
+      // URLs are correct for sites served under a sub-path. Use the URL constructor
+      // rather than path.join, which would collapse "https://" into "https:/".
+      const baseUrl = new URL(context.siteConfig.baseUrl, context.siteConfig.url).href;
       const providerContext: ProviderContext = {
         baseUrl,
         serverName: resolvedOptions.server.name,
@@ -204,7 +207,7 @@ export default function mcpServerPlugin(
           buildTime: new Date().toISOString(),
           docCount: validDocs.length,
           serverName: resolvedOptions.server.name,
-          baseUrl: context.siteConfig.url,
+          baseUrl,
           indexers: indexerNames,
         };
 
