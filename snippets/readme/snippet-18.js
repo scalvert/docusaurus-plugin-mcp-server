@@ -1,7 +1,7 @@
 import {
   createVercelHandler,
   createNetlifyHandler,
-  createCloudflareHandler,
+  createWebRequestHandler,
   createNodeServer,
   createNodeHandler,
   generateAdapterFiles,

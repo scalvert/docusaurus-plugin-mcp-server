@@ -149,12 +149,12 @@ function generateCloudflareFiles(name: string, baseUrl: string): GeneratedFile[]
  * are imported as JSON modules and passed as pre-loaded data.
  */
 
-import { createCloudflareHandler } from 'docusaurus-plugin-mcp-server/adapters';
+import { createWebRequestHandler } from 'docusaurus-plugin-mcp-server/adapters';
 import docs from '../build/mcp/docs.json';
 import searchIndex from '../build/mcp/search-index.json';
 
 export default {
-  fetch: createCloudflareHandler({
+  fetch: createWebRequestHandler({
     docs,
     searchIndexData: searchIndex,
     name: '${name}',
