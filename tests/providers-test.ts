@@ -188,6 +188,21 @@ describe('Provider Loader', () => {
     it('should throw error for non-existent module', async () => {
       await expect(loadIndexer('./non-existent-module.js')).rejects.toThrow();
     });
+
+    it('forwards flexsearch overrides to the built-in indexer', async () => {
+      const indexer = (await loadIndexer('flexsearch', {
+        flexsearch: { tokenize: 'strict', context: false },
+      })) as FlexSearchIndexer;
+      await indexer.initialize(mockProviderContext);
+      await indexer.indexDocuments(mockDocs);
+      const indexed = (await indexer.finalize()).get('search-index.json') as Record<
+        string,
+        unknown
+      >;
+      // Smoke-check: the indexer ran and produced FlexSearch's expected layout.
+      expect(indexed).toHaveProperty('reg');
+      expect(indexed).toHaveProperty('content.map');
+    });
   });
 
   describe('loadSearchProvider', () => {
@@ -200,5 +215,36 @@ describe('Provider Loader', () => {
     it('should throw error for non-existent module', async () => {
       await expect(loadSearchProvider('./non-existent-module.js')).rejects.toThrow();
     });
+
+    it('returns a SearchProvider instance passed directly', async () => {
+      const instance = new FlexSearchProvider();
+      const loaded = await loadSearchProvider(instance);
+      expect(loaded).toBe(instance);
+    });
+
+    it('rejects an object that does not implement SearchProvider', async () => {
+      await expect(
+        loadSearchProvider({ name: 'broken' } as unknown as FlexSearchProvider)
+      ).rejects.toThrow(/does not implement SearchProvider/);
+    });
+  });
+});
+
+describe('FlexSearchIndexer with custom config', () => {
+  it('produces a smaller index when context is disabled', async () => {
+    const defaultIndexer = new FlexSearchIndexer();
+    const leanIndexer = new FlexSearchIndexer({ tokenize: 'strict', context: false });
+
+    for (const indexer of [defaultIndexer, leanIndexer]) {
+      await indexer.initialize(mockProviderContext);
+      await indexer.indexDocuments(mockDocs);
+    }
+
+    const defaultSize = JSON.stringify(
+      (await defaultIndexer.finalize()).get('search-index.json')
+    ).length;
+    const leanSize = JSON.stringify((await leanIndexer.finalize()).get('search-index.json')).length;
+
+    expect(leanSize).toBeLessThan(defaultSize);
   });
 });

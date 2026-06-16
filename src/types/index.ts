@@ -1,3 +1,38 @@
+import type { SearchProvider } from '../providers/types.js';
+
+/**
+ * Field name in the search index. Higher weight = ranked higher when matched.
+ */
+export type FlexSearchField = 'title' | 'headings' | 'description' | 'content';
+
+/**
+ * Overrides for the built-in FlexSearch index configuration.
+ *
+ * The defaults are tuned for English content. Sites with long compound
+ * words (e.g. German, Finnish) or large doc sets may want to relax
+ * `tokenize`, drop `context`, or lower `resolution` to reduce
+ * index size.
+ *
+ * The same config must be supplied at build time (via plugin options)
+ * AND at runtime (via `McpServerBaseConfig.flexsearch`). Otherwise the
+ * runtime provider deserializes the index with the wrong shape and
+ * returns no results.
+ */
+export interface FlexSearchConfig {
+  /** Tokenization mode. Default: 'forward'. Use 'strict' for whole-word-only. */
+  tokenize?: 'strict' | 'forward' | 'reverse' | 'full';
+  /** Ranking resolution 1-9. Default: 9. Lower = smaller index. */
+  resolution?: number;
+  /** Phrase/proximity context. Default: { resolution: 2, depth: 2, bidirectional: true }. Set to false to disable (much smaller index). */
+  context?: false | { resolution?: number; depth?: number; bidirectional?: boolean };
+  /** Query result cache. Default: 100. */
+  cache?: number | boolean;
+  /** Custom tokenizer. Default: lowercase split + English stemmer. */
+  encode?: (str: string) => string[];
+  /** Weights applied per field during ranking. Defaults: title 3, headings 2, description 1.5, content 1. */
+  fieldWeights?: Partial<Record<FlexSearchField, number>>;
+}
+
 /**
  * Configuration options for the MCP server plugin
  */
@@ -44,6 +79,12 @@ export interface McpServerPluginOptions {
    * - '@myorg/glean-search' (npm package)
    */
   search?: string;
+
+  /**
+   * Overrides for the built-in FlexSearch indexer/provider. See {@link FlexSearchConfig}.
+   * Ignored when a custom indexer/provider is used.
+   */
+  flexsearch?: FlexSearchConfig;
 }
 
 /**
@@ -63,6 +104,8 @@ export interface ResolvedPluginOptions {
   indexers: string[] | false | undefined;
   /** Search provider module */
   search: string;
+  /** FlexSearch overrides for the built-in indexer/provider. */
+  flexsearch?: FlexSearchConfig;
 }
 
 /**
@@ -171,8 +214,21 @@ export interface McpServerBaseConfig {
   version?: string;
   /** Base URL for constructing full page URLs (e.g., https://docs.example.com) */
   baseUrl?: string;
-  /** Search provider module. Default: 'flexsearch' */
-  search?: string;
+  /**
+   * Search provider. Default: 'flexsearch'.
+   *
+   * Accepts either a module specifier (string) loaded via dynamic `import()`,
+   * or a {@link SearchProvider} instance. Pass an instance when running in a
+   * bundled environment (Cloudflare Workers, etc.) where dynamic import of
+   * arbitrary specifiers is not available.
+   */
+  search?: string | SearchProvider;
+  /**
+   * Overrides for the built-in FlexSearch provider. See {@link FlexSearchConfig}.
+   * Must match the config used at index build time. Ignored when `search` is
+   * a custom provider.
+   */
+  flexsearch?: FlexSearchConfig;
   /**
    * Instructions describing how to use the server and its tools.
    * Surfaced to MCP clients in the initialize response.

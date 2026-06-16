@@ -199,9 +199,11 @@ export class McpDocsServer {
   }
 
   private async _doInitialize(): Promise<void> {
-    // Load the search provider
+    // Load the search provider (specifier string or pre-instantiated provider)
     const searchSpecifier = this.config.search ?? 'flexsearch';
-    this.searchProvider = await loadSearchProvider(searchSpecifier);
+    this.searchProvider = await loadSearchProvider(searchSpecifier, {
+      flexsearch: this.config.flexsearch,
+    });
 
     // Build provider context
     const providerContext: ProviderContext = {

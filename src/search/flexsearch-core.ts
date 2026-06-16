@@ -1,19 +1,30 @@
 import FlexSearch from 'flexsearch';
-import type { ProcessedDoc, SearchResult } from '../types/index.js';
+import type {
+  FlexSearchConfig,
+  FlexSearchField,
+  ProcessedDoc,
+  SearchResult,
+} from '../types/index.js';
 import type { IndexableDocument } from './types.js';
 
 export type FlexSearchDocument = FlexSearch.Document<IndexableDocument, string[]>;
 
 /**
- * Field weights for search ranking
+ * Default field weights for search ranking
  * Higher values = more importance
  */
-const FIELD_WEIGHTS = {
+export const DEFAULT_FIELD_WEIGHTS: Record<FlexSearchField, number> = {
   title: 3.0,
   headings: 2.0,
   description: 1.5,
   content: 1.0,
-} as const;
+};
+
+function resolveFieldWeights(
+  overrides?: FlexSearchConfig['fieldWeights']
+): Record<FlexSearchField, number> {
+  return { ...DEFAULT_FIELD_WEIGHTS, ...overrides };
+}
 
 /**
  * Simple English stemmer
@@ -47,48 +58,48 @@ function englishStemmer(word: string): string {
   );
 }
 
+const DEFAULT_FLEXSEARCH_CONFIG = {
+  tokenize: 'forward' as const,
+  cache: 100,
+  resolution: 9,
+  context: { resolution: 2, depth: 2, bidirectional: true },
+  encode: (str: string) =>
+    str
+      .toLowerCase()
+      .split(/[\s\-_.,;:!?'"()[\]{}]+/)
+      .filter(Boolean)
+      .map(englishStemmer),
+};
+
 /**
- * Create a FlexSearch document index with enhanced configuration
+ * Create a FlexSearch document index.
  *
- * Features:
- * - Forward-prefix tokenization (finds "auth" in "authentication", avoids OOM on large doc sets)
- * - English stemming (finds "authenticate" when searching "authentication")
- * - Context-aware scoring for phrase matching
- * - Optimized resolution for relevance ranking
+ * Defaults are tuned for English: forward-prefix tokenization, English
+ * stemming, bidirectional context for phrase matching, max resolution.
+ * Pass `config` to override any of these — useful for non-English content
+ * or large doc sets where the defaults produce an oversized index.
+ *
+ * If a custom config is passed at build time, the same config must be
+ * passed at runtime to {@link importSearchIndex} (and to the search
+ * provider), otherwise the deserialized index returns no results.
  */
-export function createSearchIndex(): FlexSearchDocument {
+export function createSearchIndex(config?: FlexSearchConfig): FlexSearchDocument {
+  // `false` means caller explicitly disabled context; pass it through.
+  // Otherwise fall back to the bundled default.
+  const context =
+    config?.context === false
+      ? (false as unknown as { resolution?: number; depth?: number; bidirectional?: boolean })
+      : (config?.context ?? DEFAULT_FLEXSEARCH_CONFIG.context);
+
   return new FlexSearch.Document<IndexableDocument, string[]>({
-    // Use 'forward' tokenization to avoid OOM with large doc sets
-    // See: https://github.com/scalvert/docusaurus-plugin-mcp-server/issues/11
-    tokenize: 'forward',
-
-    // Enable caching for faster repeated queries
-    cache: 100,
-
-    // Higher resolution = more granular ranking (1-9)
-    resolution: 9,
-
-    // Enable context for phrase/proximity matching
-    context: {
-      resolution: 2,
-      depth: 2,
-      bidirectional: true,
-    },
-
-    // Apply stemming to normalize word forms
-    encode: (str: string) => {
-      // Normalize to lowercase and split into words
-      const words = str.toLowerCase().split(/[\s\-_.,;:!?'"()[\]{}]+/);
-      // Apply stemmer to each word
-      return words.filter(Boolean).map(englishStemmer);
-    },
-
-    // Document schema
+    tokenize: config?.tokenize ?? DEFAULT_FLEXSEARCH_CONFIG.tokenize,
+    cache: config?.cache ?? DEFAULT_FLEXSEARCH_CONFIG.cache,
+    resolution: config?.resolution ?? DEFAULT_FLEXSEARCH_CONFIG.resolution,
+    context,
+    encode: config?.encode ?? DEFAULT_FLEXSEARCH_CONFIG.encode,
     document: {
       id: 'id',
-      // Index these fields for searching
       index: ['title', 'content', 'headings', 'description'],
-      // Store these fields in results (for enriched queries)
       store: ['title', 'description'],
     },
   });
@@ -126,8 +137,12 @@ export function addDocumentToIndex(
  * @param docs - Documents to index
  * @param baseUrl - Optional base URL to construct full URLs as document IDs
  */
-export function buildSearchIndex(docs: ProcessedDoc[], baseUrl?: string): FlexSearchDocument {
-  const index = createSearchIndex();
+export function buildSearchIndex(
+  docs: ProcessedDoc[],
+  baseUrl?: string,
+  config?: FlexSearchConfig
+): FlexSearchDocument {
+  const index = createSearchIndex(config);
 
   for (const doc of docs) {
     addDocumentToIndex(index, doc, baseUrl);
@@ -147,9 +162,10 @@ export function querySearchIndex(
   index: FlexSearchDocument,
   docs: Record<string, ProcessedDoc>,
   query: string,
-  options: { limit?: number } = {}
+  options: { limit?: number; fieldWeights?: FlexSearchConfig['fieldWeights'] } = {}
 ): SearchResult[] {
-  const { limit = 16 } = options;
+  const { limit = 16, fieldWeights } = options;
+  const weights = resolveFieldWeights(fieldWeights);
 
   // Search across all fields
   const rawResults = index.search(query, {
@@ -162,8 +178,8 @@ export function querySearchIndex(
 
   for (const fieldResult of rawResults) {
     // Determine which field this result is from
-    const field = fieldResult.field as keyof typeof FIELD_WEIGHTS;
-    const fieldWeight = FIELD_WEIGHTS[field] ?? 1.0;
+    const field = fieldResult.field as FlexSearchField;
+    const fieldWeight = weights[field] ?? 1.0;
 
     // With enrich: true, results are objects with id property
     const results = fieldResult.result as unknown as Array<{ id: string } | string>;
@@ -308,9 +324,10 @@ export async function exportSearchIndex(index: FlexSearchDocument): Promise<unkn
  * Import a search index from serialized data
  */
 export async function importSearchIndex(
-  data: Record<string, unknown>
+  data: Record<string, unknown>,
+  config?: FlexSearchConfig
 ): Promise<FlexSearchDocument> {
-  const index = createSearchIndex();
+  const index = createSearchIndex(config);
 
   for (const [key, value] of Object.entries(data)) {
     // FlexSearch's import expects the data in a specific format
