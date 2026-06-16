@@ -508,3 +508,17 @@ import {
 ## License
 
 MIT
+
+<!-- configure-agents:skills start -->
+
+## Agent skills
+
+This repository ships agent skill(s) under `skills/`. Install them into your
+AI agent with [`npx skills`](https://github.com/agentskills/agentskills):
+
+```sh
+npx skills add -g scalvert/docusaurus-plugin-mcp-server   # global — available in every repo
+npx skills add scalvert/docusaurus-plugin-mcp-server      # or scoped to the current repo
+```
+
+<!-- configure-agents:skills end -->
