@@ -76,9 +76,17 @@ export function filterRoutes(
   });
 }
 
+// Sibling HTMLs like `foo.html` are how Docusaurus emits pages when
+// `trailingSlash` is `false`. We skip the generated `404.html`.
+const NON_ROUTE_HTML = new Set(['404.html']);
+
 /**
  * Discover all HTML files in the build directory and create routes for them.
  * This is more reliable than using Docusaurus routes as it captures all built pages.
+ *
+ * Picks up both `path/index.html` (trailingSlash: true/undefined) and sibling
+ * `path.html` files (trailingSlash: false). When both exist for the same
+ * route, the `index.html` form wins via the dedup pass in `collectRoutes`.
  */
 export async function discoverHtmlFiles(outDir: string): Promise<FlattenedRoute[]> {
   const routes: FlattenedRoute[] = [];
@@ -95,21 +103,25 @@ export async function discoverHtmlFiles(outDir: string): Promise<FlattenedRoute[
           continue;
         }
         await scanDirectory(fullPath);
-      } else if (entry.name === 'index.html') {
-        // Convert file path back to route
-        const relativePath = path.relative(outDir, fullPath);
-        let routePath = '/' + path.dirname(relativePath).replace(/\\/g, '/');
-
-        // Handle root index.html
-        if (routePath === '/.') {
-          routePath = '/';
-        }
-
-        routes.push({
-          path: routePath,
-          htmlPath: fullPath,
-        });
+        continue;
       }
+
+      if (!entry.isFile() || !entry.name.endsWith('.html') || NON_ROUTE_HTML.has(entry.name)) {
+        continue;
+      }
+
+      const relativePath = path.relative(outDir, fullPath);
+
+      let routePath: string;
+      if (entry.name === 'index.html') {
+        const dirName = path.dirname(relativePath).replace(/\\/g, '/');
+        routePath = dirName === '.' ? '/' : '/' + dirName;
+      } else {
+        const withoutExt = relativePath.slice(0, -'.html'.length).replace(/\\/g, '/');
+        routePath = '/' + withoutExt;
+      }
+
+      routes.push({ path: routePath, htmlPath: fullPath });
     }
   }
 
@@ -153,10 +165,13 @@ export async function collectRoutes(
   // Filter out excluded routes
   const filteredRoutes = filterRoutes(allRoutes, excludePatterns);
 
-  // Deduplicate routes by path
+  // Deduplicate routes by path. When the same route is emitted as both
+  // `foo/index.html` and `foo.html`, prefer the `index.html` form so that
+  // sites which output both for redirect compatibility get a stable choice.
   const uniqueRoutes = new Map<string, FlattenedRoute>();
   for (const route of filteredRoutes) {
-    if (!uniqueRoutes.has(route.path)) {
+    const existing = uniqueRoutes.get(route.path);
+    if (!existing || path.basename(route.htmlPath) === 'index.html') {
       uniqueRoutes.set(route.path, route);
     }
   }
