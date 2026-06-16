@@ -35,85 +35,7 @@ module.exports = {
 
 ### 2. Create the API Endpoint
 
-Choose your deployment platform:
-
-<details>
-<summary><strong>Vercel</strong></summary>
-
-Create `api/mcp.js`:
-
-```javascript snippet=readme/snippet-02.js
-import { createVercelHandler } from 'docusaurus-plugin-mcp-server/adapters';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-export default createVercelHandler({
-  docsPath: path.join(__dirname, '../build/mcp/docs.json'),
-  indexPath: path.join(__dirname, '../build/mcp/search-index.json'),
-  name: 'my-docs',
-  baseUrl: 'https://docs.example.com',
-});
-```
-
-Add to `vercel.json`:
-
-```json snippet=readme/snippet-03.json
-{
-  "functions": {
-    "api/mcp.js": {
-      "includeFiles": "build/mcp/**"
-    }
-  },
-  "rewrites": [{ "source": "/mcp", "destination": "/api/mcp" }]
-}
-```
-
-</details>
-
-<details>
-<summary><strong>Netlify</strong></summary>
-
-Create `netlify/functions/mcp.js`:
-
-```javascript snippet=readme/snippet-04.js
-import { createNetlifyHandler } from 'docusaurus-plugin-mcp-server/adapters';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-export const handler = createNetlifyHandler({
-  docsPath: path.join(__dirname, '../../build/mcp/docs.json'),
-  indexPath: path.join(__dirname, '../../build/mcp/search-index.json'),
-  name: 'my-docs',
-  baseUrl: 'https://docs.example.com',
-});
-```
-
-Add to `netlify.toml`:
-
-```toml snippet=readme/snippet-05.toml
-[build]
-  publish = "build"
-
-[functions]
-  directory = "netlify/functions"
-  included_files = ["build/mcp/**"]
-
-[[redirects]]
-  from = "/mcp"
-  to = "/.netlify/functions/mcp"
-  status = 200
-```
-
-</details>
-
-<details>
-<summary><strong>Cloudflare Workers</strong></summary>
-
-Cloudflare Workers can't access the filesystem, so you need to import the data directly. `createWebRequestHandler` returns a standard `(request: Request) => Promise<Response>` handler, so the same code works on any web-standard runtime (Cloudflare Workers, modern Netlify functions, Deno, Bun):
+The MCP server runs on any web-standard serverless or edge runtime — Cloudflare Workers, modern Netlify functions, Vercel Edge, Deno, Bun. Import the build artifacts and pass them to `createWebRequestHandler`, which returns a standard `(request: Request) => Promise<Response>`. (These runtimes can't read the filesystem, so the data is imported as modules rather than loaded from disk.)
 
 ```javascript snippet=readme/snippet-06.js
 import { createWebRequestHandler } from 'docusaurus-plugin-mcp-server/adapters';
@@ -130,7 +52,9 @@ export default {
 };
 ```
 
-</details>
+The `export default { fetch }` form works on Cloudflare Workers, Deno, and Bun. Other runtimes use their own entry convention (e.g. modern Netlify functions `export default async (request) => Response`) — the handler is identical, only the export wrapper differs.
+
+For local development, run the server over Node's `http` with `createNodeServer` (see [Adapter Exports](#adapter-exports)).
 
 ### 3. Build and Deploy
 
@@ -366,30 +290,32 @@ For the runtime adapters:
 |--------|------|----------|-------------|
 | `docsPath` | `string` | Yes* | Path to `docs.json` |
 | `indexPath` | `string` | Yes* | Path to `search-index.json` |
-| `docs` | `object` | Yes* | Pre-loaded docs (Cloudflare) |
-| `searchIndexData` | `object` | Yes* | Pre-loaded search index (Cloudflare) |
+| `docs` | `object` | Yes* | Pre-loaded docs (web handler) |
+| `searchIndexData` | `object` | Yes* | Pre-loaded search index (web handler) |
 | `name` | `string` | Yes | Server name |
 | `version` | `string` | No | Server version |
 | `baseUrl` | `string` | No | Base URL for full page URLs in responses |
 | `instructions` | `string` | No | Instructions describing how to use the server, surfaced to MCP clients in the `initialize` response |
 | `tools` | `object` | No | Per-tool overrides. Supports `docs_search.description` and `docs_fetch.description` to customize tool descriptions |
 
-*Use either file paths (Node.js) or pre-loaded data (Workers).
+*Use file paths (`createNodeServer`, local dev) or pre-loaded data (`createWebRequestHandler`, serverless/edge).
 
 Example with extended configuration:
 
 ```javascript
-export default createVercelHandler({
-  docsPath: path.join(__dirname, '../build/mcp/docs.json'),
-  indexPath: path.join(__dirname, '../build/mcp/search-index.json'),
-  name: 'my-docs',
-  baseUrl: 'https://docs.example.com',
-  instructions: 'Search the Acme product docs. Use docs_search to find pages, then docs_fetch for full content.',
-  tools: {
-    docs_search: { description: 'Search the Acme product documentation.' },
-    docs_fetch: { description: 'Fetch the full markdown of an Acme docs page.' },
-  },
-});
+export default {
+  fetch: createWebRequestHandler({
+    docs,
+    searchIndexData: searchIndex,
+    name: 'my-docs',
+    baseUrl: 'https://docs.example.com',
+    instructions: 'Search the Acme product docs. Use docs_search to find pages, then docs_fetch for full content.',
+    tools: {
+      docs_search: { description: 'Search the Acme product documentation.' },
+      docs_fetch: { description: 'Fetch the full markdown of an Acme docs page.' },
+    },
+  }),
+};
 ```
 
 ## Verifying Your Build
@@ -546,12 +472,9 @@ import {
 
 ```javascript snippet=readme/snippet-18.js
 import {
-  createVercelHandler,
-  createNetlifyHandler,
   createWebRequestHandler,
   createNodeServer,
   createNodeHandler,
-  generateAdapterFiles,
 } from 'docusaurus-plugin-mcp-server/adapters';
 ```
 
