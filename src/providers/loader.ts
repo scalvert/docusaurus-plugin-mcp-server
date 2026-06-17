@@ -1,28 +1,38 @@
+import type { FlexSearchConfig } from '../types/index.js';
 import type { ContentIndexer, SearchProvider } from './types.js';
+
+/**
+ * Options forwarded to the built-in 'flexsearch' indexer/provider.
+ * Ignored for custom specifiers.
+ */
+export interface BuiltinIndexerOptions {
+  flexsearch?: FlexSearchConfig;
+}
 
 /**
  * Load an indexer by name or module path.
  *
  * @param specifier - Either 'flexsearch' for the built-in indexer, or a module path
  *                    (relative path like './my-indexer.js' or npm package like '@myorg/indexer')
+ * @param builtinOptions - Options passed to the built-in indexer constructor (ignored for custom specifiers)
  * @returns Instantiated ContentIndexer
  *
  * @example
  * ```typescript
- * // Built-in
- * const indexer = await loadIndexer('flexsearch');
+ * // Built-in with overrides
+ * const indexer = await loadIndexer('flexsearch', { flexsearch: { tokenize: 'strict' } });
  *
  * // Custom relative path
  * const indexer = await loadIndexer('./src/providers/algolia-indexer.js');
- *
- * // Custom npm package
- * const indexer = await loadIndexer('@myorg/custom-indexer');
  * ```
  */
-export async function loadIndexer(specifier: string): Promise<ContentIndexer> {
+export async function loadIndexer(
+  specifier: string,
+  builtinOptions?: BuiltinIndexerOptions
+): Promise<ContentIndexer> {
   if (specifier === 'flexsearch') {
     const { FlexSearchIndexer } = await import('./indexers/flexsearch-indexer.js');
-    return new FlexSearchIndexer();
+    return new FlexSearchIndexer(builtinOptions?.flexsearch);
   }
 
   try {
@@ -60,28 +70,41 @@ export async function loadIndexer(specifier: string): Promise<ContentIndexer> {
 }
 
 /**
- * Load a search provider by name or module path.
+ * Load a search provider by name, module path, or instance.
  *
- * @param specifier - Either 'flexsearch' for the built-in provider, or a module path
- *                    (relative path like './my-search.js' or npm package like '@myorg/search')
+ * @param specifier - 'flexsearch' for the built-in provider, a module path to
+ *                    dynamically import, or a {@link SearchProvider} instance.
+ *                    Pass an instance when running in a bundled environment
+ *                    where dynamic `import()` of arbitrary specifiers is not
+ *                    available (e.g. Cloudflare Workers).
+ * @param builtinOptions - Options passed to the built-in provider constructor (ignored otherwise)
  * @returns Instantiated SearchProvider
  *
  * @example
  * ```typescript
- * // Built-in
- * const provider = await loadSearchProvider('flexsearch');
+ * // Built-in with overrides
+ * const provider = await loadSearchProvider('flexsearch', { flexsearch: { tokenize: 'strict' } });
  *
- * // Custom relative path
- * const provider = await loadSearchProvider('./src/providers/glean-search.js');
- *
- * // Custom npm package
- * const provider = await loadSearchProvider('@myorg/glean-search');
+ * // Pre-instantiated (Workers / bundled environments)
+ * const provider = await loadSearchProvider(new MyProvider());
  * ```
  */
-export async function loadSearchProvider(specifier: string): Promise<SearchProvider> {
+export async function loadSearchProvider(
+  specifier: string | SearchProvider,
+  builtinOptions?: BuiltinIndexerOptions
+): Promise<SearchProvider> {
+  if (typeof specifier !== 'string') {
+    if (!isSearchProvider(specifier)) {
+      throw new Error(
+        'Invalid search provider instance: does not implement SearchProvider interface'
+      );
+    }
+    return specifier;
+  }
+
   if (specifier === 'flexsearch') {
     const { FlexSearchProvider } = await import('./search/flexsearch-provider.js');
-    return new FlexSearchProvider();
+    return new FlexSearchProvider(builtinOptions?.flexsearch);
   }
 
   try {

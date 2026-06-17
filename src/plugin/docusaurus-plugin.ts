@@ -175,7 +175,9 @@ export default function mcpServerPlugin(
 
       for (const indexerSpec of indexerSpecs) {
         try {
-          const indexer = await loadIndexer(indexerSpec);
+          const indexer = await loadIndexer(indexerSpec, {
+            flexsearch: resolvedOptions.flexsearch,
+          });
 
           // Check if indexer wants to run (env var gating)
           if (indexer.shouldRun && !indexer.shouldRun()) {

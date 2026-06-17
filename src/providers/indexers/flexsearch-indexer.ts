@@ -1,4 +1,4 @@
-import type { ProcessedDoc } from '../../types/index.js';
+import type { FlexSearchConfig, ProcessedDoc } from '../../types/index.js';
 import type { ContentIndexer, ProviderContext } from '../types.js';
 import { buildSearchIndex, exportSearchIndex } from '../../search/flexsearch-core.js';
 
@@ -16,6 +16,11 @@ export class FlexSearchIndexer implements ContentIndexer {
   private docsIndex: Record<string, ProcessedDoc> = {};
   private exportedIndex: unknown = null;
   private docCount = 0;
+  private readonly config?: FlexSearchConfig;
+
+  constructor(config?: FlexSearchConfig) {
+    this.config = config;
+  }
 
   /**
    * FlexSearch indexer always runs by default.
@@ -44,7 +49,7 @@ export class FlexSearchIndexer implements ContentIndexer {
 
     // Build and export FlexSearch index (use full URLs as document IDs)
     console.log('[FlexSearch] Building search index...');
-    const searchIndex = buildSearchIndex(docs, this.baseUrl);
+    const searchIndex = buildSearchIndex(docs, this.baseUrl, this.config);
     this.exportedIndex = await exportSearchIndex(searchIndex);
     console.log(`[FlexSearch] Indexed ${this.docCount} documents`);
   }

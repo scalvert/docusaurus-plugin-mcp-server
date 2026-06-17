@@ -1,5 +1,5 @@
 import fs from 'fs-extra';
-import type { ProcessedDoc, SearchResult } from '../../types/index.js';
+import type { FlexSearchConfig, ProcessedDoc, SearchResult } from '../../types/index.js';
 import type {
   SearchProvider,
   ProviderContext,
@@ -24,6 +24,11 @@ export class FlexSearchProvider implements SearchProvider {
   private docs: Record<string, ProcessedDoc> | null = null;
   private searchIndex: FlexSearchDocument | null = null;
   private ready = false;
+  private readonly config?: FlexSearchConfig;
+
+  constructor(config?: FlexSearchConfig) {
+    this.config = config;
+  }
 
   async initialize(_context: ProviderContext, initData?: SearchProviderInitData): Promise<void> {
     if (!initData) {
@@ -33,7 +38,10 @@ export class FlexSearchProvider implements SearchProvider {
     // Pre-loaded data mode (Cloudflare Workers, etc.)
     if (initData.docs && initData.indexData) {
       this.docs = initData.docs;
-      this.searchIndex = await importSearchIndex(initData.indexData as Record<string, unknown>);
+      this.searchIndex = await importSearchIndex(
+        initData.indexData as Record<string, unknown>,
+        this.config
+      );
       this.ready = true;
       return;
     }
@@ -48,7 +56,7 @@ export class FlexSearchProvider implements SearchProvider {
 
       if (await fs.pathExists(initData.indexPath)) {
         const indexData = await fs.readJson(initData.indexPath);
-        this.searchIndex = await importSearchIndex(indexData);
+        this.searchIndex = await importSearchIndex(indexData, this.config);
       } else {
         throw new Error(`[FlexSearch] Search index not found: ${initData.indexPath}`);
       }
@@ -72,7 +80,10 @@ export class FlexSearchProvider implements SearchProvider {
     }
 
     const limit = options?.limit ?? 16;
-    return querySearchIndex(this.searchIndex, this.docs, query, { limit });
+    return querySearchIndex(this.searchIndex, this.docs, query, {
+      limit,
+      fieldWeights: this.config?.fieldWeights,
+    });
   }
 
   async getDocument(url: string): Promise<ProcessedDoc | null> {
