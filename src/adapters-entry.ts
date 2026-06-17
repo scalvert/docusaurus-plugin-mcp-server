@@ -11,7 +11,4 @@ export {
   createNodeHandler,
   type NodeServerOptions,
   type WebRequestAdapterConfig,
-  // Deprecated aliases, kept for one release.
-  createCloudflareHandler,
-  type CloudflareAdapterConfig,
 } from './adapters/index.js';
