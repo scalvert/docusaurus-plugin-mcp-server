@@ -7,6 +7,33 @@
 
 
 
+
+## v0.13.0 (2026-06-19)
+
+#### :boom: Breaking Change
+
+* [#75](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/75) refactor(adapters)!: consolidate to a single generic web-standard handler ([@scalvert](https://github.com/scalvert))
+
+#### :rocket: Enhancement
+
+* [#78](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/78) feat: configurable FlexSearch and SearchProvider instances ([@mokevnin](https://github.com/mokevnin))
+* [#76](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/76) chore(agents): adopt agent baseline + deploy skill ([@scalvert](https://github.com/scalvert))
+* [#75](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/75) refactor(adapters)!: consolidate to a single generic web-standard handler ([@scalvert](https://github.com/scalvert))
+* [#74](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/74) refactor(adapters): rename createCloudflareHandler to createWebRequestHandler ([@scalvert](https://github.com/scalvert))
+* [#63](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/63) feat: support server instructions and custom tool descriptions ([@scalvert](https://github.com/scalvert))
+
+#### :house: Internal
+
+* [#76](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/76) chore(agents): adopt agent baseline + deploy skill ([@scalvert](https://github.com/scalvert))
+* [#48](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/48) feat: add markdown-code to manage README code samples ([@scalvert](https://github.com/scalvert))
+
+#### Committers: 3
+* George ([@GeorgeTaveras1231](https://github.com/GeorgeTaveras1231))
+* Kirill Mokevnin ([@mokevnin](https://github.com/mokevnin))
+* Steve Calvert ([@scalvert](https://github.com/scalvert))
+
+
+
 ## v0.12.0 (2026-04-12)
 
 #### :boom: Breaking Change
