@@ -132,16 +132,3 @@ export function createWebRequestHandler(config: WebRequestAdapterConfig) {
     }
   };
 }
-
-/**
- * @deprecated Renamed to `createWebRequestHandler`. The handler is not
- * Cloudflare-specific — it works on any web-standard runtime. This alias will
- * be removed in a future release.
- */
-export const createCloudflareHandler = createWebRequestHandler;
-
-/**
- * @deprecated Renamed to `WebRequestAdapterConfig`. This alias will be removed
- * in a future release.
- */
-export type CloudflareAdapterConfig = WebRequestAdapterConfig;

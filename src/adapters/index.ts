@@ -7,12 +7,6 @@
  * server over Node's `http` module.
  */
 
-export {
-  createWebRequestHandler,
-  type WebRequestAdapterConfig,
-  // Deprecated aliases, kept for one release.
-  createCloudflareHandler,
-  type CloudflareAdapterConfig,
-} from './web-request.js';
+export { createWebRequestHandler, type WebRequestAdapterConfig } from './web-request.js';
 export { createNodeServer, createNodeHandler } from './node.js';
 export type { NodeServerOptions } from './node.js';
