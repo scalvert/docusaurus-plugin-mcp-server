@@ -70,4 +70,4 @@ ESM-only (`"type": "module"`). All imports use `.js` extensions in source files.
 
 ## Skills
 
-This repository ships an agent skill at `skills/SKILL.md`. Keep it accurate as the public API changes.
+This repository ships an agent skill at `skills/docusaurus-plugin-mcp-server/SKILL.md`. Keep it accurate as the public API changes.
