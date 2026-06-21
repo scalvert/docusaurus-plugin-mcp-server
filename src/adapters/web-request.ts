@@ -27,17 +27,13 @@
  */
 
 import { McpDocsServer } from '../mcp/server.js';
-import type { ProcessedDoc, McpServerBaseConfig, McpServerDataConfig } from '../types/index.js';
+import type { McpServerDataConfig } from '../types/index.js';
 import { getCorsHeaders } from './cors.js';
 
 /**
  * Config for the web-standard request handler
  */
-export interface WebRequestAdapterConfig extends McpServerBaseConfig {
-  /** Pre-loaded docs data (imported from docs.json) */
-  docs: Record<string, ProcessedDoc>;
-  /** Pre-loaded search index data (imported from search-index.json) */
-  searchIndexData: Record<string, unknown>;
+export interface WebRequestAdapterConfig extends McpServerDataConfig {
   /** CORS origin to allow. Defaults to '*' (all origins). */
   corsOrigin?: string;
 }
