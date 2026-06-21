@@ -15,6 +15,7 @@ import { htmlToMarkdown } from '../processing/html-to-markdown.js';
 import { extractHeadingsFromMarkdown } from '../processing/heading-extractor.js';
 import { loadIndexer } from '../providers/loader.js';
 import type { ProviderContext } from '../providers/types.js';
+import { resolveServerUrl } from './resolve-server-url.js';
 
 /**
  * Resolve plugin options with defaults.
@@ -60,7 +61,6 @@ async function processHtmlFile(
       return null;
     }
 
-    // Convert to markdown
     const markdown = await htmlToMarkdown(extracted.contentHtml);
 
     if (!markdown || markdown.trim().length < options.minContentLength) {
@@ -68,7 +68,6 @@ async function processHtmlFile(
       return null;
     }
 
-    // Extract headings
     const headings = extractHeadingsFromMarkdown(markdown);
 
     return {
@@ -99,9 +98,12 @@ export default function mcpServerPlugin(
     // Expose configuration to theme components via globalData
     async contentLoaded({ actions }) {
       const { setGlobalData } = actions;
-
-      // Construct server URL from site URL + output directory
-      const serverUrl = `${context.siteConfig.url}/${resolvedOptions.outputDir}`;
+      const serverUrl = resolveServerUrl({
+        siteUrl: context.siteConfig.url,
+        baseUrl: context.siteConfig.baseUrl,
+        outputDir: resolvedOptions.outputDir,
+        server: resolvedOptions.server,
+      });
 
       setGlobalData({
         serverUrl,
@@ -113,13 +115,11 @@ export default function mcpServerPlugin(
       console.log('[MCP] Starting MCP artifact generation...');
       const startTime = Date.now();
 
-      // Check if indexing is disabled
       if (resolvedOptions.indexers === false) {
         console.log('[MCP] Indexing disabled, skipping artifact generation');
         return;
       }
 
-      // Collect routes from the build output
       const routes = await collectRoutes(outDir, resolvedOptions.excludeRoutes);
       console.log(`[MCP] Found ${routes.length} routes to process`);
 
@@ -128,7 +128,6 @@ export default function mcpServerPlugin(
         return;
       }
 
-      // Process all HTML files in parallel (with concurrency limit)
       const processOptions: ProcessHtmlOptions = {
         contentSelectors: resolvedOptions.contentSelectors,
         excludeSelectors: resolvedOptions.excludeSelectors,
@@ -143,7 +142,6 @@ export default function mcpServerPlugin(
         { concurrency: 10 }
       );
 
-      // Filter out null results
       const validDocs = processedDocs.filter((doc): doc is ProcessedDoc => doc !== null);
       console.log(`[MCP] Successfully processed ${validDocs.length} documents`);
 
@@ -152,7 +150,6 @@ export default function mcpServerPlugin(
         return;
       }
 
-      // Create provider context
       const mcpOutputDir = path.join(outDir, resolvedOptions.outputDir);
       // Resolve the site's baseUrl (e.g. "/docs/") against the origin so document
       // URLs are correct for sites served under a sub-path. Use the URL constructor
@@ -165,8 +162,6 @@ export default function mcpServerPlugin(
         outputDir: mcpOutputDir,
       };
 
-      // Determine which indexers to run
-      // undefined = ['flexsearch'] for backward compatibility
       const indexerSpecs = resolvedOptions.indexers ?? ['flexsearch'];
 
       await fs.ensureDir(mcpOutputDir);
@@ -189,7 +184,6 @@ export default function mcpServerPlugin(
           await indexer.initialize(providerContext);
           await indexer.indexDocuments(validDocs);
 
-          // Write artifacts from this indexer
           const artifacts = await indexer.finalize();
           for (const [filename, content] of artifacts) {
             await fs.writeJson(path.join(mcpOutputDir, filename), content, { spaces: 0 });
@@ -223,5 +217,4 @@ export default function mcpServerPlugin(
   };
 }
 
-// Named export for ESM compatibility
 export { mcpServerPlugin };

@@ -135,7 +135,6 @@ export function cleanContentElement(element: Element, excludeSelectors: string[]
         }
       }
 
-      // Recursively clean children
       removeUnwanted(childElement);
       return true;
     });

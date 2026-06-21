@@ -171,6 +171,8 @@ Retrieve full page content as markdown. Use this after searching to get the comp
 | `minContentLength` | `number` | `50` | Minimum content length to consider a page valid |
 | `server.name` | `string` | `'docs-mcp-server'` | Name of the MCP server |
 | `server.version` | `string` | `'1.0.0'` | Version of the MCP server |
+| `server.url` | `string` | (derived) | Explicit MCP HTTP endpoint URL for the install button |
+| `server.urlBase` | `'origin' \| 'site'` | `'origin'` | How to derive the MCP URL when `server.url` is not set. `'origin'` → `{siteUrl}/{outputDir}`; `'site'` → under Docusaurus `baseUrl` |
 | `excludeRoutes` | `string[]` | `['/404*', '/search*']` | Routes to exclude (glob patterns) |
 | `indexers` | `string[] \| false` | `['flexsearch']` | Indexers to run during build. Use `false` to disable. Supports built-in (`'flexsearch'`), relative paths, or npm packages. |
 | `search` | `string` | `'flexsearch'` | Search provider module for runtime queries. Supports built-in (`'flexsearch'`), relative paths, or npm packages. |

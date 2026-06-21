@@ -10,7 +10,6 @@ export function flattenRoutes(routes: RouteConfig[]): FlattenedRoute[] {
   const flattened: FlattenedRoute[] = [];
 
   function traverse(route: RouteConfig): void {
-    // Add the route if it has a path
     if (route.path) {
       flattened.push({
         path: route.path,
@@ -18,7 +17,6 @@ export function flattenRoutes(routes: RouteConfig[]): FlattenedRoute[] {
       });
     }
 
-    // Recursively process child routes
     if (route.routes && Array.isArray(route.routes)) {
       for (const childRoute of route.routes) {
         traverse(childRoute);
@@ -42,15 +40,12 @@ export function flattenRoutes(routes: RouteConfig[]): FlattenedRoute[] {
  * - /api -> build/api/index.html
  */
 export function routeToHtmlPath(routePath: string, outDir: string): string {
-  // Normalize the route path
   let normalizedPath = routePath;
 
-  // Remove trailing slash if present (except for root)
   if (normalizedPath.length > 1 && normalizedPath.endsWith('/')) {
     normalizedPath = normalizedPath.slice(0, -1);
   }
 
-  // Handle root path
   if (normalizedPath === '/') {
     return path.join(outDir, 'index.html');
   }
@@ -98,7 +93,6 @@ export async function discoverHtmlFiles(outDir: string): Promise<FlattenedRoute[
       const fullPath = path.join(dir, entry.name);
 
       if (entry.isDirectory()) {
-        // Skip common non-content directories
         if (['assets', 'img', 'static'].includes(entry.name)) {
           continue;
         }
@@ -159,10 +153,7 @@ export async function collectRoutes(
   outDir: string,
   excludePatterns: string[]
 ): Promise<FlattenedRoute[]> {
-  // Discover all HTML files in the build directory
   const allRoutes = await discoverHtmlFiles(outDir);
-
-  // Filter out excluded routes
   const filteredRoutes = filterRoutes(allRoutes, excludePatterns);
 
   // Deduplicate routes by path. When the same route is emitted as both

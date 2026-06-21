@@ -83,7 +83,6 @@ export class McpDocsServer {
   private registerTools(server: McpServer): void {
     const toolOverrides = this.config.tools;
 
-    // Register docs_search tool
     server.registerTool(
       docsSearchTool.name,
       {
@@ -118,7 +117,6 @@ export class McpDocsServer {
       }
     );
 
-    // Register docs_fetch tool
     server.registerTool(
       docsFetchTool.name,
       {
@@ -199,13 +197,11 @@ export class McpDocsServer {
   }
 
   private async _doInitialize(): Promise<void> {
-    // Load the search provider (specifier string or pre-instantiated provider)
     const searchSpecifier = this.config.search ?? 'flexsearch';
     this.searchProvider = await loadSearchProvider(searchSpecifier, {
       flexsearch: this.config.flexsearch,
     });
 
-    // Build provider context
     const providerContext: ProviderContext = {
       baseUrl: this.config.baseUrl ?? '',
       serverName: this.config.name,
@@ -228,7 +224,6 @@ export class McpDocsServer {
       throw new Error('Invalid server config: must provide either file paths or pre-loaded data');
     }
 
-    // Initialize the search provider
     await this.searchProvider.initialize(providerContext, initData);
 
     this.initialized = true;
@@ -260,14 +255,11 @@ export class McpDocsServer {
       enableJsonResponse: true, // Return JSON instead of SSE streams
     });
 
-    // Connect the server to this transport
     await server.connect(transport);
 
     try {
-      // Let the transport handle the request
       await transport.handleRequest(req, res, parsedBody);
     } finally {
-      // Clean up the transport after request
       await transport.close();
     }
   }
@@ -287,20 +279,16 @@ export class McpDocsServer {
 
     const server = this.createMcpServer();
 
-    // Create a stateless transport for Web Standards
     const transport = new WebStandardStreamableHTTPServerTransport({
       sessionIdGenerator: undefined, // Stateless mode
       enableJsonResponse: true,
     });
 
-    // Connect the server to this transport
     await server.connect(transport);
 
     try {
-      // Let the transport handle the request and return the response
       return await transport.handleRequest(request);
     } finally {
-      // Clean up the transport after request
       await transport.close();
     }
   }

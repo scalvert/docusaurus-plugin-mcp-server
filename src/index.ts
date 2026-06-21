@@ -17,6 +17,9 @@ export type {
 
 export { DEFAULT_PLUGIN_OPTIONS } from './types/index.js';
 
+export { resolveServerUrl } from './plugin/resolve-server-url.js';
+export type { ResolveServerUrlInput, ServerUrlBase } from './plugin/resolve-server-url.js';
+
 export type {
   ProviderContext,
   ContentIndexer,
