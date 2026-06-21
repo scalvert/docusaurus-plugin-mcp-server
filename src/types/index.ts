@@ -51,6 +51,17 @@ export interface McpServerPluginOptions {
     name?: string;
     /** Version of the MCP server */
     version?: string;
+    /**
+     * Explicit MCP HTTP endpoint URL for the install button.
+     * When set, `urlBase` and auto-derived paths are ignored.
+     */
+    url?: string;
+    /**
+     * How to derive the MCP URL from site config when `url` is not set.
+     * - `'origin'` (default): `{siteUrl}/{outputDir}` — MCP at the site origin.
+     * - `'site'`: under the Docusaurus `baseUrl`, e.g. `{siteUrl}{baseUrl}{outputDir}`.
+     */
+    urlBase?: 'origin' | 'site';
   };
   /** Routes to exclude from processing (glob patterns) */
   excludeRoutes?: string[];
@@ -98,6 +109,8 @@ export interface ResolvedPluginOptions {
   server: {
     name: string;
     version: string;
+    url?: string;
+    urlBase?: 'origin' | 'site';
   };
   excludeRoutes: string[];
   /** Indexers to run. undefined means ['flexsearch'], false disables indexing */
