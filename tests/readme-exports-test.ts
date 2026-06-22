@@ -5,10 +5,12 @@ import { describe, it, expect } from 'vitest';
 // names a symbol the entry point does not export throws at import time.
 describe('README export snippets resolve against the real public API', () => {
   it('Main Exports snippet imports only real "." exports', async () => {
+    // @ts-expect-error — untyped .js snippet; we only assert it resolves at runtime.
     await expect(import('../snippets/readme/snippet-17.js')).resolves.toBeDefined();
   });
 
   it('Adapter Exports snippet imports only real ./adapters + ./adapters/node exports', async () => {
+    // @ts-expect-error — untyped .js snippet; we only assert it resolves at runtime.
     await expect(import('../snippets/readme/snippet-18.js')).resolves.toBeDefined();
   });
 });
