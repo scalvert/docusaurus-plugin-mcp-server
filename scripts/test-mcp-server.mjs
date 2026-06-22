@@ -6,8 +6,11 @@
  * for integration testing with @gleanwork/mcp-server-tester.
  */
 
-import http from 'http';
-import { McpDocsServer, loadIndexer } from '../dist/index.js';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
+import { loadIndexer } from '../dist/index.js';
+import { createNodeServer } from '../dist/adapters-node.js';
 
 const PORT = process.env.PORT || 3457;
 
@@ -104,61 +107,24 @@ async function main() {
   await indexer.indexDocuments(sampleDocsArray);
   const artifacts = await indexer.finalize();
 
-  const mcpServer = new McpDocsServer({
+  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'mcp-test-server-'));
+  await fs.writeFile(path.join(dir, 'docs.json'), JSON.stringify(artifacts.get('docs.json')));
+  await fs.writeFile(
+    path.join(dir, 'search-index.json'),
+    JSON.stringify(artifacts.get('search-index.json'))
+  );
+
+  // Use the SHIPPED node adapter so integration tests exercise the real
+  // routing/CORS/body handling consumers get, not a reimplementation.
+  const server = createNodeServer({
     name: 'test-docs',
     version: '1.0.0',
-    docs: artifacts.get('docs.json'),
-    searchIndexData: artifacts.get('search-index.json'),
     baseUrl: BASE_URL,
+    docsPath: path.join(dir, 'docs.json'),
+    indexPath: path.join(dir, 'search-index.json'),
   });
 
-  await mcpServer.initialize();
-
-  const httpServer = http.createServer(async (req, res) => {
-    // CORS headers
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept');
-
-    if (req.method === 'OPTIONS') {
-      res.writeHead(204);
-      res.end();
-      return;
-    }
-
-    if (req.method === 'GET') {
-      const status = await mcpServer.getStatus();
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(status));
-      return;
-    }
-
-    if (req.method === 'POST') {
-      try {
-        let body = '';
-        for await (const chunk of req) {
-          body += chunk;
-        }
-        const parsedBody = JSON.parse(body);
-        await mcpServer.handleHttpRequest(req, res, parsedBody);
-      } catch (error) {
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(
-          JSON.stringify({
-            jsonrpc: '2.0',
-            id: null,
-            error: { code: -32603, message: error.message },
-          })
-        );
-      }
-      return;
-    }
-
-    res.writeHead(405);
-    res.end();
-  });
-
-  httpServer.listen(PORT, () => {
+  server.listen(PORT, () => {
     console.log(`Test MCP server running on http://localhost:${PORT}`);
   });
 }

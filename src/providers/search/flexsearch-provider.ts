@@ -1,4 +1,3 @@
-import fs from 'fs-extra';
 import type { FlexSearchConfig, ProcessedDoc, SearchResult } from '../../types/index.js';
 import type {
   SearchProvider,
@@ -46,19 +45,23 @@ export class FlexSearchProvider implements SearchProvider {
       return;
     }
 
-    // File-based mode (Node.js)
+    // File-based mode (Node.js). `fs` is imported dynamically so this module
+    // pulls in no Node built-ins on the web-standard/edge (data-mode) path.
     if (initData.docsPath && initData.indexPath) {
-      if (await fs.pathExists(initData.docsPath)) {
-        this.docs = await fs.readJson(initData.docsPath);
-      } else {
-        throw new Error(`[FlexSearch] Docs file not found: ${initData.docsPath}`);
+      const { readFile } = await import('node:fs/promises');
+      const readJson = async (path: string) => JSON.parse(await readFile(path, 'utf8'));
+
+      try {
+        this.docs = await readJson(initData.docsPath);
+      } catch {
+        throw new Error(`[FlexSearch] Docs file not found or unreadable: ${initData.docsPath}`);
       }
 
-      if (await fs.pathExists(initData.indexPath)) {
-        const indexData = await fs.readJson(initData.indexPath);
+      try {
+        const indexData = await readJson(initData.indexPath);
         this.searchIndex = await importSearchIndex(indexData, this.config);
-      } else {
-        throw new Error(`[FlexSearch] Search index not found: ${initData.indexPath}`);
+      } catch {
+        throw new Error(`[FlexSearch] Search index not found or unreadable: ${initData.indexPath}`);
       }
 
       this.ready = true;
@@ -109,19 +112,5 @@ export class FlexSearchProvider implements SearchProvider {
 
   getDocCount(): number {
     return this.docs ? Object.keys(this.docs).length : 0;
-  }
-
-  /**
-   * Get all loaded documents (for compatibility with existing server code)
-   */
-  getDocs(): Record<string, ProcessedDoc> | null {
-    return this.docs;
-  }
-
-  /**
-   * Get the FlexSearch index (for compatibility with existing server code)
-   */
-  getSearchIndex(): FlexSearchDocument | null {
-    return this.searchIndex;
   }
 }

@@ -4,6 +4,7 @@ export default defineConfig({
   entry: {
     index: 'src/index.ts',
     'adapters-entry': 'src/adapters-entry.ts',
+    'adapters-node': 'src/adapters-node.ts',
     'theme/index': 'src/theme/index.ts',
     'cli/verify': 'src/cli/verify.ts',
   },

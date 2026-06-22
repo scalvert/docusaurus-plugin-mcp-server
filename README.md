@@ -54,7 +54,9 @@ export default {
 
 The `export default { fetch }` form works on Cloudflare Workers, Deno, and Bun. Other runtimes use their own entry convention (e.g. modern Netlify functions `export default async (request) => Response`) — the handler is identical, only the export wrapper differs.
 
-For local development, run the server over Node's `http` with `createNodeServer` (see [Adapter Exports](#adapter-exports)).
+The handler is unauthenticated and allows all origins (`Access-Control-Allow-Origin: *`) by default, since a docs MCP endpoint is meant to be public — pass `corsOrigin` to restrict it.
+
+For local development, run the server over Node's `http` with `createNodeServer` from `docusaurus-plugin-mcp-server/adapters/node` (see [Adapter Exports](#adapter-exports)).
 
 ### 3. Build and Deploy
 
@@ -66,11 +68,13 @@ npm run build
 ### 4. Connect Your AI Tool
 
 **Claude Code:**
+
 ```bash
 claude mcp add --transport http my-docs https://docs.example.com/mcp
 ```
 
 **Cursor / VS Code:**
+
 ```json snippet=readme/snippet-07.json
 {
   "mcpServers": {
@@ -134,6 +138,7 @@ Search across documentation with relevance ranking. Returns matching documents w
 | `limit` | `number` | `16` | Max results (1-20) |
 
 **Response includes:**
+
 - Full URL for each result (use with `docs_fetch`)
 - Title and relevance score
 - Snippet of matching content
@@ -157,6 +162,7 @@ Retrieve full page content as markdown. Use this after searching to get the comp
 | `url` | `string` | Full URL of the page (from search results) |
 
 **Response includes:**
+
 - Page title and description
 - Table of contents with anchor links
 - Full markdown content
@@ -176,15 +182,18 @@ Retrieve full page content as markdown. Use this after searching to get the comp
 | `excludeRoutes` | `string[]` | `['/404*', '/search*']` | Routes to exclude (glob patterns) |
 | `indexers` | `string[] \| false` | `['flexsearch']` | Indexers to run during build. Use `false` to disable. Supports built-in (`'flexsearch'`), relative paths, or npm packages. |
 | `search` | `string` | `'flexsearch'` | Search provider module for runtime queries. Supports built-in (`'flexsearch'`), relative paths, or npm packages. |
+| `flexsearch` | `FlexSearchConfig` | (tuned defaults) | Tuning for the built-in FlexSearch index (`tokenize`, `resolution`, `context`, `fieldWeights`). Must be the same at build and runtime, or the index deserializes wrong. |
 
 ### Default Selectors
 
 **Content selectors** (in priority order):
+
 ```javascript snippet=readme/snippet-11.js
 ['article', 'main', '.main-wrapper', '[role="main"]'];
 ```
 
 **Exclude selectors**:
+
 ```javascript snippet=readme/snippet-12.js
 [
   'nav',
@@ -329,6 +338,7 @@ npx docusaurus-mcp-verify
 ```
 
 This checks that:
+
 - All required files exist (`docs.json`, `search-index.json`, `manifest.json`)
 - Document structure is valid
 - The MCP server can initialize and load the content
@@ -341,7 +351,7 @@ npx docusaurus-mcp-verify ./custom-build
 
 Example output:
 
-```
+```sh
 🔍 MCP Build Verification
 ==================================================
 Build directory: /path/to/your/project/build
@@ -366,6 +376,7 @@ npx @modelcontextprotocol/inspector
 ```
 
 This opens a visual interface where you can:
+
 - Connect to your server URL
 - Browse available tools
 - Execute tool calls interactively
@@ -418,7 +429,7 @@ Run a local MCP server for testing using the built-in Node adapter:
 
 ```javascript snippet=readme/snippet-16.js
 // mcp-server.mjs
-import { createNodeServer } from 'docusaurus-plugin-mcp-server/adapters';
+import { createNodeServer } from 'docusaurus-plugin-mcp-server/adapters/node';
 
 createNodeServer({
   docsPath: './build/mcp/docs.json',
@@ -433,6 +444,7 @@ createNodeServer({
 The Node adapter handles CORS, preflight requests, and health checks (GET) automatically.
 
 Connect Claude Code:
+
 ```bash
 claude mcp add --transport http my-docs http://localhost:3456
 ```
@@ -443,41 +455,33 @@ claude mcp add --transport http my-docs http://localhost:3456
 
 ```javascript snippet=readme/snippet-17.js
 import {
-  // Docusaurus plugin (default export)
+  // Docusaurus plugin (also the default export)
   mcpServerPlugin,
 
-  // MCP Server class
+  // MCP server class (advanced / custom runtimes)
   McpDocsServer,
 
   // Tool definitions
   docsSearchTool,
   docsFetchTool,
 
-  // Utilities
-  htmlToMarkdown,
-  extractContent,
-  extractHeadingsFromMarkdown,
-  buildSearchIndex,
-
-  // Provider types (for custom implementations)
+  // Provider loaders (built-in 'flexsearch' or custom indexers/providers)
   loadIndexer,
   loadSearchProvider,
-  FlexSearchIndexer,
-  FlexSearchProvider,
 
-  // Default options
-  DEFAULT_OPTIONS,
+  // Resolve the MCP endpoint URL the install button uses
+  resolveServerUrl,
+
+  // Default plugin options
+  DEFAULT_PLUGIN_OPTIONS,
 } from 'docusaurus-plugin-mcp-server';
 ```
 
 ### Adapter Exports
 
 ```javascript snippet=readme/snippet-18.js
-import {
-  createWebRequestHandler,
-  createNodeServer,
-  createNodeHandler,
-} from 'docusaurus-plugin-mcp-server/adapters';
+import { createWebRequestHandler } from 'docusaurus-plugin-mcp-server/adapters';
+import { createNodeServer, createNodeHandler } from 'docusaurus-plugin-mcp-server/adapters/node';
 ```
 
 - `createNodeServer(options)` — Creates a complete Node.js HTTP server for local development. Returns an `http.Server` ready to `.listen()`.

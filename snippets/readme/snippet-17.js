@@ -1,26 +1,21 @@
 import {
-  // Docusaurus plugin (default export)
+  // Docusaurus plugin (also the default export)
   mcpServerPlugin,
 
-  // MCP Server class
+  // MCP server class (advanced / custom runtimes)
   McpDocsServer,
 
   // Tool definitions
   docsSearchTool,
   docsFetchTool,
 
-  // Utilities
-  htmlToMarkdown,
-  extractContent,
-  extractHeadingsFromMarkdown,
-  buildSearchIndex,
-
-  // Provider types (for custom implementations)
+  // Provider loaders (built-in 'flexsearch' or custom indexers/providers)
   loadIndexer,
   loadSearchProvider,
-  FlexSearchIndexer,
-  FlexSearchProvider,
 
-  // Default options
-  DEFAULT_OPTIONS,
+  // Resolve the MCP endpoint URL the install button uses
+  resolveServerUrl,
+
+  // Default plugin options
+  DEFAULT_PLUGIN_OPTIONS,
 } from 'docusaurus-plugin-mcp-server';

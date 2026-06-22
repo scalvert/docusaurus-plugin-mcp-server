@@ -123,6 +123,21 @@ export function createNodeHandler(options: NodeServerOptions) {
         return;
       }
 
+      if (error instanceof Error && error.message === 'Invalid JSON in request body') {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(
+          JSON.stringify({
+            jsonrpc: '2.0',
+            id: null,
+            error: {
+              code: -32700,
+              message: 'Parse error: invalid JSON in request body',
+            },
+          })
+        );
+        return;
+      }
+
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(
         JSON.stringify({
@@ -161,7 +176,8 @@ async function parseRequestBody(req: IncomingMessage): Promise<unknown> {
     req.on('data', (chunk: Buffer | string) => {
       size += typeof chunk === 'string' ? Buffer.byteLength(chunk) : chunk.length;
       if (size > MAX_BODY_SIZE) {
-        req.destroy();
+        // Stop accumulating (bounded memory) and reject so the handler can send
+        // a 413. Don't destroy the socket here, or the client never sees it.
         reject(new Error('Request body too large'));
         return;
       }
