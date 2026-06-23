@@ -6,9 +6,6 @@
  * for integration testing with @gleanwork/mcp-server-tester.
  */
 
-import fs from 'node:fs/promises';
-import os from 'node:os';
-import path from 'node:path';
 import { loadIndexer } from '../dist/index.js';
 import { createNodeServer } from '../dist/adapters-node.js';
 
@@ -107,21 +104,16 @@ async function main() {
   await indexer.indexDocuments(sampleDocsArray);
   const artifacts = await indexer.finalize();
 
-  const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'mcp-test-server-'));
-  await fs.writeFile(path.join(dir, 'docs.json'), JSON.stringify(artifacts.get('docs.json')));
-  await fs.writeFile(
-    path.join(dir, 'search-index.json'),
-    JSON.stringify(artifacts.get('search-index.json'))
-  );
-
   // Use the SHIPPED node adapter so integration tests exercise the real
-  // routing/CORS/body handling consumers get, not a reimplementation.
+  // routing/CORS/body handling consumers get, not a reimplementation. Pass the
+  // built artifacts as pre-loaded data — same as a serverless deploy — so no
+  // temp files are involved.
   const server = createNodeServer({
     name: 'test-docs',
     version: '1.0.0',
     baseUrl: BASE_URL,
-    docsPath: path.join(dir, 'docs.json'),
-    indexPath: path.join(dir, 'search-index.json'),
+    docs: artifacts.get('docs.json'),
+    searchIndexData: artifacts.get('search-index.json'),
   });
 
   server.listen(PORT, () => {

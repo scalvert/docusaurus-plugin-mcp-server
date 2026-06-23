@@ -5,7 +5,7 @@
  *
  * @example
  * ```typescript
- * import { createNodeServer } from 'docusaurus-plugin-mcp-server/adapters';
+ * import { createNodeServer } from 'docusaurus-plugin-mcp-server/adapters/node';
  *
  * const server = createNodeServer({
  *   docsPath: './build/mcp/docs.json',
@@ -21,18 +21,22 @@
 
 import { createServer, type Server, type IncomingMessage, type ServerResponse } from 'node:http';
 import { McpDocsServer } from '../mcp/server.js';
-import type { McpServerFileConfig } from '../types/index.js';
+import type { McpServerConfig } from '../types/index.js';
 
 /**
- * Options for the Node.js MCP server
+ * Options for the Node.js MCP server.
+ *
+ * Accepts the same config as {@link McpDocsServer} — either file paths
+ * (`docsPath`/`indexPath`, the usual local-dev case) or pre-loaded
+ * `docs`/`searchIndexData` — plus a CORS override.
  */
-export interface NodeServerOptions extends McpServerFileConfig {
+export type NodeServerOptions = McpServerConfig & {
   /**
    * CORS origin to allow. Defaults to '*' (all origins).
    * Set to a specific origin or false to disable CORS headers.
    */
   corsOrigin?: string | false;
-}
+};
 
 /**
  * Create a Node.js request handler for the MCP server.
