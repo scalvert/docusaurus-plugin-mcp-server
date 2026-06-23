@@ -1,5 +1,5 @@
 // mcp-server.mjs
-import { createNodeServer } from 'docusaurus-plugin-mcp-server/adapters';
+import { createNodeServer } from 'docusaurus-plugin-mcp-server/adapters/node';
 
 createNodeServer({
   docsPath: './build/mcp/docs.json',

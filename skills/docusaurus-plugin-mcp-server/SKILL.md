@@ -27,7 +27,8 @@ npm install docusaurus-plugin-mcp-server
 ESM-only. Three entry points:
 
 - `docusaurus-plugin-mcp-server` — the plugin (default export) + `McpDocsServer`, provider types, `DEFAULT_PLUGIN_OPTIONS`.
-- `docusaurus-plugin-mcp-server/adapters` — runtime handlers: `createWebRequestHandler` (deploy) and `createNodeServer`/`createNodeHandler` (local dev).
+- `docusaurus-plugin-mcp-server/adapters` — the web-standard deploy handler `createWebRequestHandler`.
+- `docusaurus-plugin-mcp-server/adapters/node` — `createNodeServer`/`createNodeHandler` for local dev (Node `http`).
 - `docusaurus-plugin-mcp-server/theme` — `McpInstallButton`.
 
 Peers: `@docusaurus/core` (and `react`/`react-dom` for the theme button) are optional peer deps; provide them from your Docusaurus app.
@@ -37,7 +38,8 @@ Peers: `@docusaurus/core` (and `react`/`react-dom` for the theme button) are opt
 The authoritative API is the published TypeScript types. Read the `.d.ts` files referenced by `exports` in `package.json` before writing calls — do not guess signatures:
 
 - `.` → `dist/index.d.ts` (plugin options, `McpDocsServer`, provider/`ProcessedDoc` types)
-- `./adapters` → `dist/adapters-entry.d.ts` (`WebRequestAdapterConfig`, `NodeServerOptions`, and the shared `McpServerBaseConfig`/`McpServerFileConfig`/`McpServerDataConfig`)
+- `./adapters` → `dist/adapters-entry.d.ts` (`WebRequestAdapterConfig`, shared `McpServerBaseConfig`/`McpServerDataConfig`)
+- `./adapters/node` → `dist/adapters-node.d.ts` (`createNodeServer`/`createNodeHandler`, `NodeServerOptions`, `McpServerFileConfig`)
 - `./theme` → `dist/theme/index.d.ts` (`McpInstallButton` props)
 
 Config shape in particular (data-vs-file, required fields, `instructions`/`tools` overrides) lives in those types — read them rather than copying field lists.
@@ -63,7 +65,7 @@ Per-platform glue to scaffold:
 - **Modern Netlify functions** — `export default async (request) => handler(request)` (the new web-standard functions API, not the legacy `event`/`context` one).
 - **Vercel** — use the Edge runtime: `export const config = { runtime: 'edge' }` and `export default handler`.
 
-**3. Run locally.** `createNodeServer(...)` returns an `http.Server` you `.listen()`; it reads from disk via `docsPath`/`indexPath`. Use `createNodeHandler(...)` to mount into an existing `http.createServer`.
+**3. Run locally.** From `docusaurus-plugin-mcp-server/adapters/node`, `createNodeServer(...)` returns an `http.Server` you `.listen()`; it reads from disk via `docsPath`/`indexPath`. Use `createNodeHandler(...)` to mount into an existing `http.createServer`.
 
 **4. Install button.** Render `McpInstallButton` (from `./theme`) in a navbar component with your `serverUrl`/`serverName`.
 
@@ -71,10 +73,10 @@ Per-platform glue to scaffold:
 
 - **Filesystem paths on edge/Workers.** `docsPath`/`indexPath` only work where there's a filesystem (local Node). On Workers/edge, import the JSON and pass `docs`/`searchIndexData` to `createWebRequestHandler`.
 - **Cloudflare JSON imports fail without the Data rule.** Missing `[[rules]] type = "Data"` in `wrangler.toml` makes the `docs.json`/`search-index.json` imports break at deploy.
-- **Reaching for removed/renamed handlers.** There is now a *single* generic deploy handler. `createVercelHandler`, `createNetlifyHandler`, and `generateAdapterFiles` were removed. `createCloudflareHandler` still exists as a **deprecated** alias of `createWebRequestHandler` — use the new name.
+- **Reaching for removed handlers.** `createVercelHandler`, `createNetlifyHandler`, `createCloudflareHandler`, and `generateAdapterFiles` were all removed — there is one generic deploy handler, `createWebRequestHandler`. The Node server lives at `docusaurus-plugin-mcp-server/adapters/node`, not `/adapters`.
 - **Wrong `baseUrl`.** It must be the site origin plus the Docusaurus `baseUrl` (e.g. `https://example.com/docs/`); otherwise the URLs in search results point to the wrong place.
 - **Deploying before building.** The handler needs `build/mcp/*` — run `docusaurus build` first.
 
 ## Version notes
 
-Check the installed version with `npm ls docusaurus-plugin-mcp-server`. The adapter surface recently consolidated to one web-standard `createWebRequestHandler`; the legacy `createVercelHandler`/`createNetlifyHandler`/`generateAdapterFiles` are gone and `createCloudflareHandler` is a deprecated alias scheduled for removal — confirm against `dist/adapters-entry.d.ts` for the version you have.
+Check the installed version with `npm ls docusaurus-plugin-mcp-server`. The adapter surface consolidated to one web-standard `createWebRequestHandler`; `createVercelHandler`/`createNetlifyHandler`/`generateAdapterFiles` are gone, and `createCloudflareHandler` was removed in 1.0.0 (it was a deprecated alias through 0.13.0). The Node server/handler moved to the `./adapters/node` subpath. Confirm exports against `dist/adapters-entry.d.ts` and `dist/adapters-node.d.ts` for the version you have.

@@ -5,7 +5,7 @@
  *
  * @example
  * ```typescript
- * import { createNodeServer } from 'docusaurus-plugin-mcp-server/adapters';
+ * import { createNodeServer } from 'docusaurus-plugin-mcp-server/adapters/node';
  *
  * const server = createNodeServer({
  *   docsPath: './build/mcp/docs.json',
@@ -21,18 +21,22 @@
 
 import { createServer, type Server, type IncomingMessage, type ServerResponse } from 'node:http';
 import { McpDocsServer } from '../mcp/server.js';
-import type { McpServerFileConfig } from '../types/index.js';
+import type { McpServerConfig } from '../types/index.js';
 
 /**
- * Options for the Node.js MCP server
+ * Options for the Node.js MCP server.
+ *
+ * Accepts the same config as {@link McpDocsServer} — either file paths
+ * (`docsPath`/`indexPath`, the usual local-dev case) or pre-loaded
+ * `docs`/`searchIndexData` — plus a CORS override.
  */
-export interface NodeServerOptions extends McpServerFileConfig {
+export type NodeServerOptions = McpServerConfig & {
   /**
    * CORS origin to allow. Defaults to '*' (all origins).
    * Set to a specific origin or false to disable CORS headers.
    */
   corsOrigin?: string | false;
-}
+};
 
 /**
  * Create a Node.js request handler for the MCP server.
@@ -123,6 +127,21 @@ export function createNodeHandler(options: NodeServerOptions) {
         return;
       }
 
+      if (error instanceof Error && error.message === 'Invalid JSON in request body') {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        res.end(
+          JSON.stringify({
+            jsonrpc: '2.0',
+            id: null,
+            error: {
+              code: -32700,
+              message: 'Parse error: invalid JSON in request body',
+            },
+          })
+        );
+        return;
+      }
+
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(
         JSON.stringify({
@@ -161,7 +180,8 @@ async function parseRequestBody(req: IncomingMessage): Promise<unknown> {
     req.on('data', (chunk: Buffer | string) => {
       size += typeof chunk === 'string' ? Buffer.byteLength(chunk) : chunk.length;
       if (size > MAX_BODY_SIZE) {
-        req.destroy();
+        // Stop accumulating (bounded memory) and reject so the handler can send
+        // a 413. Don't destroy the socket here, or the client never sees it.
         reject(new Error('Request body too large'));
         return;
       }

@@ -222,4 +222,21 @@ describe('McpDocsServer', () => {
       expect(fetch?.description).toContain('Fetch the complete content');
     });
   });
+
+  describe('initialize() error handling', () => {
+    it('rejects on invalid config (neither file paths nor pre-loaded data)', async () => {
+      const server = new McpDocsServer({ name: 'bad' } as unknown as McpServerDataConfig);
+      await expect(server.initialize()).rejects.toThrow(/Invalid server config/);
+    });
+
+    it('caches the init error — a second initialize() also rejects (fail-fast)', async () => {
+      const server = new McpDocsServer({
+        name: 'missing-files',
+        docsPath: '/no/such/docs.json',
+        indexPath: '/no/such/search-index.json',
+      });
+      await expect(server.initialize()).rejects.toThrow();
+      await expect(server.initialize()).rejects.toThrow();
+    });
+  });
 });

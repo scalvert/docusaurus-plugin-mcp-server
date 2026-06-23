@@ -11,7 +11,7 @@
 
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { createNodeServer } from 'docusaurus-plugin-mcp-server/adapters';
+import { createNodeServer } from 'docusaurus-plugin-mcp-server/adapters/node';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3456;

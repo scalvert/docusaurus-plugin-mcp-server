@@ -36,6 +36,11 @@
       "import": "./dist/adapters-entry.js",
       "default": "./dist/adapters-entry.js"
     },
+    "./adapters/node": {
+      "types": "./dist/adapters-node.d.ts",
+      "import": "./dist/adapters-node.js",
+      "default": "./dist/adapters-node.js"
+    },
     "./theme": {
       "types": "./dist/theme/index.d.ts",
       "import": "./dist/theme/index.js",
@@ -69,7 +74,7 @@
   },
   "dependencies": {
     "@gleanwork/mcp-config-schema": "^5.0.0",
-    "@modelcontextprotocol/sdk": "^1.25.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "flexsearch": "^0.7.43",
     "fs-extra": "^11.0.0",
     "hast-util-select": "^6.0.0",
