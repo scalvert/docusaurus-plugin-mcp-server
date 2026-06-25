@@ -37,7 +37,7 @@ npx vitest run tests/html-to-markdown-test.ts
 
 - `src/plugin/` — Docusaurus plugin (build-time processing)
 - `src/mcp/` — MCP server and tool definitions
-- `src/adapters/` — Platform adapters (Vercel, Netlify, Cloudflare, Node)
+- `src/adapters/` — Runtime handlers (`web-request.ts` for serverless/edge, `node.ts` for local dev)
 - `src/processing/` — HTML parsing and markdown conversion
 - `src/search/` — FlexSearch integration
 - `src/providers/` — Pluggable indexer and search provider system

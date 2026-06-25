@@ -13,6 +13,7 @@ export type {
   McpServerDataConfig,
   DocsSearchParams,
   DocsFetchParams,
+  FlexSearchConfig,
 } from './types/index.js';
 
 export { DEFAULT_PLUGIN_OPTIONS } from './types/index.js';
@@ -29,6 +30,7 @@ export type {
 } from './providers/types.js';
 
 export { loadIndexer, loadSearchProvider } from './providers/loader.js';
+export type { BuiltinIndexerOptions } from './providers/loader.js';
 
 export { docsSearchTool } from './mcp/tools/docs-search.js';
 export { docsFetchTool } from './mcp/tools/docs-fetch.js';

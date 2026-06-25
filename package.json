@@ -62,7 +62,7 @@
     "format": "prettier --write .",
     "lint": "eslint src/ tests/ && prettier --check .",
     "lint:fix": "eslint src/ tests/ --fix && prettier --write .",
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "npm run lint && npm run typecheck && npm run test && npm run build",
     "snippets:check": "markdown-code check",
     "snippets:sync": "markdown-code sync",
     "test": "vitest run",
