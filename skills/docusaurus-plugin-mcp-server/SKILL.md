@@ -35,7 +35,7 @@ Peers: `@docusaurus/core` (and `react`/`react-dom` for the theme button) are opt
 
 ## Authoritative API
 
-The authoritative API is the published TypeScript types. Read the `.d.ts` files referenced by `exports` in `package.json` before writing calls — do not guess signatures:
+The authoritative API is the published TypeScript types. Read the `.d.ts` files referenced by `exports` in `package.json` before writing calls — do not guess signatures. `dist/` is a build artifact (git-ignored), so in a fresh clone run `npm run build` first, or read the corresponding `src/*.ts`:
 
 - `.` → `dist/index.d.ts` (plugin options, `McpDocsServer`, provider/`ProcessedDoc` types)
 - `./adapters` → `dist/adapters-entry.d.ts` (`WebRequestAdapterConfig`, shared `McpServerBaseConfig`/`McpServerDataConfig`)

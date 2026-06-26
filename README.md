@@ -107,8 +107,8 @@ The button shows a dropdown with copy-to-clipboard configurations for all suppor
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `serverUrl` | `string` | required | Your MCP server endpoint URL |
-| `serverName` | `string` | required | Name for the MCP server |
+| `serverUrl` | `string` | (plugin config) | MCP server endpoint URL. Falls back to the plugin's global data when omitted |
+| `serverName` | `string` | (plugin config) | MCP server name. Falls back to the plugin's global data when omitted |
 | `label` | `string` | (none) | Button label. If omitted, shows only the MCP icon |
 | `headerText` | `string` | `"Choose your AI tool:"` | Text shown at the top of the dropdown |
 | `className` | `string` | `""` | Optional CSS class |
@@ -418,8 +418,8 @@ The plugin operates in two phases:
 
 - **Full-text Search** - FlexSearch-powered search with relevance ranking
 - **Page Retrieval** - Get complete page content as clean markdown
-- **Platform Adapters** - Pre-built adapters for Vercel, Netlify, and Cloudflare Workers
-- **CORS Support** - All adapters include CORS headers for browser-based clients
+- **Runs Anywhere** - One web-standard handler (`createWebRequestHandler`) for any serverless/edge runtime — Cloudflare Workers, modern Netlify functions, Vercel Edge, Deno, Bun — plus a Node server (`createNodeServer`) for local development
+- **CORS Support** - The web and Node handlers send CORS headers for browser-based clients; restrict with `corsOrigin`
 - **Build-time Processing** - Extracts content from rendered HTML, capturing React component output
 - **Zero Runtime Docusaurus Dependency** - The MCP server runs independently
 
