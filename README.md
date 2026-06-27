@@ -184,6 +184,8 @@ Retrieve full page content as markdown. Use this after searching to get the comp
 | `search` | `string` | `'flexsearch'` | Search provider module for runtime queries. Supports built-in (`'flexsearch'`), relative paths, or npm packages. |
 | `flexsearch` | `FlexSearchConfig` | (tuned defaults) | Tuning for the built-in FlexSearch index (`tokenize`, `resolution`, `context`, `fieldWeights`). Must be the same at build and runtime, or the index deserializes wrong. |
 
+Build-time options control artifact generation and the install-button URL (`server.url` / `server.urlBase`). Runtime-only options such as `instructions`, `tools`, and `baseUrl` belong on the adapter/handler config — see [Server Configuration](#server-configuration).
+
 ### Default Selectors
 
 **Content selectors** (in priority order):
@@ -295,7 +297,7 @@ module.exports = {
 
 ## Server Configuration
 
-For the runtime adapters:
+These options apply to `createWebRequestHandler`, `createNodeServer`, and `createNodeHandler` — where the MCP server actually runs. They are **not** `McpServerPluginOptions`; the Docusaurus plugin only builds `docs.json` and the search index at build time.
 
 | Option | Type | Required | Description |
 |--------|------|----------|-------------|
@@ -476,6 +478,34 @@ import {
   DEFAULT_PLUGIN_OPTIONS,
 } from 'docusaurus-plugin-mcp-server';
 ```
+
+### `resolveServerUrl`
+
+Derives the public MCP HTTP endpoint URL — the same logic the plugin uses for the install button and `globalData`. Use this when building custom theme UI that must stay in sync with plugin URL resolution.
+
+Types `ResolveServerUrlInput` and `ServerUrlBase` are also exported from `.`.
+
+```typescript
+import { resolveServerUrl, type ResolveServerUrlInput } from 'docusaurus-plugin-mcp-server';
+
+const serverUrl = resolveServerUrl({
+  siteUrl: 'https://docs.example.com',
+  baseUrl: '/docs/',
+  outputDir: 'mcp',
+  server: { urlBase: 'site' },
+});
+// → 'https://docs.example.com/docs/mcp'
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `siteUrl` | `string` | Docusaurus `siteConfig.url` |
+| `baseUrl` | `string` | Docusaurus `siteConfig.baseUrl` |
+| `outputDir` | `string` | Plugin `outputDir` (default `'mcp'`) |
+| `server.url` | `string` | Explicit endpoint; when set, `urlBase` is ignored |
+| `server.urlBase` | `ServerUrlBase` | `'origin'` (default) → `{siteUrl}/{outputDir}`; `'site'` → under `baseUrl` |
+
+`ServerUrlBase` is `'origin' | 'site'`. Mirrors the `server.url` / `server.urlBase` plugin options.
 
 ### Adapter Exports
 
