@@ -8,6 +8,38 @@
 
 
 
+
+## v1.0.0 (2026-06-27)
+
+#### :boom: Breaking Change
+
+* [#92](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/92) fix(1.0.0)!: split adapters web/node, add adapter tests, fix docs ([@scalvert](https://github.com/scalvert))
+* [#79](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/79) refactor(adapters)!: remove deprecated createCloudflareHandler alias ([@scalvert](https://github.com/scalvert))
+
+#### :rocket: Enhancement
+
+* [#90](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/90) feat: add configurable MCP server URL (server.url / server.urlBase) ([@scalvert](https://github.com/scalvert))
+
+#### :bug: Bug Fix
+
+* [#93](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/93) fix(1.0.0): export missing config types, correct stale docs, add API smoke tests ([@scalvert](https://github.com/scalvert))
+* [#80](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/80) fix(agents): move skill into named directory for configure-agents check ([@scalvert](https://github.com/scalvert))
+
+#### :memo: Documentation
+
+* [#94](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/94) [docs] Document resolveServerUrl and build vs runtime config for 1.0.0 ([@scalvert](https://github.com/scalvert))
+* [#82](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/82) docs: add 0.13.0 to 1.0.0 migration guide ([@scalvert](https://github.com/scalvert))
+
+#### :house: Internal
+
+* [#89](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/89) refactor(types): WebRequestAdapterConfig extends McpServerDataConfig ([@scalvert](https://github.com/scalvert))
+* [#81](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/81) test(theme): add vitest + jsdom coverage for ./theme ([@scalvert](https://github.com/scalvert))
+
+#### Committers: 1
+* Steve Calvert ([@scalvert](https://github.com/scalvert))
+
+
+
 ## v0.13.0 (2026-06-19)
 
 #### :boom: Breaking Change
