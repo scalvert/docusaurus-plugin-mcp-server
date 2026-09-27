@@ -38,6 +38,26 @@
       }
     },
     {
+      "id": "search-response-shape",
+      "description": "Tools answer with exactly one text content block (no structuredContent)",
+      "toolName": "docs_search",
+      "args": { "query": "authentication" },
+      "tags": ["search", "schema"],
+      "expect": {
+        "schema": "single-text-block"
+      }
+    },
+    {
+      "id": "fetch-response-shape",
+      "description": "docs_fetch also answers with one text content block",
+      "toolName": "docs_fetch",
+      "args": { "url": "https://docs.example.com/docs/intro" },
+      "tags": ["fetch", "schema"],
+      "expect": {
+        "schema": "single-text-block"
+      }
+    },
+    {
       "id": "search-respects-limit",
       "description": "limit: 1 returns exactly one result",
       "toolName": "docs_search",

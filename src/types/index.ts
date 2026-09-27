@@ -149,7 +149,8 @@ export interface SkillFile {
 export interface SkillArtifact {
   /**
    * Skill path: the part of the `skill://` URI before the file path. Its last
-   * segment equals `frontmatter.name` (e.g. `my-docs/docs-research`).
+   * segment must equal `frontmatter.name`. The packager uses the bare name
+   * (e.g. `docs-research` → `skill://docs-research/SKILL.md`).
    */
   skillPath: string;
   /** SKILL.md YAML frontmatter rendered as JSON (always has `name` and `description`) */

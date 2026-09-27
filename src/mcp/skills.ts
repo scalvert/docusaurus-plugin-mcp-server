@@ -11,10 +11,15 @@
  */
 
 import { z } from 'zod';
-import { ProtocolError, ProtocolErrorCode, type McpServer } from '@modelcontextprotocol/server';
-import type { SkillArtifact, SkillsArtifact } from '../types/index.js';
+import {
+  ProtocolError,
+  ProtocolErrorCode,
+  type CacheHint,
+  type McpServer,
+} from '@modelcontextprotocol/server';
+import type { SkillArtifact, SkillFile, SkillsArtifact } from '../types/index.js';
 
-export const SKILLS_EXTENSION_ID = 'io.modelcontextprotocol/skills';
+const SKILLS_EXTENSION_ID = 'io.modelcontextprotocol/skills';
 
 /** A skill entry as returned by skills/list and skills/get */
 export interface SkillEntry {
@@ -23,15 +28,15 @@ export interface SkillEntry {
   resources: Array<{ uri: string; digest: string; size: number }>;
 }
 
-export function skillFileUri(skill: SkillArtifact, filePath: string): string {
+function skillFileUri(skill: SkillArtifact, filePath: string): string {
   return `skill://${skill.skillPath}/${filePath}`;
 }
 
-export function skillUri(skill: SkillArtifact): string {
+function skillUri(skill: SkillArtifact): string {
   return skillFileUri(skill, 'SKILL.md');
 }
 
-export function toSkillEntry(skill: SkillArtifact): SkillEntry {
+function toSkillEntry(skill: SkillArtifact): SkillEntry {
   return {
     uri: skillUri(skill),
     frontmatter: skill.frontmatter,
@@ -60,7 +65,21 @@ const GetParams = z.looseObject({ uri: z.string() });
 
 export interface RegisterSkillsOptions {
   /** ttlMs/cacheScope stamped on skills/list and on skill resources */
-  cacheHint: { ttlMs: number; cacheScope: 'public' | 'private' };
+  cacheHint: Required<CacheHint>;
+}
+
+/** resources/read content for one skill file. Fails loudly on a malformed skills.json. */
+function readContent(uri: string, file: SkillFile) {
+  if (file.text !== undefined) {
+    return { uri, mimeType: file.mimeType, text: file.text };
+  }
+  if (file.blob !== undefined) {
+    return { uri, mimeType: file.mimeType, blob: file.blob };
+  }
+  throw new ProtocolError(
+    ProtocolErrorCode.InternalError,
+    `Skill file ${uri} has no content in skills.json`
+  );
 }
 
 /**
@@ -83,8 +102,9 @@ export function registerSkills(
       const uri = skillFileUri(skill, file.path);
       const isSkillMd = file.path === 'SKILL.md';
 
+      // SEP-2640: a SKILL.md resource's name SHOULD be the frontmatter name.
       server.registerResource(
-        `${skill.frontmatter.name}/${file.path}`,
+        isSkillMd ? skill.frontmatter.name : `${skill.frontmatter.name}/${file.path}`,
         uri,
         {
           mimeType: file.mimeType,
@@ -92,13 +112,7 @@ export function registerSkills(
           ...(isSkillMd ? { description: skill.frontmatter.description } : {}),
           cacheHint,
         },
-        async () => ({
-          contents: [
-            file.text !== undefined
-              ? { uri, mimeType: file.mimeType, text: file.text }
-              : { uri, mimeType: file.mimeType, blob: file.blob ?? '' },
-          ],
-        })
+        async () => ({ contents: [readContent(uri, file)] })
       );
     }
   }

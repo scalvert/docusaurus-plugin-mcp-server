@@ -36,7 +36,11 @@ export type {
 export { loadIndexer, loadSearchProvider } from './providers/loader.js';
 export type { BuiltinIndexerOptions } from './providers/loader.js';
 
-export { buildSkillsArtifact, type BuildSkillsOptions } from './skills/packager.js';
+export {
+  buildSkillsArtifact,
+  SkillValidationError,
+  type BuildSkillsOptions,
+} from './skills/packager.js';
 
 export { docsSearchTool, docsSearchInputSchema } from './mcp/tools/docs-search.js';
 export { docsFetchTool, docsFetchInputSchema } from './mcp/tools/docs-fetch.js';

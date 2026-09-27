@@ -176,6 +176,10 @@ describe.each(['modern', 'legacy'] as const)('%s client', (mode) => {
     );
     expect(got.skill).toEqual(entry);
 
+    // SEP-2640: the SKILL.md resource's name is the frontmatter name.
+    const { resources } = await client.listResources();
+    expect(resources.find((r) => r.uri === entry.uri)?.name).toBe('docs-research');
+
     const read = await client.readResource({ uri: entry.uri });
     const content = read.contents[0] as { text: string };
     const bytes = new TextEncoder().encode(content.text);
@@ -218,6 +222,19 @@ describe('modern wire format', () => {
     // Modern requests carry the routing headers the CORS config now allows.
     const toolsCall = wire.requests.find((r) => r.method === 'tools/list');
     expect(toolsCall?.headers.get('mcp-method')).toBe('tools/list');
+  });
+});
+
+describe('malformed skills.json', () => {
+  it('errors on resources/read for a file with neither text nor blob', async () => {
+    const skills = await buildSkillsArtifact({ builtin: true, siteTitle: 'Example' });
+    const file = skills.skills[0]!.files[0]!;
+    delete file.text;
+    const { client } = await connect(await buildServer(skills), 'modern');
+
+    await expect(client.readResource({ uri: 'skill://docs-research/SKILL.md' })).rejects.toThrow(
+      /no content in skills\.json/
+    );
   });
 });
 

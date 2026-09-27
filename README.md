@@ -205,7 +205,7 @@ mcp-skills/
         └── v1-to-v2.md
 ```
 
-At build time the plugin validates every skill (frontmatter `name` must match the directory name; at most 512 files and 16 MiB per skill), precomputes SHA-256 digests, and writes `build/mcp/skills.json`. Pass it to the handler as `skills` (web) or `skillsPath` (Node). An author skill named `docs-research` replaces the built-in one. Set `skills: { builtin: false, dir: '...' }` to ship only your own, or `skills: false` to turn skills off.
+At build time the plugin validates every skill (frontmatter `name` must match the directory name; at most 512 files and 16 MiB per skill), precomputes SHA-256 digests, and writes `build/mcp/skills.json`. Invalid skills fail the build with a `SkillValidationError`. Symlinks inside a skill are skipped, and bundled scripts (`.sh`, `.py`, `.js`, ...) are packaged with a warning. Pass it to the handler as `skills` (web) or `skillsPath` (Node). An author skill named `docs-research` replaces the built-in one. Set `skills: { builtin: false, dir: '...' }` to ship only your own, or `skills: false` to turn skills off.
 
 At runtime the server:
 
@@ -599,7 +599,7 @@ import {
 
 2.0 moves to the MCP TypeScript SDK v2 (`@modelcontextprotocol/server`) and the 2026-07-28 protocol revision.
 
-**Clients:** nothing to do. Clients on 2026-07-28 are served statelessly. Clients on 2025-era revisions (`initialize` handshake) still get plain JSON responses from the same endpoint.
+**Clients:** nothing to do. Clients on 2026-07-28 are served statelessly. Clients on 2025-era revisions (`initialize` handshake) still get plain JSON responses from the same endpoint. When skills are served, all clients also see a `resources` capability, the `skill://` resources, and a short list of skill URIs appended to `instructions`.
 
 **What changed for you:**
 

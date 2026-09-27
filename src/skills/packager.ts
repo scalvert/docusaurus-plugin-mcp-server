@@ -111,13 +111,39 @@ function mimeTypeFor(filePath: string): string {
   return MIME_TYPES[path.extname(filePath).toLowerCase()] ?? 'application/octet-stream';
 }
 
+/** A file read from a skill directory, before packaging */
+export interface RawSkillFile {
+  /** Path relative to the skill root, `/`-separated */
+  path: string;
+  bytes: Buffer;
+}
+
+/** Extensions of executable scripts. Packaged, but warned about (see warnOnScripts). */
+const SCRIPT_EXTENSIONS = new Set([
+  '.sh',
+  '.bash',
+  '.py',
+  '.js',
+  '.mjs',
+  '.cjs',
+  '.ts',
+  '.rb',
+  '.ps1',
+]);
+
+function isBinaryMime(mimeType: string): boolean {
+  return (
+    (mimeType.startsWith('image/') && mimeType !== 'image/svg+xml') ||
+    mimeType === 'application/pdf'
+  );
+}
+
 function toSkillFile(filePath: string, bytes: Buffer): SkillFile {
   const mimeType = mimeTypeFor(filePath);
   const digest = `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
   const base = { path: filePath, mimeType, digest, size: bytes.length };
 
-  const looksBinary = mimeType.startsWith('image/') && mimeType !== 'image/svg+xml';
-  if (!looksBinary && mimeType !== 'application/pdf' && !bytes.includes(0)) {
+  if (!isBinaryMime(mimeType) && !bytes.includes(0)) {
     try {
       // Only store as text when it round-trips byte-for-byte, so the digest
       // and size hold for what resources/read serves.
@@ -138,7 +164,7 @@ function toSkillFile(filePath: string, bytes: Buffer): SkillFile {
  */
 export function packageSkill(
   dirName: string,
-  files: Array<{ path: string; bytes: Buffer }>,
+  files: RawSkillFile[],
   source: string
 ): SkillArtifact {
   const skillMd = files.find((f) => f.path === 'SKILL.md');
@@ -168,36 +194,51 @@ export function packageSkill(
     );
   }
 
-  const ordered = [skillMd, ...files.filter((f) => f !== skillMd).sort(comparePaths)];
+  const rest = files.filter((f) => f !== skillMd).sort((a, b) => compareNames(a.path, b.path));
+  warnOnScripts(frontmatter.name, rest);
 
   return {
     skillPath: frontmatter.name,
     frontmatter,
-    files: ordered.map((f) => toSkillFile(f.path, f.bytes)),
+    files: [skillMd, ...rest].map((f) => toSkillFile(f.path, f.bytes)),
   };
 }
 
-function comparePaths(a: { path: string }, b: { path: string }): number {
-  return a.path < b.path ? -1 : a.path > b.path ? 1 : 0;
+/**
+ * Hosts treat MCP-served skills as untrusted and won't run bundled scripts
+ * without explicit per-skill approval (SEP-2640), so scripts rarely help.
+ */
+function warnOnScripts(skillName: string, files: RawSkillFile[]): void {
+  const scripts = files
+    .map((f) => f.path)
+    .filter((p) => SCRIPT_EXTENSIONS.has(path.extname(p).toLowerCase()));
+  if (scripts.length > 0) {
+    console.warn(
+      `[MCP] Skill "${skillName}" includes scripts (${scripts.join(', ')}). ` +
+        'MCP hosts will not run them without explicit user approval; prefer markdown instructions.'
+    );
+  }
 }
 
-async function readSkillFiles(
-  root: string,
-  relDir = ''
-): Promise<Array<{ path: string; bytes: Buffer }>> {
+function compareNames(a: string, b: string): number {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+async function readSkillFiles(root: string, relDir = ''): Promise<RawSkillFile[]> {
   const entries = await fs.readdir(path.join(root, relDir), { withFileTypes: true });
-  const files: Array<{ path: string; bytes: Buffer }> = [];
+  const files: RawSkillFile[] = [];
 
   for (const entry of entries) {
     // Skip dotfiles (.DS_Store, .git, editor state).
     if (entry.name.startsWith('.')) continue;
 
     const rel = relDir ? `${relDir}/${entry.name}` : entry.name;
-    const stat = await fs.stat(path.join(root, rel));
-
-    if (stat.isDirectory()) {
+    // withFileTypes reports symlinks as symlinks (no follow), so cycles can't recurse.
+    if (entry.isSymbolicLink()) {
+      console.warn(`[MCP] Skipping symlink in skill: ${path.join(root, rel)}`);
+    } else if (entry.isDirectory()) {
       files.push(...(await readSkillFiles(root, rel)));
-    } else if (stat.isFile()) {
+    } else if (entry.isFile()) {
       files.push({ path: rel, bytes: await fs.readFile(path.join(root, rel)) });
     }
   }
@@ -216,9 +257,11 @@ export async function loadSkillsDir(dir: string): Promise<SkillArtifact[]> {
   const entries = await fs.readdir(dir, { withFileTypes: true });
   const skills: SkillArtifact[] = [];
 
-  for (const entry of entries.sort((a, b) => (a.name < b.name ? -1 : 1))) {
+  for (const entry of entries.sort((a, b) => compareNames(a.name, b.name))) {
     if (entry.name.startsWith('.')) continue;
     const skillDir = path.join(dir, entry.name);
+    // Follow a symlinked skill directory at the top level (common for shared
+    // skills); symlinks inside a skill are skipped by readSkillFiles.
     if (!(await fs.stat(skillDir)).isDirectory()) continue;
 
     const files = await readSkillFiles(skillDir);

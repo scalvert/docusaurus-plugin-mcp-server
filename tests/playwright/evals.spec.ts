@@ -8,12 +8,26 @@
 
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { z } from 'zod';
 import { test, expect, loadEvalDataset, runEvalDataset } from '@gleanwork/mcp-server-tester';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 
+/**
+ * Schemas referenced by `expect.schema` in the datasets. The docs tools return
+ * markdown text (no structuredContent), so schemas check the CallToolResult
+ * envelope: exactly one non-empty text block, not an error.
+ */
+const schemas = {
+  'single-text-block': z.object({
+    content: z.tuple([z.object({ type: z.literal('text'), text: z.string().min(1) })]),
+    isError: z.literal(false).optional(),
+    structuredContent: z.never().optional(),
+  }),
+};
+
 test('docs tools eval dataset', async ({ mcp }, testInfo) => {
-  const dataset = await loadEvalDataset(path.join(here, 'evals', 'docs-tools.json'));
+  const dataset = await loadEvalDataset(path.join(here, 'evals', 'docs-tools.json'), { schemas });
   const result = await runEvalDataset({ dataset }, { mcp, testInfo, expect });
 
   const failures = result.caseResults

@@ -24,13 +24,14 @@ import type {
 import { docsSearchTool, formatSearchResults } from './tools/docs-search.js';
 import { docsFetchTool, formatPageContent } from './tools/docs-fetch.js';
 import { registerSkills, skillsCapabilities, skillsInstructions } from './skills.js';
+import { toWebRequest, writeWebResponse } from '../adapters/node-bridge.js';
 
 /**
  * Cache hint for everything this server lists or reads. Content only changes
  * on redeploy, so clients (and shared caches) may reuse results briefly
  * (protocol revision 2026-07-28, SEP-2549). Legacy responses are unaffected.
  */
-const CACHE_HINT = { ttlMs: 5 * 60 * 1000, cacheScope: 'public' } satisfies CacheHint;
+const CACHE_HINT: Required<CacheHint> = { ttlMs: 5 * 60 * 1000, cacheScope: 'public' };
 
 /**
  * Type guard to check if config uses file-based loading
@@ -371,80 +372,5 @@ export class McpDocsServer {
       baseUrl: this.config.baseUrl,
       searchProvider: this.searchProvider?.name,
     };
-  }
-}
-
-/**
- * Build a web-standard Request from a Node request. When the body was
- * already parsed it's re-serialized; otherwise the raw stream is forwarded.
- */
-function toWebRequest(req: IncomingMessage, parsedBody: unknown): Request {
-  const host = req.headers.host ?? 'localhost';
-  const url = new URL(req.url ?? '/', `http://${host}`);
-
-  const headers = new Headers();
-  for (const [key, value] of Object.entries(req.headers)) {
-    if (value === undefined) continue;
-    if (Array.isArray(value)) {
-      for (const v of value) headers.append(key, v);
-    } else {
-      headers.set(key, value);
-    }
-  }
-
-  const method = req.method ?? 'GET';
-  const hasBody = method !== 'GET' && method !== 'HEAD';
-
-  if (!hasBody) {
-    return new Request(url, { method, headers });
-  }
-
-  if (parsedBody !== undefined) {
-    headers.delete('content-length');
-    return new Request(url, { method, headers, body: JSON.stringify(parsedBody) });
-  }
-
-  const body = new ReadableStream<Uint8Array>({
-    async start(controller) {
-      for await (const chunk of req) {
-        controller.enqueue(typeof chunk === 'string' ? new TextEncoder().encode(chunk) : chunk);
-      }
-      controller.close();
-    },
-  });
-
-  return new Request(url, {
-    method,
-    headers,
-    body,
-    // Required by Node's fetch implementation for streaming request bodies.
-    duplex: 'half',
-  } as RequestInit);
-}
-
-/**
- * Write a web-standard Response to a Node ServerResponse, preserving any
- * headers already set on `res` (e.g. CORS).
- */
-async function writeWebResponse(response: Response, res: ServerResponse): Promise<void> {
-  response.headers.forEach((value, key) => {
-    res.setHeader(key, value);
-  });
-  res.writeHead(response.status, response.statusText);
-
-  if (!response.body) {
-    res.end();
-    return;
-  }
-
-  const reader = response.body.getReader();
-  try {
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      res.write(value);
-    }
-  } finally {
-    res.end();
   }
 }

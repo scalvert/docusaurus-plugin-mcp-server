@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { createHash } from 'node:crypto';
 import fs from 'node:fs/promises';
 import os from 'node:os';
@@ -170,6 +170,32 @@ describe('buildSkillsArtifact', () => {
     await writeSkill('only-mine', { 'SKILL.md': skillMd('only-mine') });
     const artifact = await buildSkillsArtifact({ builtin: false, dir, siteTitle: 'Example' });
     expect(artifact.skills.map((s) => s.frontmatter.name)).toEqual(['only-mine']);
+  });
+
+  it('skips symlinks inside a skill (no cycles, no escaping the skill dir)', async () => {
+    await writeSkill('linked', { 'SKILL.md': skillMd('linked'), 'refs/a.md': '# A' });
+    // A cycle back to the skill root and a link to a file outside it
+    await fs.symlink(path.join(dir, 'linked'), path.join(dir, 'linked', 'refs', 'loop'));
+    await fs.writeFile(path.join(dir, 'secret.txt'), 'outside');
+    await fs.symlink(path.join(dir, 'secret.txt'), path.join(dir, 'linked', 'secret.txt'));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const artifact = await buildSkillsArtifact({ builtin: false, dir, siteTitle: 'Example' });
+
+    expect(artifact.skills[0]?.files.map((f) => f.path)).toEqual(['SKILL.md', 'refs/a.md']);
+    expect(warn).toHaveBeenCalledTimes(2);
+    warn.mockRestore();
+  });
+
+  it('packages scripts but warns about them', async () => {
+    await writeSkill('scripted', { 'SKILL.md': skillMd('scripted'), 'scripts/run.sh': 'echo hi' });
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const artifact = await buildSkillsArtifact({ builtin: false, dir, siteTitle: 'Example' });
+
+    expect(artifact.skills[0]?.files.map((f) => f.path)).toContain('scripts/run.sh');
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('scripts/run.sh'));
+    warn.mockRestore();
   });
 
   it('fails the build on an invalid skill', async () => {
