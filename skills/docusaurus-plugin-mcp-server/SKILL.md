@@ -1,11 +1,11 @@
 ---
 name: "docusaurus-plugin-mcp-server"
-description: "Expose a Docusaurus site's docs as an MCP server for AI agents — add the build-time plugin, deploy the MCP endpoint to any web-standard serverless/edge runtime, run it locally, or add the install button. Load when working with docusaurus-plugin-mcp-server or its /adapters or /theme entry points."
+description: "Expose a Docusaurus site's docs as an MCP server for AI agents — add the build-time plugin, deploy the MCP endpoint to any web-standard serverless/edge runtime, run it locally, serve Agent Skills over MCP, or add the install button. Load when working with docusaurus-plugin-mcp-server or its /adapters or /theme entry points."
 ---
 
 # docusaurus-plugin-mcp-server
 
-A Docusaurus plugin that, at `docusaurus build`, emits MCP artifacts (`docs.json`, `search-index.json`, `manifest.json`) under `build/mcp/`, plus runtime handlers that serve them as an MCP endpoint (`docs_search` + `docs_fetch`) to AI agents.
+A Docusaurus plugin that, at `docusaurus build`, emits MCP artifacts (`docs.json`, `search-index.json`, `skills.json`, `manifest.json`) under `build/mcp/`, plus runtime handlers that serve them as an MCP endpoint (`docs_search` + `docs_fetch` tools, and Agent Skills via the `io.modelcontextprotocol/skills` extension) to AI agents. The endpoint speaks MCP 2026-07-28 and still serves 2025-era (`initialize`) clients.
 
 ## When to use
 
@@ -15,8 +15,9 @@ Load this skill when the task involves:
 - Standing up the MCP HTTP endpoint — deploying to a serverless/edge runtime (Cloudflare Workers, modern Netlify functions, Vercel Edge, Deno, Bun) or running it locally on Node.
 - Adding the `McpInstallButton` to a docs site.
 - Writing a custom indexer or search provider.
+- Shipping Agent Skills with the docs (the `skills` plugin option, `skills.json`).
 
-Trigger imports: `docusaurus-plugin-mcp-server`, `docusaurus-plugin-mcp-server/adapters`, `docusaurus-plugin-mcp-server/theme`.
+Trigger imports: `docusaurus-plugin-mcp-server`, `docusaurus-plugin-mcp-server/adapters`, `docusaurus-plugin-mcp-server/adapters/node`, `docusaurus-plugin-mcp-server/theme`.
 
 ## Install & import
 
@@ -24,14 +25,14 @@ Trigger imports: `docusaurus-plugin-mcp-server`, `docusaurus-plugin-mcp-server/a
 npm install docusaurus-plugin-mcp-server
 ```
 
-ESM-only. Three entry points:
+ESM-only. Four entry points:
 
 - `docusaurus-plugin-mcp-server` — the plugin (default export) + `McpDocsServer`, provider types, `DEFAULT_PLUGIN_OPTIONS`.
 - `docusaurus-plugin-mcp-server/adapters` — the web-standard deploy handler `createWebRequestHandler`.
 - `docusaurus-plugin-mcp-server/adapters/node` — `createNodeServer`/`createNodeHandler` for local dev (Node `http`).
 - `docusaurus-plugin-mcp-server/theme` — `McpInstallButton`.
 
-Peers: `@docusaurus/core` (and `react`/`react-dom` for the theme button) are optional peer deps; provide them from your Docusaurus app.
+Peers: `zod` (>= 4.2) is required. `@docusaurus/core` (and `react`/`react-dom` for the theme button) are optional peer deps; provide them from your Docusaurus app.
 
 ## Authoritative API
 
@@ -54,9 +55,12 @@ Config shape in particular (data-vs-file, required fields, `instructions`/`tools
 import { createWebRequestHandler } from 'docusaurus-plugin-mcp-server/adapters';
 import docs from './build/mcp/docs.json';
 import searchIndexData from './build/mcp/search-index.json';
+import skills from './build/mcp/skills.json';
 
-const handler = createWebRequestHandler({ docs, searchIndexData, name: 'my-docs', baseUrl: 'https://docs.example.com' });
+const handler = createWebRequestHandler({ docs, searchIndexData, skills, name: 'my-docs', baseUrl: 'https://docs.example.com' });
 ```
+
+`skills` is optional; omit it to serve no skills.
 
 Per-platform glue to scaffold:
 
@@ -65,7 +69,9 @@ Per-platform glue to scaffold:
 - **Modern Netlify functions** — `export default async (request) => handler(request)` (the new web-standard functions API, not the legacy `event`/`context` one).
 - **Vercel** — use the Edge runtime: `export const config = { runtime: 'edge' }` and `export default handler`.
 
-**3. Run locally.** From `docusaurus-plugin-mcp-server/adapters/node`, `createNodeServer(...)` returns an `http.Server` you `.listen()`; it reads from disk via `docsPath`/`indexPath`. Use `createNodeHandler(...)` to mount into an existing `http.createServer`.
+**3. Run locally.** From `docusaurus-plugin-mcp-server/adapters/node`, `createNodeServer(...)` returns an `http.Server` you `.listen()`; it reads from disk via `docsPath`/`indexPath` (and optional `skillsPath`). Use `createNodeHandler(...)` to mount into an existing `http.createServer`.
+
+**Skills.** By default the build packages a built-in `docs-research` skill (search → fetch → cite), loaded from the package's `skills-builtin/docs-research/SKILL.md` with `{{siteTitle}}` filled in. To customize it, copy that directory into your skills dir (same name overrides the built-in) and replace the placeholder. Add site skills with the plugin option `skills: { dir: 'mcp-skills' }` (site-relative; one directory per skill, each with a `SKILL.md` whose frontmatter `name` matches the directory). `skills: { builtin: false, dir }` ships only yours; `skills: false` disables skills. The server serves them as `skill://<name>/<path>` resources, implements `skills/list`/`skills/get`, and lists the URIs in `instructions` for clients without the extension.
 
 **4. Install button.** Render `McpInstallButton` (from `./theme`) in a navbar component with your `serverUrl`/`serverName`.
 
@@ -76,7 +82,10 @@ Per-platform glue to scaffold:
 - **Reaching for removed handlers.** `createVercelHandler`, `createNetlifyHandler`, `createCloudflareHandler`, and `generateAdapterFiles` were all removed — there is one generic deploy handler, `createWebRequestHandler`. The Node server lives at `docusaurus-plugin-mcp-server/adapters/node`, not `/adapters`.
 - **Wrong `baseUrl`.** It must be the site origin plus the Docusaurus `baseUrl` (e.g. `https://example.com/docs/`); otherwise the URLs in search results point to the wrong place.
 - **Deploying before building.** The handler needs `build/mcp/*` — run `docusaurus build` first.
+- **Forgetting to pass skills.** The build writes `skills.json`, but the handler only serves skills when you pass `skills` (web) or `skillsPath` (Node).
+- **Invalid skill directories fail the build.** Frontmatter must have `name` (lowercase, hyphens, matching the directory) and `description`; each skill is capped at 512 files / 16 MiB.
+- **zod 3.** 2.x requires zod >= 4.2 (MCP SDK v2).
 
 ## Version notes
 
-Check the installed version with `npm ls docusaurus-plugin-mcp-server`. The adapter surface consolidated to one web-standard `createWebRequestHandler`; `createVercelHandler`/`createNetlifyHandler`/`generateAdapterFiles` are gone, and `createCloudflareHandler` was removed in 1.0.0 (it was a deprecated alias through 0.13.0). The Node server/handler moved to the `./adapters/node` subpath. Confirm exports against `dist/adapters-entry.d.ts` and `dist/adapters-node.d.ts` for the version you have.
+Check the installed version with `npm ls docusaurus-plugin-mcp-server`. 2.0 moved to the MCP TypeScript SDK v2 (`@modelcontextprotocol/server`) and protocol 2026-07-28 (2025-era clients still served), added skills, made `docsSearchTool.inputSchema`/`docsFetchTool.inputSchema` `z.object(...)` schemas (raw shapes remain as `docsSearchInputSchema`/`docsFetchInputSchema`), and returns JSON-RPC `-32602` for unknown tools. The adapter surface consolidated to one web-standard `createWebRequestHandler`; `createVercelHandler`/`createNetlifyHandler`/`generateAdapterFiles` are gone, and `createCloudflareHandler` was removed in 1.0.0 (it was a deprecated alias through 0.13.0). The Node server/handler moved to the `./adapters/node` subpath. Confirm exports against `dist/adapters-entry.d.ts` and `dist/adapters-node.d.ts` for the version you have.

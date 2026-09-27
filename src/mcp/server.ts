@@ -1,12 +1,19 @@
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
+import {
+  McpServer,
+  WebStandardStreamableHTTPServerTransport,
+  createMcpHandler,
+  isLegacyRequest,
+  type CacheHint,
+  type McpHandlerRequestOptions,
+  type McpHttpHandler,
+} from '@modelcontextprotocol/server';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type {
   ProcessedDoc,
   McpServerConfig,
   McpServerFileConfig,
   McpServerDataConfig,
+  SkillsArtifact,
 } from '../types/index.js';
 import { loadSearchProvider } from '../providers/loader.js';
 import type {
@@ -16,6 +23,27 @@ import type {
 } from '../providers/types.js';
 import { docsSearchTool, formatSearchResults } from './tools/docs-search.js';
 import { docsFetchTool, formatPageContent } from './tools/docs-fetch.js';
+import { registerSkills, skillsCapabilities, skillsInstructions } from './skills.js';
+// The bridge lives with the adapters but is a dependency of handleHttpRequest,
+// which predates the web handler and stays part of this class's public API.
+import { toWebRequest, writeWebResponse } from '../adapters/node-bridge.js';
+
+/**
+ * Cache hint for everything this server lists or reads. Content only changes
+ * on redeploy, so clients (and shared caches) may reuse results briefly
+ * (protocol revision 2026-07-28, SEP-2549). Legacy responses are unaffected.
+ */
+const CACHE_HINT: Required<CacheHint> = { ttlMs: 5 * 60 * 1000, cacheScope: 'public' };
+
+/** A successful single-text-block tool result */
+function toolText(text: string) {
+  return { content: [{ type: 'text' as const, text }] };
+}
+
+/** A tool-level error result (the call reached the tool but failed) */
+function toolError(text: string) {
+  return { ...toolText(text), isError: true };
+}
 
 /**
  * Type guard to check if config uses file-based loading
@@ -41,11 +69,15 @@ function isDataConfig(config: McpServerConfig): config is McpServerDataConfig {
  * - File-based: Load docs and search index from filesystem (Node.js)
  * - Pre-loaded: Accept docs and search index data directly (Workers)
  *
- * Uses the official MCP SDK for proper protocol handling.
+ * Serves MCP protocol revision 2026-07-28 statelessly, and 2025-era clients
+ * (initialize handshake) from the same endpoint through a stateless
+ * JSON-response transport, so their responses match 1.x (see dispatch).
  */
 export class McpDocsServer {
   private config: McpServerConfig;
   private searchProvider: SearchProvider | null = null;
+  private skillsArtifact: SkillsArtifact | null = null;
+  private handler: McpHttpHandler | null = null;
   private initialized = false;
   private initPromise: Promise<void> | null = null;
   private initError: Error | null = null;
@@ -55,11 +87,16 @@ export class McpDocsServer {
   }
 
   /**
-   * Create a fresh McpServer instance with tools registered.
-   * Each request gets its own server to avoid concurrency issues
-   * with the SDK's transport reassignment.
+   * Create a fresh McpServer instance with tools (and skills) registered.
+   * Called by the SDK once per HTTP request.
    */
   private createMcpServer(): McpServer {
+    const skills = this.skillsArtifact?.skills.length ? this.skillsArtifact : null;
+
+    const instructions = [this.config.instructions, skills && skillsInstructions(skills.skills)]
+      .filter(Boolean)
+      .join('\n\n');
+
     const server = new McpServer(
       {
         name: this.config.name,
@@ -67,13 +104,24 @@ export class McpDocsServer {
       },
       {
         capabilities: {
-          tools: {},
+          tools: { listChanged: false },
+          ...(skills ? skillsCapabilities() : {}),
         },
-        instructions: this.config.instructions,
+        instructions: instructions || undefined,
+        cacheHints: {
+          'server/discover': CACHE_HINT,
+          'tools/list': CACHE_HINT,
+          'resources/list': CACHE_HINT,
+          'resources/templates/list': CACHE_HINT,
+          'resources/read': CACHE_HINT,
+        },
       }
     );
 
     this.registerTools(server);
+    if (skills) {
+      registerSkills(server, skills, { cacheHint: CACHE_HINT });
+    }
     return server;
   }
 
@@ -88,31 +136,19 @@ export class McpDocsServer {
       {
         description: toolOverrides?.docs_search?.description ?? docsSearchTool.description,
         inputSchema: docsSearchTool.inputSchema,
+        annotations: { readOnlyHint: true, openWorldHint: false },
       },
       async ({ query, limit }) => {
         if (!this.searchProvider || !this.searchProvider.isReady()) {
-          return {
-            content: [{ type: 'text' as const, text: 'Server not initialized. Please try again.' }],
-            isError: true,
-          };
+          return toolError('Server not initialized. Please try again.');
         }
 
         try {
           const results = await this.searchProvider.search(query, { limit });
-          return {
-            content: [{ type: 'text' as const, text: formatSearchResults(results) }],
-          };
+          return toolText(formatSearchResults(results));
         } catch (error) {
           console.error('[MCP] Search error:', error);
-          return {
-            content: [
-              {
-                type: 'text' as const,
-                text: 'An error occurred while searching. Please try again.',
-              },
-            ],
-            isError: true,
-          };
+          return toolError('An error occurred while searching. Please try again.');
         }
       }
     );
@@ -122,31 +158,19 @@ export class McpDocsServer {
       {
         description: toolOverrides?.docs_fetch?.description ?? docsFetchTool.description,
         inputSchema: docsFetchTool.inputSchema,
+        annotations: { readOnlyHint: true, openWorldHint: false },
       },
       async ({ url }) => {
         if (!this.searchProvider || !this.searchProvider.isReady()) {
-          return {
-            content: [{ type: 'text' as const, text: 'Server not initialized. Please try again.' }],
-            isError: true,
-          };
+          return toolError('Server not initialized. Please try again.');
         }
 
         try {
           const doc = await this.getDocument(url);
-          return {
-            content: [{ type: 'text' as const, text: formatPageContent(doc) }],
-          };
+          return toolText(formatPageContent(doc));
         } catch (error) {
           console.error('[MCP] Fetch error:', error);
-          return {
-            content: [
-              {
-                type: 'text' as const,
-                text: 'An error occurred while fetching the page. Please try again.',
-              },
-            ],
-            isError: true,
-          };
+          return toolError('An error occurred while fetching the page. Please try again.');
         }
       }
     );
@@ -216,24 +240,69 @@ export class McpDocsServer {
       // Pre-loaded data mode (Cloudflare Workers, etc.)
       initData.docs = this.config.docs;
       initData.indexData = this.config.searchIndexData;
+      this.skillsArtifact = this.config.skills ?? null;
     } else if (isFileConfig(this.config)) {
       // File-based mode (Node.js)
       initData.docsPath = this.config.docsPath;
       initData.indexPath = this.config.indexPath;
+      if (this.config.skillsPath) {
+        const { readFile } = await import('node:fs/promises');
+        this.skillsArtifact = JSON.parse(
+          await readFile(this.config.skillsPath, 'utf8')
+        ) as SkillsArtifact;
+      }
     } else {
       throw new Error('Invalid server config: must provide either file paths or pre-loaded data');
     }
 
     await this.searchProvider.initialize(providerContext, initData);
 
+    this.handler = createMcpHandler(() => this.createMcpServer(), {
+      // Legacy traffic is routed separately (see dispatch) to keep v1's JSON responses.
+      legacy: 'reject',
+      // Default 'auto' mode answers with a single JSON body unless a handler
+      // emits a notification first; our tools never do.
+      onerror: (error) => console.error('[MCP] Handler error:', error),
+    });
+
     this.initialized = true;
   }
 
   /**
-   * Handle an HTTP request using the MCP SDK's transport
+   * Route one request by protocol era. 2026-07-28 requests go to the SDK's
+   * modern handler. 2025-era requests (initialize handshake, no per-request
+   * envelope) get a fresh stateless server over a JSON-response transport,
+   * matching the wire behavior of v1 of this package.
+   */
+  private async dispatch(request: Request, options?: McpHandlerRequestOptions): Promise<Response> {
+    await this.initialize();
+    if (!this.handler) {
+      throw new Error('MCP handler not initialized');
+    }
+
+    if (!(await isLegacyRequest(request, options?.parsedBody))) {
+      return this.handler.fetch(request, options);
+    }
+
+    const server = this.createMcpServer();
+    const transport = new WebStandardStreamableHTTPServerTransport({
+      sessionIdGenerator: undefined,
+      enableJsonResponse: true,
+    });
+    await server.connect(transport);
+    try {
+      return await transport.handleRequest(request, options);
+    } finally {
+      await transport.close();
+    }
+  }
+
+  /**
+   * Handle a Node.js HTTP request.
    *
-   * This method is designed for serverless environments (Vercel, Netlify).
-   * Creates a fresh McpServer per request to avoid concurrency issues.
+   * Bridges the Node request/response pair onto the web-standard handler.
+   * Pass `parsedBody` when the body has already been consumed (e.g. by a
+   * body-parsing middleware).
    *
    * @param req - Node.js IncomingMessage or compatible request object
    * @param res - Node.js ServerResponse or compatible response object
@@ -244,53 +313,22 @@ export class McpDocsServer {
     res: ServerResponse,
     parsedBody?: unknown
   ): Promise<void> {
-    await this.initialize();
-
-    const server = this.createMcpServer();
-
-    // Create a stateless transport for this request
-    // enableJsonResponse: true means we get simple JSON responses instead of SSE
-    const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: undefined, // Stateless mode - no session tracking
-      enableJsonResponse: true, // Return JSON instead of SSE streams
-    });
-
-    await server.connect(transport);
-
-    try {
-      await transport.handleRequest(req, res, parsedBody);
-    } finally {
-      await transport.close();
-    }
+    const request = toWebRequest(req, parsedBody);
+    const response = await this.dispatch(
+      request,
+      parsedBody !== undefined ? { parsedBody } : undefined
+    );
+    await writeWebResponse(response, res);
   }
 
   /**
    * Handle a Web Standard Request (Cloudflare Workers, Deno, Bun)
    *
-   * This method is designed for Web Standard environments that use
-   * the Fetch API Request/Response pattern.
-   * Creates a fresh McpServer per request to avoid concurrency issues.
-   *
    * @param request - Web Standard Request object
    * @returns Web Standard Response object
    */
   async handleWebRequest(request: Request): Promise<Response> {
-    await this.initialize();
-
-    const server = this.createMcpServer();
-
-    const transport = new WebStandardStreamableHTTPServerTransport({
-      sessionIdGenerator: undefined, // Stateless mode
-      enableJsonResponse: true,
-    });
-
-    await server.connect(transport);
-
-    try {
-      return await transport.handleRequest(request);
-    } finally {
-      await transport.close();
-    }
+    return this.dispatch(request);
   }
 
   /**
@@ -303,6 +341,7 @@ export class McpDocsServer {
     version: string;
     initialized: boolean;
     docCount: number;
+    skillCount: number;
     baseUrl?: string;
     searchProvider?: string;
   }> {
@@ -317,6 +356,7 @@ export class McpDocsServer {
       version: this.config.version ?? '1.0.0',
       initialized: this.initialized,
       docCount,
+      skillCount: this.skillsArtifact?.skills.length ?? 0,
       baseUrl: this.config.baseUrl,
       searchProvider: this.searchProvider?.name,
     };

@@ -10,6 +10,10 @@ export default defineConfig({
 
   reporter: [['html', { open: 'never' }], ['list']],
 
+  // Eval snapshots are plain text, so share one baseline across platforms
+  // (the default template appends the OS, which breaks CI on Linux).
+  snapshotPathTemplate: '{testDir}/{testFileName}-snapshots/{arg}{ext}',
+
   // Start the test MCP server before running tests
   webServer: {
     command: 'node scripts/test-mcp-server.mjs',

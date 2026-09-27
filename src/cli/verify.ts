@@ -135,12 +135,15 @@ async function testServer(buildDir: string): Promise<{ success: boolean; message
     const manifest = await fs.readJson(manifestPath);
     const docs = await fs.readJson(docsPath);
     const searchIndexData = await fs.readJson(indexPath);
+    const skillsPath = path.join(mcpDir, 'skills.json');
+    const skills = (await fs.pathExists(skillsPath)) ? await fs.readJson(skillsPath) : undefined;
 
     const server = new McpDocsServer({
       name: manifest.name || 'test-docs',
       version: manifest.version || '1.0.0',
       docs,
       searchIndexData,
+      skills,
     });
 
     await server.initialize();
@@ -154,9 +157,10 @@ async function testServer(buildDir: string): Promise<{ success: boolean; message
       return { success: false, message: 'Server has no documents loaded' };
     }
 
+    const skillsNote = skills ? ` and ${status.skillCount} skill(s)` : '';
     return {
       success: true,
-      message: `Server initialized with ${status.docCount} documents`,
+      message: `Server initialized with ${status.docCount} documents${skillsNote}`,
     };
   } catch (error) {
     return {

@@ -16,6 +16,7 @@ import { extractHeadingsFromMarkdown } from '../processing/heading-extractor.js'
 import { loadIndexer } from '../providers/loader.js';
 import type { ProviderContext } from '../providers/types.js';
 import { resolveServerUrl } from './resolve-server-url.js';
+import { buildSkillsArtifact } from '../skills/packager.js';
 
 /**
  * Resolve plugin options with defaults.
@@ -196,6 +197,20 @@ export default function mcpServerPlugin(
         }
       }
 
+      // Package skills served via the MCP skills extension
+      let skillCount: number | undefined;
+      if (resolvedOptions.skills !== false) {
+        const skillsOptions = resolvedOptions.skills ?? {};
+        const skills = await buildSkillsArtifact({
+          builtin: skillsOptions.builtin ?? true,
+          dir: skillsOptions.dir ? path.resolve(context.siteDir, skillsOptions.dir) : undefined,
+          siteTitle: context.siteConfig.title,
+        });
+        await fs.writeJson(path.join(mcpOutputDir, 'skills.json'), skills, { spaces: 0 });
+        skillCount = skills.skills.length;
+        console.log(`[MCP] Packaged ${skillCount} skill(s)`);
+      }
+
       // Write manifest (only if at least one indexer ran)
       if (indexerNames.length > 0) {
         const manifest: McpManifest = {
@@ -205,6 +220,7 @@ export default function mcpServerPlugin(
           serverName: resolvedOptions.server.name,
           baseUrl,
           indexers: indexerNames,
+          ...(skillCount !== undefined ? { skillCount } : {}),
         };
 
         await fs.writeJson(path.join(mcpOutputDir, 'manifest.json'), manifest, { spaces: 2 });

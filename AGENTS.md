@@ -30,24 +30,30 @@ This is a Docusaurus plugin that exposes documentation as an MCP (Model Context 
 **Build Time** (`src/plugin/`): The Docusaurus plugin runs during `docusaurus build`:
 - `docusaurus-plugin.ts` - Main plugin with `postBuild` hook
 - Processes HTML files → extracts content → converts to markdown → builds search index
-- Outputs artifacts to `build/mcp/` (docs.json, search-index.json, manifest.json)
+- Packages Agent Skills (built-in `docs-research` + optional site skills) with digests
+- Outputs artifacts to `build/mcp/` (docs.json, search-index.json, skills.json, manifest.json)
 
 **Runtime** (`src/mcp/`, `src/adapters/`): Serverless functions serve MCP requests:
-- `McpDocsServer` class wraps the official MCP SDK
+- `McpDocsServer` class wraps the MCP TypeScript SDK v2 (`@modelcontextprotocol/server`). It serves protocol 2026-07-28 statelessly and routes 2025-era (`initialize`) requests to a stateless JSON-response transport on the same endpoint
 - `createWebRequestHandler` — one generic web-standard `(Request) => Response` handler for any serverless/edge runtime (pre-loaded data)
 - `createNodeServer`/`createNodeHandler` — local-dev server over Node `http` (file-based)
 
 ### Entry Points
 
-The package has three export paths configured in `package.json`:
+The package has four export paths configured in `package.json`:
 - `.` → Main plugin + MCP server (`src/index.ts`)
-- `./adapters` → Platform handlers (`src/adapters-entry.ts`)
+- `./adapters` → Web-standard handler for serverless/edge (`src/adapters-entry.ts`); must not statically import Node built-ins
+- `./adapters/node` → Local-dev Node server (`src/adapters-node.ts`)
 - `./theme` → React components (`src/theme/index.ts`)
 
 ### Key Modules
 
-- `src/mcp/server.ts` - Core MCP server using `@modelcontextprotocol/sdk`
+- `src/mcp/server.ts` - Core MCP server using `@modelcontextprotocol/server` (era dispatch, cache hints)
 - `src/mcp/tools/` - MCP tool definitions (`docs_search`, `docs_fetch`)
+- `src/mcp/skills.ts` - Skills extension runtime (`io.modelcontextprotocol/skills`: `skills/list`, `skills/get`, `skill://` resources); edge-safe
+- `src/skills/` - Build-time skill packaging (`packager.ts`) and built-in skill loading/templating (`builtin.ts`)
+- `skills-builtin/` - Built-in skills shipped in the package (`docs-research/SKILL.md`, with a `{{siteTitle}}` placeholder). Published via package.json `files`; distinct from `skills/`, which is this repo's own developer skill
+- `src/adapters/node-bridge.ts` - Node `IncomingMessage`/`ServerResponse` ↔ web `Request`/`Response`
 - `src/processing/` - HTML parsing, markdown conversion, heading extraction
 - `src/search/` - FlexSearch integration for full-text search
 - `src/providers/` - Pluggable indexer/search provider system
@@ -61,8 +67,10 @@ Indexers and search providers are pluggable via the `src/providers/` system:
 
 ## Testing
 
-- Unit tests: `tests/*.ts` using Vitest
-- Integration tests: `tests/playwright/mcp.spec.ts` using `@gleanwork/mcp-server-tester`
+- Unit tests: `tests/*.ts` using Vitest. `tests/protocol-eras-test.ts` drives the v2 client (`@modelcontextprotocol/client`) in both 2026-07-28 and 2025-era modes
+- Integration tests: `tests/playwright/` using `@gleanwork/mcp-server-tester` (a 2025-era client, so it also guards backward compatibility)
+  - `mcp.spec.ts` - conformance checks and protocol behavior
+  - `evals.spec.ts` + `evals/*.json` - direct-mode eval datasets for tool output; update snapshots with `npm run test:mcp -- --update-snapshots`
 
 ## Package Format
 

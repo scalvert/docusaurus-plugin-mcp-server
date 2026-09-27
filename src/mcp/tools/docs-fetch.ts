@@ -2,7 +2,9 @@ import { z } from 'zod';
 import type { ProcessedDoc } from '../../types/index.js';
 
 /**
- * Zod schema for docs_fetch input parameters
+ * Zod field shape for docs_fetch input parameters. A raw shape (not a
+ * `z.object`) so callers can extend it; `docsFetchTool.inputSchema` wraps it.
+ * The name is kept from 1.x for compatibility.
  */
 export const docsFetchInputSchema = {
   url: z
@@ -20,7 +22,7 @@ export const docsFetchTool = {
   name: 'docs_fetch',
   description:
     'Fetch the complete content of a documentation page. Use this after searching to get the full markdown content of a specific page.',
-  inputSchema: docsFetchInputSchema,
+  inputSchema: z.object(docsFetchInputSchema),
 };
 
 /**

@@ -1,0 +1,129 @@
+{
+  "name": "docs-tools",
+  "description": "Direct-mode evals for docs_search and docs_fetch against the fixture docs in scripts/test-mcp-server.mjs",
+  "cases": [
+    {
+      "id": "search-by-title",
+      "description": "Title keywords find the matching page",
+      "toolName": "docs_search",
+      "args": { "query": "introduction" },
+      "tags": ["search"],
+      "expect": {
+        "isError": false,
+        "containsText": ["**Introduction**", "URL: https://docs.example.com/docs/intro"]
+      }
+    },
+    {
+      "id": "search-by-body",
+      "description": "Terms that only appear in page bodies still match",
+      "toolName": "docs_search",
+      "args": { "query": "OAuth" },
+      "tags": ["search"],
+      "expect": {
+        "containsText": ["Authentication API", "https://docs.example.com/docs/api/authentication"]
+      }
+    },
+    {
+      "id": "search-lists-numbered-results",
+      "description": "Results use the numbered format and end with the fetch hint",
+      "toolName": "docs_search",
+      "args": { "query": "installation" },
+      "tags": ["search", "format"],
+      "expect": {
+        "matchesPattern": [
+          "^Found \\d+ result\\(s\\):",
+          "1\\. \\*\\*[^*]+\\*\\*\\n\\s+URL: https://docs\\.example\\.com/",
+          "Use docs_fetch with the URL to retrieve the full page content\\.$"
+        ]
+      }
+    },
+    {
+      "id": "search-response-shape",
+      "description": "Tools answer with exactly one text content block (no structuredContent)",
+      "toolName": "docs_search",
+      "args": { "query": "authentication" },
+      "tags": ["search", "schema"],
+      "expect": {
+        "schema": "single-text-block"
+      }
+    },
+    {
+      "id": "fetch-response-shape",
+      "description": "docs_fetch also answers with one text content block",
+      "toolName": "docs_fetch",
+      "args": { "url": "https://docs.example.com/docs/intro" },
+      "tags": ["fetch", "schema"],
+      "expect": {
+        "schema": "single-text-block"
+      }
+    },
+    {
+      "id": "search-respects-limit",
+      "description": "limit: 1 returns exactly one result",
+      "toolName": "docs_search",
+      "args": { "query": "the", "limit": 1 },
+      "tags": ["search"],
+      "expect": {
+        "isError": false,
+        "containsText": "Found 1 result(s):"
+      }
+    },
+    {
+      "id": "search-no-results",
+      "description": "Non-matching queries return a clear message, not an error",
+      "toolName": "docs_search",
+      "args": { "query": "xyznonexistent12345" },
+      "tags": ["search", "edge"],
+      "expect": {
+        "isError": false,
+        "matchesPattern": "^No matching documents found\\.$"
+      }
+    },
+    {
+      "id": "fetch-page-structure",
+      "description": "Fetched pages have a title, description, contents list, and body",
+      "toolName": "docs_fetch",
+      "args": { "url": "https://docs.example.com/docs/intro" },
+      "tags": ["fetch", "format"],
+      "expect": {
+        "isError": false,
+        "matchesPattern": [
+          "^# Introduction\\n",
+          "> Welcome to our documentation",
+          "## Contents\\n\\n- \\[Introduction\\]\\(#introduction\\)\\n  - \\[Overview\\]\\(#overview\\)"
+        ]
+      }
+    },
+    {
+      "id": "fetch-page-snapshot",
+      "description": "Full docs_fetch output for a page with nested headings stays stable",
+      "toolName": "docs_fetch",
+      "args": { "url": "https://docs.example.com/docs/api/authentication" },
+      "tags": ["fetch", "snapshot"],
+      "expect": {
+        "snapshot": "fetch-authentication"
+      }
+    },
+    {
+      "id": "fetch-code-blocks",
+      "description": "Code blocks survive as fenced markdown",
+      "toolName": "docs_fetch",
+      "args": { "url": "https://docs.example.com/docs/installation" },
+      "tags": ["fetch"],
+      "expect": {
+        "containsText": "```bash\nnpm install my-platform\n```",
+        "responseSize": { "minBytes": 200, "maxBytes": 4096 }
+      }
+    },
+    {
+      "id": "fetch-missing-page",
+      "description": "Unknown URLs return a not-found message",
+      "toolName": "docs_fetch",
+      "args": { "url": "https://docs.example.com/docs/nonexistent" },
+      "tags": ["fetch", "edge"],
+      "expect": {
+        "containsText": "Page not found"
+      }
+    }
+  ]
+}

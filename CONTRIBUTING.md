@@ -36,13 +36,15 @@ npx vitest run tests/html-to-markdown-test.ts
 ## Project Structure
 
 - `src/plugin/` — Docusaurus plugin (build-time processing)
-- `src/mcp/` — MCP server and tool definitions
-- `src/adapters/` — Runtime handlers (`web-request.ts` for serverless/edge, `node.ts` for local dev)
+- `src/mcp/` — MCP server, tool definitions, and the skills extension runtime
+- `src/skills/` — Build-time Agent Skills packaging
+- `skills-builtin/` — Built-in skills shipped with the package (`docs-research`)
+- `src/adapters/` — Runtime handlers (`web-request.ts` for serverless/edge, `node.ts` for local dev, `node-bridge.ts` for Node ↔ web request conversion)
 - `src/processing/` — HTML parsing and markdown conversion
 - `src/search/` — FlexSearch integration
 - `src/providers/` — Pluggable indexer and search provider system
 - `src/theme/` — React components (McpInstallButton)
-- `tests/` — Unit and integration tests
+- `tests/` — Unit tests (Vitest) and `tests/playwright/` integration tests and eval datasets (`@gleanwork/mcp-server-tester`)
 
 See `CLAUDE.md` for detailed architecture notes.
 

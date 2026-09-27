@@ -16,6 +16,9 @@ import {
   // Resolve the MCP endpoint URL the install button uses
   resolveServerUrl,
 
+  // Package Agent Skills into a skills.json artifact (outside the plugin)
+  buildSkillsArtifact,
+
   // Default plugin options
   DEFAULT_PLUGIN_OPTIONS,
 } from 'docusaurus-plugin-mcp-server';
