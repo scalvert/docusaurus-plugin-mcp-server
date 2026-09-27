@@ -1,53 +1,76 @@
-import { stringify as stringifyYaml } from 'yaml';
+/**
+ * The built-in skills shipped with the package, under `skills-builtin/` at
+ * the package root (published via package.json `files`).
+ *
+ * Built-in skills are ordinary skill directories. The only difference from
+ * author skills is that their SKILL.md may use `{{siteTitle}}`, filled in at
+ * build time. To customize one, copy its directory into your own skills dir
+ * (a skill with the same name replaces the built-in) and edit it there.
+ */
 
-/** Name (and skill path) of the built-in skill */
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import fs from 'fs-extra';
+import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
+import { FRONTMATTER_PATTERN } from './frontmatter.js';
+
+/** Name (and directory) of the built-in docs research skill */
 export const BUILTIN_SKILL_NAME = 'docs-research';
 
-export interface BuiltinSkillInput {
-  /** Human-readable site name, e.g. the Docusaurus `siteConfig.title` */
-  siteTitle: string;
+const BUILTIN_DIR_NAME = 'skills-builtin';
+const SITE_TITLE_PLACEHOLDER = '{{siteTitle}}';
+
+/**
+ * Locate `skills-builtin/` by walking up from this module. The module is
+ * bundled into `dist/*.js` for the published package but runs from
+ * `src/skills/` in tests, so a fixed relative path would only work for one.
+ */
+export async function findBuiltinSkillsDir(
+  from: string = path.dirname(fileURLToPath(import.meta.url))
+): Promise<string> {
+  let dir = from;
+  for (;;) {
+    const candidate = path.join(dir, BUILTIN_DIR_NAME);
+    if (await fs.pathExists(candidate)) return candidate;
+
+    const parent = path.dirname(dir);
+    if (parent === dir) {
+      throw new Error(`[MCP] Built-in skills directory "${BUILTIN_DIR_NAME}" not found`);
+    }
+    dir = parent;
+  }
+}
+
+function replacePlaceholder<T>(value: T, site: string): T {
+  if (typeof value === 'string') {
+    return value.split(SITE_TITLE_PLACEHOLDER).join(site) as T;
+  }
+  if (Array.isArray(value)) {
+    return value.map((v) => replacePlaceholder(v, site)) as T;
+  }
+  if (value !== null && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([k, v]) => [k, replacePlaceholder(v, site)])
+    ) as T;
+  }
+  return value;
 }
 
 /**
- * Render the built-in `docs-research` SKILL.md.
- *
- * It teaches an agent the search → fetch → cite workflow for this server's
- * `docs_search` and `docs_fetch` tools. Frontmatter is emitted with a YAML
- * serializer so arbitrary site titles are escaped correctly.
+ * Fill `{{siteTitle}}` into a built-in SKILL.md. Frontmatter is parsed and
+ * re-serialized rather than string-replaced, so titles containing YAML
+ * syntax (`:`, quotes, `#`) can't corrupt it.
  */
-export function renderBuiltinSkill({ siteTitle }: BuiltinSkillInput): string {
+export function renderSkillTemplate(markdown: string, siteTitle: string): string {
   const site = siteTitle.trim() || 'this site';
-  const frontmatter = stringifyYaml(
-    {
-      name: BUILTIN_SKILL_NAME,
-      description: `Answer questions about ${site} from its official documentation. Use when the user asks how ${site} works, how to install, configure, or use it, or wants answers backed by links to the docs.`,
-    },
-    { lineWidth: 0 }
-  );
+  const match = FRONTMATTER_PATTERN.exec(markdown);
+  if (!match) {
+    return markdown.split(SITE_TITLE_PLACEHOLDER).join(site);
+  }
 
-  return `---
-${frontmatter.trimEnd()}
----
+  const frontmatter = replacePlaceholder(parseYaml(match[1] ?? ''), site);
+  const yaml = stringifyYaml(frontmatter, { lineWidth: 0 }).trimEnd();
+  const body = markdown.slice(match[0].length).split(SITE_TITLE_PLACEHOLDER).join(site);
 
-# Researching the ${site} documentation
-
-This MCP server exposes the ${site} documentation through two tools:
-
-- \`docs_search\`: full-text search across every page. Returns titles, URLs, matching sections, and snippets.
-- \`docs_fetch\`: returns the complete markdown of one page, given its URL.
-
-## Workflow
-
-1. **Search first.** Call \`docs_search\` with a few specific keywords (product terms, API or option names, error strings) rather than a full sentence.
-2. **Pick candidates.** Use titles, matching sections, and snippets to choose the one to three most relevant URLs. Snippets are excerpts, not answers.
-3. **Fetch before answering.** Call \`docs_fetch\` with an exact URL from the results. The page starts with a contents list; focus on the sections that matter.
-4. **Refine when results are thin.** Search again with synonyms, narrower terms, or terms you saw in fetched pages. Try two or three searches before concluding the docs don't cover something.
-5. **Answer from the docs.** Ground the answer in fetched content and link the pages you used (add \`#heading-id\` anchors where useful). If the docs don't cover the question, say so instead of guessing.
-
-## Tips
-
-- \`docs_search\` returns up to 16 results by default (max 20). Pass a smaller \`limit\` for focused lookups.
-- Only pass URLs to \`docs_fetch\` that came from \`docs_search\` results or from links in fetched pages.
-- Prefer several targeted searches over one broad one; each search is cheap.
-`;
+  return `---\n${yaml}\n---\n${body}`;
 }

@@ -11,7 +11,7 @@ import {
   SkillValidationError,
   MAX_SKILL_FILES,
 } from '../src/skills/packager.js';
-import { renderBuiltinSkill } from '../src/skills/builtin.js';
+import { findBuiltinSkillsDir, renderSkillTemplate } from '../src/skills/builtin.js';
 
 const sha256 = (bytes: Buffer) => `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
 
@@ -104,18 +104,52 @@ describe('packageSkill', () => {
   });
 });
 
-describe('renderBuiltinSkill', () => {
-  it('escapes site titles in frontmatter', () => {
-    const markdown = renderBuiltinSkill({ siteTitle: 'Acme: "Docs" #1' });
-    const fm = parseSkillFrontmatter(markdown, 'builtin');
-    expect(fm.name).toBe('docs-research');
-    expect(fm.description).toContain('Acme: "Docs" #1');
+describe('renderSkillTemplate', () => {
+  const template =
+    "---\nname: guide\ndescription: 'Answers about {{siteTitle}}'\n---\n\n# {{siteTitle}} guide\n";
+
+  it('fills {{siteTitle}} in frontmatter and body', () => {
+    const markdown = renderSkillTemplate(template, 'Example');
+    expect(parseSkillFrontmatter(markdown, 'x').description).toBe('Answers about Example');
+    expect(markdown).toContain('# Example guide');
+    expect(markdown).not.toContain('{{siteTitle}}');
+  });
+
+  it('escapes site titles containing YAML syntax', () => {
+    const markdown = renderSkillTemplate(template, 'Acme: "Docs" #1');
+    expect(parseSkillFrontmatter(markdown, 'x').description).toBe('Answers about Acme: "Docs" #1');
   });
 
   it('frontmatter round-trips through a plain YAML parse', () => {
-    const markdown = renderBuiltinSkill({ siteTitle: 'Example' });
+    const markdown = renderSkillTemplate(template, 'Example');
     const yamlBlock = markdown.split('---')[1] ?? '';
-    expect(parseYaml(yamlBlock)).toEqual(parseSkillFrontmatter(markdown, 'builtin'));
+    expect(parseYaml(yamlBlock)).toEqual(parseSkillFrontmatter(markdown, 'x'));
+  });
+
+  it('falls back to "this site" for an empty title', () => {
+    expect(renderSkillTemplate(template, '  ')).toContain('# this site guide');
+  });
+});
+
+describe('built-in skills directory', () => {
+  it('is found from the source tree', async () => {
+    const dir = await findBuiltinSkillsDir();
+    expect(path.basename(dir)).toBe('skills-builtin');
+  });
+
+  it('is found from a nested location such as dist/', async () => {
+    const root = path.dirname(await findBuiltinSkillsDir());
+    const dir = await findBuiltinSkillsDir(path.join(root, 'dist'));
+    expect(dir).toBe(path.join(root, 'skills-builtin'));
+  });
+
+  it('ships a docs-research skill whose template renders to a valid skill', async () => {
+    const file = path.join(await findBuiltinSkillsDir(), 'docs-research', 'SKILL.md');
+    const markdown = renderSkillTemplate(await fs.readFile(file, 'utf8'), 'Example');
+    const fm = parseSkillFrontmatter(markdown, file);
+    expect(fm.name).toBe('docs-research');
+    expect(fm.description).toContain('Example');
+    expect(markdown).toContain('docs_search');
   });
 });
 

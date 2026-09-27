@@ -37,7 +37,8 @@ npx vitest run tests/html-to-markdown-test.ts
 
 - `src/plugin/` — Docusaurus plugin (build-time processing)
 - `src/mcp/` — MCP server, tool definitions, and the skills extension runtime
-- `src/skills/` — Build-time Agent Skills packaging and the built-in `docs-research` skill
+- `src/skills/` — Build-time Agent Skills packaging
+- `skills-builtin/` — Built-in skills shipped with the package (`docs-research`)
 - `src/adapters/` — Runtime handlers (`web-request.ts` for serverless/edge, `node.ts` for local dev, `node-bridge.ts` for Node ↔ web request conversion)
 - `src/processing/` — HTML parsing and markdown conversion
 - `src/search/` — FlexSearch integration

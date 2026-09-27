@@ -13,7 +13,8 @@ import { createHash } from 'node:crypto';
 import fs from 'fs-extra';
 import { parse as parseYaml } from 'yaml';
 import type { SkillArtifact, SkillFile, SkillsArtifact } from '../types/index.js';
-import { BUILTIN_SKILL_NAME, renderBuiltinSkill } from './builtin.js';
+import { BUILTIN_SKILL_NAME, findBuiltinSkillsDir, renderSkillTemplate } from './builtin.js';
+import { FRONTMATTER_PATTERN } from './frontmatter.js';
 
 /** Agent Skills naming rule: lowercase alphanumerics separated by single hyphens */
 const SKILL_NAME_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -23,8 +24,6 @@ const MAX_DESCRIPTION_LENGTH = 1024;
 /** Per-skill limits every conforming host must accept (SEP-2640 "Limits") */
 export const MAX_SKILL_FILES = 512;
 export const MAX_SKILL_BYTES = 16 * 1024 * 1024;
-
-const FRONTMATTER_PATTERN = /^\uFEFF?---\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/;
 
 const MIME_TYPES: Record<string, string> = {
   '.md': 'text/markdown',
@@ -247,6 +246,25 @@ async function readSkillFiles(root: string, relDir = ''): Promise<RawSkillFile[]
 }
 
 /**
+ * Package one skill directory. `transformSkillMd` may rewrite SKILL.md
+ * before validation and hashing (used to fill built-in skill templates).
+ */
+export async function loadSkillDir(
+  skillDir: string,
+  transformSkillMd?: (markdown: string) => string
+): Promise<SkillArtifact> {
+  let files = await readSkillFiles(skillDir);
+  if (transformSkillMd) {
+    files = files.map((f) =>
+      f.path === 'SKILL.md'
+        ? { ...f, bytes: Buffer.from(transformSkillMd(f.bytes.toString('utf8')), 'utf8') }
+        : f
+    );
+  }
+  return packageSkill(path.basename(skillDir), files, skillDir);
+}
+
+/**
  * Package every `<dir>/<name>/SKILL.md` skill directory.
  */
 export async function loadSkillsDir(dir: string): Promise<SkillArtifact[]> {
@@ -264,8 +282,7 @@ export async function loadSkillsDir(dir: string): Promise<SkillArtifact[]> {
     // skills); symlinks inside a skill are skipped by readSkillFiles.
     if (!(await fs.stat(skillDir)).isDirectory()) continue;
 
-    const files = await readSkillFiles(skillDir);
-    skills.push(packageSkill(entry.name, files, skillDir));
+    skills.push(await loadSkillDir(skillDir));
   }
 
   return skills;
@@ -288,15 +305,11 @@ export async function buildSkillsArtifact(options: BuildSkillsOptions): Promise<
   const byName = new Map<string, SkillArtifact>();
 
   if (options.builtin) {
-    const markdown = renderBuiltinSkill({ siteTitle: options.siteTitle });
-    byName.set(
-      BUILTIN_SKILL_NAME,
-      packageSkill(
-        BUILTIN_SKILL_NAME,
-        [{ path: 'SKILL.md', bytes: Buffer.from(markdown, 'utf8') }],
-        'built-in'
-      )
+    const builtinDir = path.join(await findBuiltinSkillsDir(), BUILTIN_SKILL_NAME);
+    const skill = await loadSkillDir(builtinDir, (md) =>
+      renderSkillTemplate(md, options.siteTitle)
     );
+    byName.set(skill.frontmatter.name, skill);
   }
 
   if (options.dir) {

@@ -37,6 +37,8 @@ export function toWebRequest(req: IncomingMessage, parsedBody: unknown): Request
     return new Request(url, { method, headers, body: JSON.stringify(parsedBody) });
   }
 
+  // A rejected start() errors the stream, so socket errors mid-body reach
+  // the body reader (covered in tests/node-bridge-test.ts).
   const body = new ReadableStream<Uint8Array>({
     async start(controller) {
       for await (const chunk of req) {

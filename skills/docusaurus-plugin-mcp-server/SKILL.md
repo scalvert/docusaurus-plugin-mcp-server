@@ -71,7 +71,7 @@ Per-platform glue to scaffold:
 
 **3. Run locally.** From `docusaurus-plugin-mcp-server/adapters/node`, `createNodeServer(...)` returns an `http.Server` you `.listen()`; it reads from disk via `docsPath`/`indexPath` (and optional `skillsPath`). Use `createNodeHandler(...)` to mount into an existing `http.createServer`.
 
-**Skills.** By default the build packages a built-in `docs-research` skill (search → fetch → cite). Add site skills with the plugin option `skills: { dir: 'mcp-skills' }` (site-relative; one directory per skill, each with a `SKILL.md` whose frontmatter `name` matches the directory). `skills: { builtin: false, dir }` ships only yours; `skills: false` disables skills. The server serves them as `skill://<name>/<path>` resources, implements `skills/list`/`skills/get`, and lists the URIs in `instructions` for clients without the extension.
+**Skills.** By default the build packages a built-in `docs-research` skill (search → fetch → cite), loaded from the package's `skills-builtin/docs-research/SKILL.md` with `{{siteTitle}}` filled in. To customize it, copy that directory into your skills dir (same name overrides the built-in) and replace the placeholder. Add site skills with the plugin option `skills: { dir: 'mcp-skills' }` (site-relative; one directory per skill, each with a `SKILL.md` whose frontmatter `name` matches the directory). `skills: { builtin: false, dir }` ships only yours; `skills: false` disables skills. The server serves them as `skill://<name>/<path>` resources, implements `skills/list`/`skills/get`, and lists the URIs in `instructions` for clients without the extension.
 
 **4. Install button.** Render `McpInstallButton` (from `./theme`) in a navbar component with your `serverUrl`/`serverName`.
 

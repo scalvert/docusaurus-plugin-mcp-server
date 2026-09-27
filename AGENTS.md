@@ -51,7 +51,8 @@ The package has four export paths configured in `package.json`:
 - `src/mcp/server.ts` - Core MCP server using `@modelcontextprotocol/server` (era dispatch, cache hints)
 - `src/mcp/tools/` - MCP tool definitions (`docs_search`, `docs_fetch`)
 - `src/mcp/skills.ts` - Skills extension runtime (`io.modelcontextprotocol/skills`: `skills/list`, `skills/get`, `skill://` resources); edge-safe
-- `src/skills/` - Build-time skill packaging (`packager.ts`) and the built-in `docs-research` skill (`builtin.ts`)
+- `src/skills/` - Build-time skill packaging (`packager.ts`) and built-in skill loading/templating (`builtin.ts`)
+- `skills-builtin/` - Built-in skills shipped in the package (`docs-research/SKILL.md`, with a `{{siteTitle}}` placeholder). Published via package.json `files`; distinct from `skills/`, which is this repo's own developer skill
 - `src/adapters/node-bridge.ts` - Node `IncomingMessage`/`ServerResponse` ↔ web `Request`/`Response`
 - `src/processing/` - HTML parsing, markdown conversion, heading extraction
 - `src/search/` - FlexSearch integration for full-text search

@@ -54,7 +54,8 @@
     "docusaurus-mcp-verify": "./dist/cli/verify.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "skills-builtin"
   ],
   "scripts": {
     "build": "tsup",
