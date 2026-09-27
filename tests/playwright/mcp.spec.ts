@@ -1,88 +1,58 @@
 /**
  * MCP Server Integration Tests using @gleanwork/mcp-server-tester
  *
- * These tests use the Playwright-based MCP testing framework to validate
- * our documentation MCP server implementation.
+ * Protocol conformance and behavior that doesn't fit an eval case. Tool
+ * output checks live in the eval dataset (evals.spec.ts + evals/*.json).
+ *
+ * The tester's client is a 2025-era (v1 SDK) client, so this suite also
+ * guards backward compatibility with pre-2026-07-28 clients. The
+ * 2026-07-28 path is covered by tests/protocol-eras-test.ts.
  *
  * The test server is started automatically via Playwright's webServer config.
  */
 
-import { test, expect } from '@gleanwork/mcp-server-tester';
+import { test, expect, runConformanceChecks } from '@gleanwork/mcp-server-tester';
 
 test.describe('MCP Protocol Conformance', () => {
-  test('should return valid server info', async ({ mcp }) => {
-    const info = mcp.getServerInfo();
-    expect(info).toBeTruthy();
-    expect(info?.name).toBe('test-docs');
-    expect(info?.version).toBe('1.0.0');
+  test('passes the tester conformance checks', async ({ mcp }, testInfo) => {
+    const result = await runConformanceChecks(
+      mcp,
+      { requiredTools: ['docs_search', 'docs_fetch'], validateSchemas: true },
+      testInfo
+    );
+
+    const failed = result.checks.filter((c) => !c.pass);
+    expect(failed, JSON.stringify(failed, null, 2)).toEqual([]);
+    expect(result.raw.serverInfo).toMatchObject({ name: 'test-docs', version: '1.0.0' });
+    expect(result.raw.tools).toHaveLength(2);
   });
 
-  test('should list available tools', async ({ mcp }) => {
+  test('tools are annotated read-only', async ({ mcp }) => {
     const tools = await mcp.listTools();
-    expect(Array.isArray(tools)).toBe(true);
-    expect(tools.length).toBe(2);
-
-    const toolNames = tools.map((t) => t.name);
-    expect(toolNames).toContain('docs_search');
-    expect(toolNames).toContain('docs_fetch');
+    for (const tool of tools) {
+      expect(tool.annotations, tool.name).toMatchObject({ readOnlyHint: true });
+    }
   });
 
-  test('should handle invalid tool gracefully', async ({ mcp }) => {
-    const result = await mcp.callTool('nonexistent_tool', {});
-    expect(result.isError).toBe(true);
+  test('rejects an unknown tool with a JSON-RPC invalid-params error', async ({ mcp }) => {
+    // MCP SDK v2: unknown tools are a protocol error (-32602), not an isError result.
+    await expect(mcp.callTool('nonexistent_tool', {})).rejects.toMatchObject({ code: -32602 });
   });
 });
 
-test.describe('docs_search Tool', () => {
-  test('finds documents by title keywords', async ({ mcp }) => {
-    const result = await mcp.callTool('docs_search', { query: 'introduction' });
-    expect(result).toContainToolText('Introduction');
-    expect(result).toContainToolText('/docs/intro');
+test.describe('Skills (2025-era client)', () => {
+  test('points to skills in instructions', async ({ mcp }) => {
+    // 2025-era clients drop the capabilities `extensions` field, so the
+    // instructions pointer is how they discover skills.
+    expect(mcp.client.getInstructions()).toContain('skill://docs-research/SKILL.md');
   });
 
-  test('finds documents by content', async ({ mcp }) => {
-    const result = await mcp.callTool('docs_search', { query: 'OAuth' });
-    expect(result).toContainToolText('Authentication');
-    expect(result).toContainToolText('/docs/api/authentication');
-  });
+  test('lists and reads the built-in skill as a resource', async ({ mcp }) => {
+    // The tester has no resources API yet, so use the underlying SDK client.
+    const { resources } = await mcp.client.listResources();
+    expect(resources.map((r) => r.uri)).toContain('skill://docs-research/SKILL.md');
 
-  test('respects limit parameter', async ({ mcp }) => {
-    const result = await mcp.callTool('docs_search', { query: 'the', limit: 1 });
-    expect(result).not.toBeToolError();
-  });
-
-  test('returns no results message for non-matching query', async ({ mcp }) => {
-    const result = await mcp.callTool('docs_search', { query: 'xyznonexistent12345' });
-    expect(result).toContainToolText('No matching documents found');
-  });
-
-  test('includes URLs when baseUrl is configured', async ({ mcp }) => {
-    const result = await mcp.callTool('docs_search', { query: 'installation' });
-    expect(result).toContainToolText('https://docs.example.com');
-  });
-});
-
-test.describe('docs_fetch Tool', () => {
-  test('retrieves full page content by URL', async ({ mcp }) => {
-    const result = await mcp.callTool('docs_fetch', {
-      url: 'https://docs.example.com/docs/intro',
-    });
-    expect(result).not.toBeToolError();
-    expect(result).toContainToolText('Introduction');
-    expect(result).toContainToolText('Welcome to the documentation');
-  });
-
-  test('returns page with markdown content', async ({ mcp }) => {
-    const result = await mcp.callTool('docs_fetch', {
-      url: 'https://docs.example.com/docs/installation',
-    });
-    expect(result).toContainToolText('npm install my-platform');
-  });
-
-  test('returns error for non-existent page', async ({ mcp }) => {
-    const result = await mcp.callTool('docs_fetch', {
-      url: 'https://docs.example.com/docs/nonexistent',
-    });
-    expect(result).toContainToolText('Page not found');
+    const { contents } = await mcp.client.readResource({ uri: 'skill://docs-research/SKILL.md' });
+    expect((contents[0] as { text: string }).text).toContain('docs_search');
   });
 });
