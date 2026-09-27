@@ -20,7 +20,7 @@ export const docsFetchTool = {
   name: 'docs_fetch',
   description:
     'Fetch the complete content of a documentation page. Use this after searching to get the full markdown content of a specific page.',
-  inputSchema: docsFetchInputSchema,
+  inputSchema: z.object(docsFetchInputSchema),
 };
 
 /**

@@ -24,7 +24,7 @@ export const docsSearchTool = {
   name: 'docs_search',
   description:
     'Search the documentation for relevant pages. Returns matching documents with URLs, snippets, and relevance scores. Use this to find information across all documentation.',
-  inputSchema: docsSearchInputSchema,
+  inputSchema: z.object(docsSearchInputSchema),
 };
 
 /**

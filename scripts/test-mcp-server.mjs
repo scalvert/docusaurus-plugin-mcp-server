@@ -8,6 +8,7 @@
 
 import { loadIndexer } from '../dist/index.js';
 import { createNodeServer } from '../dist/adapters-node.js';
+import { buildSkillsArtifact } from '../dist/index.js';
 
 const PORT = process.env.PORT || 3457;
 
@@ -114,6 +115,7 @@ async function main() {
     baseUrl: BASE_URL,
     docs: artifacts.get('docs.json'),
     searchIndexData: artifacts.get('search-index.json'),
+    skills: await buildSkillsArtifact({ builtin: true, siteTitle: 'Test Docs' }),
   });
 
   server.listen(PORT, () => {

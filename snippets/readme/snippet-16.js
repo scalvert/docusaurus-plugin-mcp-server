@@ -4,6 +4,7 @@ import { createNodeServer } from 'docusaurus-plugin-mcp-server/adapters/node';
 createNodeServer({
   docsPath: './build/mcp/docs.json',
   indexPath: './build/mcp/search-index.json',
+  skillsPath: './build/mcp/skills.json',
   name: 'my-docs',
   baseUrl: 'http://localhost:3000',
 }).listen(3456, () => {

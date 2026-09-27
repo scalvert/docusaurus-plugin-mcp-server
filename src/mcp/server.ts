@@ -1,12 +1,19 @@
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js';
+import {
+  McpServer,
+  WebStandardStreamableHTTPServerTransport,
+  createMcpHandler,
+  isLegacyRequest,
+  type CacheHint,
+  type McpHandlerRequestOptions,
+  type McpHttpHandler,
+} from '@modelcontextprotocol/server';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type {
   ProcessedDoc,
   McpServerConfig,
   McpServerFileConfig,
   McpServerDataConfig,
+  SkillsArtifact,
 } from '../types/index.js';
 import { loadSearchProvider } from '../providers/loader.js';
 import type {
@@ -16,6 +23,14 @@ import type {
 } from '../providers/types.js';
 import { docsSearchTool, formatSearchResults } from './tools/docs-search.js';
 import { docsFetchTool, formatPageContent } from './tools/docs-fetch.js';
+import { registerSkills, skillsCapabilities, skillsInstructions } from './skills.js';
+
+/**
+ * Cache hint for everything this server lists or reads. Content only changes
+ * on redeploy, so clients (and shared caches) may reuse results briefly
+ * (protocol revision 2026-07-28, SEP-2549). Legacy responses are unaffected.
+ */
+const CACHE_HINT = { ttlMs: 5 * 60 * 1000, cacheScope: 'public' } satisfies CacheHint;
 
 /**
  * Type guard to check if config uses file-based loading
@@ -41,11 +56,15 @@ function isDataConfig(config: McpServerConfig): config is McpServerDataConfig {
  * - File-based: Load docs and search index from filesystem (Node.js)
  * - Pre-loaded: Accept docs and search index data directly (Workers)
  *
- * Uses the official MCP SDK for proper protocol handling.
+ * Serves MCP protocol revision 2026-07-28 statelessly, and 2025-era clients
+ * (initialize handshake) from the same endpoint via the SDK's stateless
+ * legacy fallback.
  */
 export class McpDocsServer {
   private config: McpServerConfig;
   private searchProvider: SearchProvider | null = null;
+  private skills: SkillsArtifact | null = null;
+  private handler: McpHttpHandler | null = null;
   private initialized = false;
   private initPromise: Promise<void> | null = null;
   private initError: Error | null = null;
@@ -55,11 +74,16 @@ export class McpDocsServer {
   }
 
   /**
-   * Create a fresh McpServer instance with tools registered.
-   * Each request gets its own server to avoid concurrency issues
-   * with the SDK's transport reassignment.
+   * Create a fresh McpServer instance with tools (and skills) registered.
+   * Called by the SDK once per HTTP request.
    */
   private createMcpServer(): McpServer {
+    const skills = this.skills?.skills.length ? this.skills : null;
+
+    const instructions = [this.config.instructions, skills && skillsInstructions(skills.skills)]
+      .filter(Boolean)
+      .join('\n\n');
+
     const server = new McpServer(
       {
         name: this.config.name,
@@ -67,13 +91,24 @@ export class McpDocsServer {
       },
       {
         capabilities: {
-          tools: {},
+          tools: { listChanged: false },
+          ...(skills ? skillsCapabilities() : {}),
         },
-        instructions: this.config.instructions,
+        instructions: instructions || undefined,
+        cacheHints: {
+          'server/discover': CACHE_HINT,
+          'tools/list': CACHE_HINT,
+          'resources/list': CACHE_HINT,
+          'resources/templates/list': CACHE_HINT,
+          'resources/read': CACHE_HINT,
+        },
       }
     );
 
     this.registerTools(server);
+    if (skills) {
+      registerSkills(server, skills, { cacheHint: CACHE_HINT });
+    }
     return server;
   }
 
@@ -88,6 +123,7 @@ export class McpDocsServer {
       {
         description: toolOverrides?.docs_search?.description ?? docsSearchTool.description,
         inputSchema: docsSearchTool.inputSchema,
+        annotations: { readOnlyHint: true, openWorldHint: false },
       },
       async ({ query, limit }) => {
         if (!this.searchProvider || !this.searchProvider.isReady()) {
@@ -122,6 +158,7 @@ export class McpDocsServer {
       {
         description: toolOverrides?.docs_fetch?.description ?? docsFetchTool.description,
         inputSchema: docsFetchTool.inputSchema,
+        annotations: { readOnlyHint: true, openWorldHint: false },
       },
       async ({ url }) => {
         if (!this.searchProvider || !this.searchProvider.isReady()) {
@@ -216,24 +253,67 @@ export class McpDocsServer {
       // Pre-loaded data mode (Cloudflare Workers, etc.)
       initData.docs = this.config.docs;
       initData.indexData = this.config.searchIndexData;
+      this.skills = this.config.skills ?? null;
     } else if (isFileConfig(this.config)) {
       // File-based mode (Node.js)
       initData.docsPath = this.config.docsPath;
       initData.indexPath = this.config.indexPath;
+      if (this.config.skillsPath) {
+        const { readFile } = await import('node:fs/promises');
+        this.skills = JSON.parse(await readFile(this.config.skillsPath, 'utf8')) as SkillsArtifact;
+      }
     } else {
       throw new Error('Invalid server config: must provide either file paths or pre-loaded data');
     }
 
     await this.searchProvider.initialize(providerContext, initData);
 
+    this.handler = createMcpHandler(() => this.createMcpServer(), {
+      // Legacy traffic is routed separately (see dispatch) to keep v1's JSON responses.
+      legacy: 'reject',
+      // Default 'auto' mode answers with a single JSON body unless a handler
+      // emits a notification first; our tools never do.
+      onerror: (error) => console.error('[MCP] Handler error:', error),
+    });
+
     this.initialized = true;
   }
 
   /**
-   * Handle an HTTP request using the MCP SDK's transport
+   * Route one request by protocol era. 2026-07-28 requests go to the SDK's
+   * modern handler. 2025-era requests (initialize handshake, no per-request
+   * envelope) get a fresh stateless server over a JSON-response transport,
+   * matching the wire behavior of v1 of this package.
+   */
+  private async dispatch(request: Request, options?: McpHandlerRequestOptions): Promise<Response> {
+    await this.initialize();
+    if (!this.handler) {
+      throw new Error('MCP handler not initialized');
+    }
+
+    if (!(await isLegacyRequest(request, options?.parsedBody))) {
+      return this.handler.fetch(request, options);
+    }
+
+    const server = this.createMcpServer();
+    const transport = new WebStandardStreamableHTTPServerTransport({
+      sessionIdGenerator: undefined,
+      enableJsonResponse: true,
+    });
+    await server.connect(transport);
+    try {
+      return await transport.handleRequest(request, options);
+    } finally {
+      await transport.close();
+    }
+  }
+
+  /**
+   * Handle a Node.js HTTP request.
    *
-   * This method is designed for serverless environments (Vercel, Netlify).
-   * Creates a fresh McpServer per request to avoid concurrency issues.
+   * Bridges the Node request/response pair onto the web-standard handler.
+   * Pass `parsedBody` when the body has already been consumed (e.g. by a
+   * body-parsing middleware).
    *
    * @param req - Node.js IncomingMessage or compatible request object
    * @param res - Node.js ServerResponse or compatible response object
@@ -244,53 +324,22 @@ export class McpDocsServer {
     res: ServerResponse,
     parsedBody?: unknown
   ): Promise<void> {
-    await this.initialize();
-
-    const server = this.createMcpServer();
-
-    // Create a stateless transport for this request
-    // enableJsonResponse: true means we get simple JSON responses instead of SSE
-    const transport = new StreamableHTTPServerTransport({
-      sessionIdGenerator: undefined, // Stateless mode - no session tracking
-      enableJsonResponse: true, // Return JSON instead of SSE streams
-    });
-
-    await server.connect(transport);
-
-    try {
-      await transport.handleRequest(req, res, parsedBody);
-    } finally {
-      await transport.close();
-    }
+    const request = toWebRequest(req, parsedBody);
+    const response = await this.dispatch(
+      request,
+      parsedBody !== undefined ? { parsedBody } : undefined
+    );
+    await writeWebResponse(response, res);
   }
 
   /**
    * Handle a Web Standard Request (Cloudflare Workers, Deno, Bun)
    *
-   * This method is designed for Web Standard environments that use
-   * the Fetch API Request/Response pattern.
-   * Creates a fresh McpServer per request to avoid concurrency issues.
-   *
    * @param request - Web Standard Request object
    * @returns Web Standard Response object
    */
   async handleWebRequest(request: Request): Promise<Response> {
-    await this.initialize();
-
-    const server = this.createMcpServer();
-
-    const transport = new WebStandardStreamableHTTPServerTransport({
-      sessionIdGenerator: undefined, // Stateless mode
-      enableJsonResponse: true,
-    });
-
-    await server.connect(transport);
-
-    try {
-      return await transport.handleRequest(request);
-    } finally {
-      await transport.close();
-    }
+    return this.dispatch(request);
   }
 
   /**
@@ -303,6 +352,7 @@ export class McpDocsServer {
     version: string;
     initialized: boolean;
     docCount: number;
+    skillCount: number;
     baseUrl?: string;
     searchProvider?: string;
   }> {
@@ -317,8 +367,84 @@ export class McpDocsServer {
       version: this.config.version ?? '1.0.0',
       initialized: this.initialized,
       docCount,
+      skillCount: this.skills?.skills.length ?? 0,
       baseUrl: this.config.baseUrl,
       searchProvider: this.searchProvider?.name,
     };
+  }
+}
+
+/**
+ * Build a web-standard Request from a Node request. When the body was
+ * already parsed it's re-serialized; otherwise the raw stream is forwarded.
+ */
+function toWebRequest(req: IncomingMessage, parsedBody: unknown): Request {
+  const host = req.headers.host ?? 'localhost';
+  const url = new URL(req.url ?? '/', `http://${host}`);
+
+  const headers = new Headers();
+  for (const [key, value] of Object.entries(req.headers)) {
+    if (value === undefined) continue;
+    if (Array.isArray(value)) {
+      for (const v of value) headers.append(key, v);
+    } else {
+      headers.set(key, value);
+    }
+  }
+
+  const method = req.method ?? 'GET';
+  const hasBody = method !== 'GET' && method !== 'HEAD';
+
+  if (!hasBody) {
+    return new Request(url, { method, headers });
+  }
+
+  if (parsedBody !== undefined) {
+    headers.delete('content-length');
+    return new Request(url, { method, headers, body: JSON.stringify(parsedBody) });
+  }
+
+  const body = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      for await (const chunk of req) {
+        controller.enqueue(typeof chunk === 'string' ? new TextEncoder().encode(chunk) : chunk);
+      }
+      controller.close();
+    },
+  });
+
+  return new Request(url, {
+    method,
+    headers,
+    body,
+    // Required by Node's fetch implementation for streaming request bodies.
+    duplex: 'half',
+  } as RequestInit);
+}
+
+/**
+ * Write a web-standard Response to a Node ServerResponse, preserving any
+ * headers already set on `res` (e.g. CORS).
+ */
+async function writeWebResponse(response: Response, res: ServerResponse): Promise<void> {
+  response.headers.forEach((value, key) => {
+    res.setHeader(key, value);
+  });
+  res.writeHead(response.status, response.statusText);
+
+  if (!response.body) {
+    res.end();
+    return;
+  }
+
+  const reader = response.body.getReader();
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      res.write(value);
+    }
+  } finally {
+    res.end();
   }
 }

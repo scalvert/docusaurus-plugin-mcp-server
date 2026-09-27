@@ -22,6 +22,7 @@
 import { createServer, type Server, type IncomingMessage, type ServerResponse } from 'node:http';
 import { McpDocsServer } from '../mcp/server.js';
 import type { McpServerConfig } from '../types/index.js';
+import { getCorsHeaders } from './cors.js';
 
 /**
  * Options for the Node.js MCP server.
@@ -57,9 +58,9 @@ export function createNodeHandler(options: NodeServerOptions) {
 
   function setCorsHeaders(res: ServerResponse): void {
     if (corsOrigin !== false) {
-      res.setHeader('Access-Control-Allow-Origin', corsOrigin);
-      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      for (const [key, value] of Object.entries(getCorsHeaders(corsOrigin))) {
+        res.setHeader(key, value);
+      }
     }
   }
 

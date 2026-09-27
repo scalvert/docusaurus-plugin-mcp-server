@@ -6,6 +6,10 @@
 
 A Docusaurus plugin that exposes an [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) server endpoint, allowing AI agents like Claude, Cursor, and other MCP-compatible tools to search and retrieve your documentation.
 
+The server speaks MCP [2026-07-28](https://modelcontextprotocol.io/specification/2026-07-28) and still serves clients on 2025-era revisions (the `initialize` handshake) from the same endpoint. It can also serve [Agent Skills](#mcp-skills) that teach agents how to use your docs tools.
+
+> Upgrading from 1.x? See [Upgrading to 2.0](#upgrading-to-20).
+
 ## Installation
 
 ```bash
@@ -41,16 +45,20 @@ The MCP server runs on any web-standard serverless or edge runtime — Cloudflar
 import { createWebRequestHandler } from 'docusaurus-plugin-mcp-server/adapters';
 import docs from '../build/mcp/docs.json';
 import searchIndex from '../build/mcp/search-index.json';
+import skills from '../build/mcp/skills.json';
 
 export default {
   fetch: createWebRequestHandler({
     docs,
     searchIndexData: searchIndex,
+    skills,
     name: 'my-docs',
     baseUrl: 'https://docs.example.com',
   }),
 };
 ```
+
+`skills` is optional. Leave it out to serve no [skills](#mcp-skills).
 
 The `export default { fetch }` form works on Cloudflare Workers, Deno, and Bun. Other runtimes use their own entry convention (e.g. modern Netlify functions `export default async (request) => Response`) — the handler is identical, only the export wrapper differs.
 
@@ -167,6 +175,46 @@ Retrieve full page content as markdown. Use this after searching to get the comp
 - Table of contents with anchor links
 - Full markdown content
 
+## MCP Skills
+
+Tool descriptions tell an agent what `docs_search` and `docs_fetch` do, not how to research your docs well. The server can also ship that guidance as [Agent Skills](https://agentskills.io) via the MCP skills extension ([SEP-2640](https://modelcontextprotocol.io/seps/2640-skills-extension), `io.modelcontextprotocol/skills`).
+
+By default the plugin packages one built-in skill, `docs-research`, which covers the search → fetch → cite workflow for your site. Add your own skills (a directory per skill with a `SKILL.md` at its root) and point the plugin at them:
+
+```javascript snippet=readme/snippet-20.js
+// docusaurus.config.js
+module.exports = {
+  plugins: [
+    [
+      'docusaurus-plugin-mcp-server',
+      {
+        server: { name: 'my-docs' },
+        // Serve the built-in docs-research skill plus every skill in ./mcp-skills
+        skills: { dir: 'mcp-skills' },
+      },
+    ],
+  ],
+};
+```
+
+```text
+mcp-skills/
+└── api-migration/
+    ├── SKILL.md            # YAML frontmatter with name + description, then instructions
+    └── references/
+        └── v1-to-v2.md
+```
+
+At build time the plugin validates every skill (frontmatter `name` must match the directory name; at most 512 files and 16 MiB per skill), precomputes SHA-256 digests, and writes `build/mcp/skills.json`. Pass it to the handler as `skills` (web) or `skillsPath` (Node). An author skill named `docs-research` replaces the built-in one. Set `skills: { builtin: false, dir: '...' }` to ship only your own, or `skills: false` to turn skills off.
+
+At runtime the server:
+
+- declares the `io.modelcontextprotocol/skills` extension and implements `skills/list` and `skills/get`
+- serves every skill file as a resource at `skill://<name>/<path>` (for example `skill://docs-research/SKILL.md`)
+- appends the skill URIs to the server `instructions`, so clients that don't support the extension yet can still find the skills and load them with `resources/read`
+
+Keep skills to markdown. MCP hosts treat served skills as untrusted input and won't run bundled scripts without explicit user approval.
+
 ## Plugin Options
 
 | Option | Type | Default | Description |
@@ -183,6 +231,7 @@ Retrieve full page content as markdown. Use this after searching to get the comp
 | `indexers` | `string[] \| false` | `['flexsearch']` | Indexers to run during build. Use `false` to disable. Supports built-in (`'flexsearch'`), relative paths, or npm packages. |
 | `search` | `string` | `'flexsearch'` | Search provider module for runtime queries. Supports built-in (`'flexsearch'`), relative paths, or npm packages. |
 | `flexsearch` | `FlexSearchConfig` | (tuned defaults) | Tuning for the built-in FlexSearch index (`tokenize`, `resolution`, `context`, `fieldWeights`). Must be the same at build and runtime, or the index deserializes wrong. |
+| `skills` | `{ builtin?: boolean; dir?: string } \| false` | built-in skill only | [Agent Skills](#mcp-skills) to package into `skills.json`. `dir` is relative to the site directory. `false` disables skills. |
 
 Build-time options control artifact generation and the install-button URL (`server.url` / `server.urlBase`). Runtime-only options such as `instructions`, `tools`, and `baseUrl` belong on the adapter/handler config — see [Server Configuration](#server-configuration).
 
@@ -305,10 +354,12 @@ These options apply to `createWebRequestHandler`, `createNodeServer`, and `creat
 | `indexPath` | `string` | Yes* | Path to `search-index.json` |
 | `docs` | `object` | Yes* | Pre-loaded docs (web handler) |
 | `searchIndexData` | `object` | Yes* | Pre-loaded search index (web handler) |
+| `skillsPath` | `string` | No | Path to `skills.json` (file mode). Omit to serve no skills |
+| `skills` | `object` | No | Pre-loaded `skills.json` (data mode). Omit to serve no skills |
 | `name` | `string` | Yes | Server name |
 | `version` | `string` | No | Server version |
 | `baseUrl` | `string` | No | Base URL for full page URLs in responses |
-| `instructions` | `string` | No | Instructions describing how to use the server, surfaced to MCP clients in the `initialize` response |
+| `instructions` | `string` | No | Instructions describing how to use the server, surfaced to MCP clients in the `server/discover` (2026-07-28) or `initialize` (2025-era) result. When skills are served, their URIs are appended |
 | `tools` | `object` | No | Per-tool overrides. Supports `docs_search.description` and `docs_fetch.description` to customize tool descriptions |
 
 *Use file paths (`createNodeServer`, local dev) or pre-loaded data (`createWebRequestHandler`, serverless/edge).
@@ -390,11 +441,13 @@ Alternatively, test with curl:
 # List available tools
 curl -X POST https://docs.example.com/mcp \
   -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
   -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 
 # Search documentation
 curl -X POST https://docs.example.com/mcp \
   -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
   -d '{
     "jsonrpc":"2.0",
     "id":2,
@@ -414,12 +467,14 @@ The plugin operates in two phases:
 
 **Build Time:** During `docusaurus build`, the plugin's `postBuild` hook processes all rendered HTML pages, extracts content, converts to markdown, builds a FlexSearch index, and outputs artifacts to `build/mcp/`.
 
-**Runtime:** A serverless function loads the pre-built artifacts and handles MCP JSON-RPC requests from AI agents. The server is stateless and fast since all indexing happens at build time.
+**Runtime:** A serverless function loads the pre-built artifacts and handles MCP JSON-RPC requests from AI agents. The server is stateless (MCP 2026-07-28 has no sessions), so any instance can answer any request, and list/read results carry cache hints (`ttlMs` 5 minutes, `cacheScope: public`) because content only changes on redeploy. All indexing happens at build time.
 
 ## Features
 
 - **Full-text Search** - FlexSearch-powered search with relevance ranking
 - **Page Retrieval** - Get complete page content as clean markdown
+- **MCP 2026-07-28, backward compatible** - Stateless modern protocol plus 2025-era clients on the same endpoint
+- **Agent Skills** - Ships a docs-research skill (and yours) over the MCP skills extension
 - **Runs Anywhere** - One web-standard handler (`createWebRequestHandler`) for any serverless/edge runtime — Cloudflare Workers, modern Netlify functions, Vercel Edge, Deno, Bun — plus a Node server (`createNodeServer`) for local development
 - **CORS Support** - The web and Node handlers send CORS headers for browser-based clients; restrict with `corsOrigin`
 - **Build-time Processing** - Extracts content from rendered HTML, capturing React component output
@@ -436,6 +491,7 @@ import { createNodeServer } from 'docusaurus-plugin-mcp-server/adapters/node';
 createNodeServer({
   docsPath: './build/mcp/docs.json',
   indexPath: './build/mcp/search-index.json',
+  skillsPath: './build/mcp/skills.json',
   name: 'my-docs',
   baseUrl: 'http://localhost:3000',
 }).listen(3456, () => {
@@ -473,6 +529,9 @@ import {
 
   // Resolve the MCP endpoint URL the install button uses
   resolveServerUrl,
+
+  // Package Agent Skills into a skills.json artifact (outside the plugin)
+  buildSkillsArtifact,
 
   // Default plugin options
   DEFAULT_PLUGIN_OPTIONS,
@@ -536,10 +595,25 @@ import {
 - `createDocsRegistryOptions(config)` — Returns registry options without creating the registry.
 - `McpConfig` — Type for `{ serverUrl: string; serverName: string }`.
 
+## Upgrading to 2.0
+
+2.0 moves to the MCP TypeScript SDK v2 (`@modelcontextprotocol/server`) and the 2026-07-28 protocol revision.
+
+**Clients:** nothing to do. Clients on 2026-07-28 are served statelessly. Clients on 2025-era revisions (`initialize` handshake) still get plain JSON responses from the same endpoint.
+
+**What changed for you:**
+
+- **zod >= 4.2 is required.** The v2 SDK drops zod 3, and zod 4.2 or later is needed for tool schema descriptions to reach clients.
+- **`docsSearchTool.inputSchema` and `docsFetchTool.inputSchema` are now `z.object(...)` schemas.** The raw shapes are still exported as `docsSearchInputSchema` and `docsFetchInputSchema`.
+- **Calling an unknown tool now returns a JSON-RPC error (`-32602`)** instead of a tool result with `isError: true`.
+- **Skills are on by default.** The build now also writes `build/mcp/skills.json`. Pass it to your handler as `skills` or `skillsPath` to serve it, or set `skills: false` in the plugin options to skip it.
+- **CORS** now allows the `MCP-Protocol-Version`, `Mcp-Method`, and `Mcp-Name` request headers that 2026-07-28 clients send.
+
 ## Requirements
 
 - Node.js >= 20
 - Docusaurus 3.x
+- zod >= 4.2
 
 ## License
 

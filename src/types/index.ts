@@ -96,6 +96,74 @@ export interface McpServerPluginOptions {
    * Ignored when a custom indexer/provider is used.
    */
   flexsearch?: FlexSearchConfig;
+
+  /**
+   * Agent Skills served over MCP (the `io.modelcontextprotocol/skills`
+   * extension). At build time the plugin writes `skills.json` alongside the
+   * other artifacts; the runtime serves it via `skills/list`, `skills/get`
+   * and `skill://` resources.
+   *
+   * - undefined (default): the built-in `docs-research` skill only
+   * - `{ dir: 'mcp-skills' }`: also package every `<dir>/<name>/SKILL.md`
+   *   skill directory (path relative to the site directory)
+   * - `{ builtin: false, dir: ... }`: only your own skills
+   * - `false`: no skills, no `skills.json`
+   */
+  skills?: SkillsPluginOptions | false;
+}
+
+/**
+ * Options for the skills served over MCP
+ */
+export interface SkillsPluginOptions {
+  /** Include the built-in `docs-research` skill. Default: true */
+  builtin?: boolean;
+  /**
+   * Directory (relative to the site directory) containing skill directories,
+   * each with a `SKILL.md` at its root, per the Agent Skills specification.
+   */
+  dir?: string;
+}
+
+/**
+ * One file of a packaged skill, as stored in `skills.json`
+ */
+export interface SkillFile {
+  /** Path relative to the skill root, using `/` separators (e.g. `SKILL.md`, `references/api.md`) */
+  path: string;
+  /** MIME type served on `resources/read` */
+  mimeType: string;
+  /** UTF-8 text content (text files) */
+  text?: string;
+  /** Base64 content (binary files) */
+  blob?: string;
+  /** `sha256:<hex>` digest of the file's raw bytes */
+  digest: string;
+  /** Size of the file's raw bytes */
+  size: number;
+}
+
+/**
+ * A packaged skill, as stored in `skills.json`
+ */
+export interface SkillArtifact {
+  /**
+   * Skill path: the part of the `skill://` URI before the file path. Its last
+   * segment equals `frontmatter.name` (e.g. `my-docs/docs-research`).
+   */
+  skillPath: string;
+  /** SKILL.md YAML frontmatter rendered as JSON (always has `name` and `description`) */
+  frontmatter: Record<string, unknown> & { name: string; description: string };
+  /** Every file in the skill, SKILL.md first */
+  files: SkillFile[];
+}
+
+/**
+ * Contents of the `skills.json` build artifact
+ */
+export interface SkillsArtifact {
+  version: 1;
+  skills: SkillArtifact[];
 }
 
 /**
@@ -119,6 +187,8 @@ export interface ResolvedPluginOptions {
   search: string;
   /** FlexSearch overrides for the built-in indexer/provider. */
   flexsearch?: FlexSearchConfig;
+  /** Skills options; false disables skills */
+  skills?: SkillsPluginOptions | false;
 }
 
 /**
@@ -197,6 +267,8 @@ export interface McpManifest {
   baseUrl?: string;
   /** Names of indexers that ran during build */
   indexers?: string[];
+  /** Number of skills written to skills.json */
+  skillCount?: number;
 }
 
 /**
@@ -244,7 +316,9 @@ export interface McpServerBaseConfig {
   flexsearch?: FlexSearchConfig;
   /**
    * Instructions describing how to use the server and its tools.
-   * Surfaced to MCP clients in the initialize response.
+   * Surfaced to MCP clients in the `server/discover` (2026-07-28) or
+   * `initialize` (2025-era) result. When skills are served, a short pointer
+   * listing their `skill://` URIs is appended.
    */
   instructions?: string;
   /** Per-tool overrides, such as custom descriptions */
@@ -259,6 +333,8 @@ export interface McpServerFileConfig extends McpServerBaseConfig {
   docsPath: string;
   /** Path to search-index.json file */
   indexPath: string;
+  /** Path to skills.json file. Optional; omit to serve no skills. */
+  skillsPath?: string;
 }
 
 /**
@@ -269,6 +345,8 @@ export interface McpServerDataConfig extends McpServerBaseConfig {
   docs: Record<string, ProcessedDoc>;
   /** Pre-loaded search index data (exported from FlexSearch via exportSearchIndex) */
   searchIndexData: Record<string, unknown>;
+  /** Pre-loaded skills.json contents. Optional; omit to serve no skills. */
+  skills?: SkillsArtifact;
 }
 
 /**
