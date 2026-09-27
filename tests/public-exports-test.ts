@@ -8,6 +8,11 @@ import mcpServerPluginDefault, {
   docsFetchInputSchema,
   buildSkillsArtifact,
   SkillValidationError,
+  evaluateSearch,
+  McpDocsServer,
+  LocalSearchIndexer,
+  LocalSearchProvider,
+  loadSearchProvider,
 } from 'docusaurus-plugin-mcp-server';
 import { z } from 'zod';
 import { createNodeHandler } from 'docusaurus-plugin-mcp-server/adapters/node';
@@ -36,10 +41,39 @@ describe('public API surface', () => {
     expect(typeof plugin.contentLoaded).toBe('function');
   });
 
+  it('rejects the removed 1.x flexsearch plugin and server options', async () => {
+    const context = {
+      siteConfig: { url: 'https://docs.example.com', baseUrl: '/' },
+    } as unknown as LoadContext;
+
+    expect(() => mcpServerPlugin(context, { flexsearch: { tokenize: 'strict' } } as never)).toThrow(
+      /'flexsearch' plugin option was removed/
+    );
+
+    const server = new McpDocsServer({
+      name: 'x',
+      docs: {},
+      searchIndexData: {},
+      flexsearch: {},
+    } as never);
+    await expect(server.initialize()).rejects.toThrow(/'flexsearch' server option was removed/);
+  });
+
+  it('evaluateSearch is exported', () => {
+    expect(typeof evaluateSearch).toBe('function');
+  });
+
+  it('exports the built-in local search classes for passing an instance as `search`', async () => {
+    const indexer = new LocalSearchIndexer();
+    expect(indexer.name).toBe('local');
+    const provider = new LocalSearchProvider();
+    await expect(loadSearchProvider(provider)).resolves.toBe(provider);
+  });
+
   it('DEFAULT_PLUGIN_OPTIONS exposes the documented defaults', () => {
     expect(DEFAULT_PLUGIN_OPTIONS.outputDir).toBe('mcp');
     expect(DEFAULT_PLUGIN_OPTIONS.minContentLength).toBe(50);
-    expect(DEFAULT_PLUGIN_OPTIONS.search).toBe('flexsearch');
+    expect(DEFAULT_PLUGIN_OPTIONS.search).toBe('local');
     expect(DEFAULT_PLUGIN_OPTIONS.excludeRoutes).toEqual(['/404*', '/search*']);
     expect(DEFAULT_PLUGIN_OPTIONS.server.name).toBe('docs-mcp-server');
     expect(DEFAULT_PLUGIN_OPTIONS.contentSelectors[0]).toBe('article');

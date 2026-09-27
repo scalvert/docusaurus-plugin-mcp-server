@@ -22,6 +22,16 @@ import { buildSkillsArtifact } from '../skills/packager.js';
  * Resolve plugin options with defaults.
  */
 function resolveOptions(options: McpServerPluginOptions): ResolvedPluginOptions {
+  // 1.x tuned the built-in FlexSearch index here. 2.0's local search has no
+  // build-time options, so fail loudly rather than silently ignoring them.
+  if ('flexsearch' in (options as object)) {
+    throw new Error(
+      "[MCP] The 'flexsearch' plugin option was removed in docusaurus-plugin-mcp-server 2.0. " +
+        'The built-in local search needs no build-time tuning; remove the option. ' +
+        "Field boosts can be set at runtime with the server's 'localSearch' option. " +
+        'See "Upgrading to 2.0" in the README.'
+    );
+  }
   return {
     ...DEFAULT_PLUGIN_OPTIONS,
     ...options,
@@ -163,7 +173,7 @@ export default function mcpServerPlugin(
         outputDir: mcpOutputDir,
       };
 
-      const indexerSpecs = resolvedOptions.indexers ?? ['flexsearch'];
+      const indexerSpecs = resolvedOptions.indexers ?? ['local'];
 
       await fs.ensureDir(mcpOutputDir);
 
@@ -171,9 +181,7 @@ export default function mcpServerPlugin(
 
       for (const indexerSpec of indexerSpecs) {
         try {
-          const indexer = await loadIndexer(indexerSpec, {
-            flexsearch: resolvedOptions.flexsearch,
-          });
+          const indexer = await loadIndexer(indexerSpec);
 
           // Check if indexer wants to run (env var gating)
           if (indexer.shouldRun && !indexer.shouldRun()) {

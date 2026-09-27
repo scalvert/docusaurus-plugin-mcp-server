@@ -1,6 +1,5 @@
 import { z } from 'zod';
-import type { ProcessedDoc, SearchResult, DocsSearchParams } from '../../types/index.js';
-import { querySearchIndex, type FlexSearchDocument } from '../../search/flexsearch-core.js';
+import type { SearchResult } from '../../types/index.js';
 
 /**
  * Zod field shape for docs_search input parameters. A raw shape (not a
@@ -28,31 +27,6 @@ export const docsSearchTool = {
     'Search the documentation for relevant pages. Returns matching documents with URLs, snippets, and relevance scores. Use this to find information across all documentation.',
   inputSchema: z.object(docsSearchInputSchema),
 };
-
-/**
- * Execute the docs_search tool
- */
-export function executeDocsSearch(
-  params: DocsSearchParams,
-  index: FlexSearchDocument,
-  docs: Record<string, ProcessedDoc>
-): SearchResult[] {
-  const { query, limit = 16 } = params;
-
-  // Validate parameters
-  if (!query || typeof query !== 'string' || query.trim().length === 0) {
-    throw new Error('Query parameter is required and must be a non-empty string');
-  }
-
-  const effectiveLimit = Math.min(Math.max(1, limit), 20);
-
-  // Search the index
-  const results = querySearchIndex(index, docs, query.trim(), {
-    limit: effectiveLimit,
-  });
-
-  return results;
-}
 
 /**
  * Format search results for MCP response

@@ -55,15 +55,17 @@ The package has four export paths configured in `package.json`:
 - `skills-builtin/` - Built-in skills shipped in the package (`docs-research/SKILL.md`, with a `{{siteTitle}}` placeholder). Published via package.json `files`; distinct from `skills/`, which is this repo's own developer skill
 - `src/adapters/node-bridge.ts` - Node `IncomingMessage`/`ServerResponse` ↔ web `Request`/`Response`
 - `src/processing/` - HTML parsing, markdown conversion, heading extraction
-- `src/search/` - FlexSearch integration for full-text search
+- `src/search/` - Built-in BM25 local search (`local-search.ts`, MiniSearch) and the `evaluateSearch` ranking harness (`evaluate.ts`)
 - `src/providers/` - Pluggable indexer/search provider system
 - `src/cli/verify.ts` - CLI for verifying build output
 
 ### Provider System
 
 Indexers and search providers are pluggable via the `src/providers/` system:
-- `ContentIndexer` - Processes docs at build time (e.g., FlexSearchIndexer)
-- `SearchProvider` - Handles queries at runtime (e.g., FlexSearchProvider)
+- `ContentIndexer` - Processes docs at build time (e.g., LocalSearchIndexer)
+- `SearchProvider` - Handles queries at runtime (e.g., LocalSearchProvider)
+
+Ranking changes must keep `tests/search-ranking-test.ts` passing; its thresholds are floors.
 
 ## Testing
 

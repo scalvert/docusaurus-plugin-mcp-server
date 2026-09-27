@@ -1,38 +1,50 @@
-import type { FlexSearchConfig } from '../types/index.js';
+import type { LocalSearchConfig } from '../types/index.js';
 import type { ContentIndexer, SearchProvider } from './types.js';
 
 /**
- * Options forwarded to the built-in 'flexsearch' indexer/provider.
+ * Options forwarded to the built-in 'local' search provider.
  * Ignored for custom specifiers.
  */
-export interface BuiltinIndexerOptions {
-  flexsearch?: FlexSearchConfig;
+export interface BuiltinSearchOptions {
+  localSearch?: LocalSearchConfig;
+}
+
+// 1.x built-in name. Rejected with a pointer to the migration guide rather
+// than silently remapped: the index format changed, so a 1.x index cannot be
+// served, and a stale config should fail at build time, not return nothing.
+const REMOVED_BUILTIN = 'flexsearch';
+
+function removedBuiltinError(kind: 'indexer' | 'search provider'): Error {
+  return new Error(
+    `The '${REMOVED_BUILTIN}' ${kind} was replaced by the built-in 'local' search in docusaurus-plugin-mcp-server 2.0. ` +
+      `Use 'local' (or omit the option), remove any 'flexsearch' options, and rebuild the site. ` +
+      `See "Upgrading to 2.0" in the README.`
+  );
 }
 
 /**
  * Load an indexer by name or module path.
  *
- * @param specifier - Either 'flexsearch' for the built-in indexer, or a module path
+ * @param specifier - Either 'local' for the built-in indexer, or a module path
  *                    (relative path like './my-indexer.js' or npm package like '@myorg/indexer')
- * @param builtinOptions - Options passed to the built-in indexer constructor (ignored for custom specifiers)
  * @returns Instantiated ContentIndexer
  *
  * @example
  * ```typescript
- * // Built-in with overrides
- * const indexer = await loadIndexer('flexsearch', { flexsearch: { tokenize: 'strict' } });
+ * // Built-in local search indexer
+ * const indexer = await loadIndexer('local');
  *
  * // Custom relative path
  * const indexer = await loadIndexer('./src/providers/algolia-indexer.js');
  * ```
  */
-export async function loadIndexer(
-  specifier: string,
-  builtinOptions?: BuiltinIndexerOptions
-): Promise<ContentIndexer> {
-  if (specifier === 'flexsearch') {
-    const { FlexSearchIndexer } = await import('./indexers/flexsearch-indexer.js');
-    return new FlexSearchIndexer(builtinOptions?.flexsearch);
+export async function loadIndexer(specifier: string): Promise<ContentIndexer> {
+  if (specifier === 'local') {
+    const { LocalSearchIndexer } = await import('./indexers/local-search-indexer.js');
+    return new LocalSearchIndexer();
+  }
+  if (specifier === REMOVED_BUILTIN) {
+    throw removedBuiltinError('indexer');
   }
 
   try {
@@ -72,7 +84,7 @@ export async function loadIndexer(
 /**
  * Load a search provider by name, module path, or instance.
  *
- * @param specifier - 'flexsearch' for the built-in provider, a module path to
+ * @param specifier - 'local' for the built-in provider, a module path to
  *                    dynamically import, or a {@link SearchProvider} instance.
  *                    Pass an instance when running in a bundled environment
  *                    where dynamic `import()` of arbitrary specifiers is not
@@ -82,8 +94,8 @@ export async function loadIndexer(
  *
  * @example
  * ```typescript
- * // Built-in with overrides
- * const provider = await loadSearchProvider('flexsearch', { flexsearch: { tokenize: 'strict' } });
+ * // Built-in local search, weighing titles more heavily
+ * const provider = await loadSearchProvider('local', { localSearch: { fieldBoosts: { title: 5 } } });
  *
  * // Pre-instantiated (Workers / bundled environments)
  * const provider = await loadSearchProvider(new MyProvider());
@@ -91,7 +103,7 @@ export async function loadIndexer(
  */
 export async function loadSearchProvider(
   specifier: string | SearchProvider,
-  builtinOptions?: BuiltinIndexerOptions
+  builtinOptions?: BuiltinSearchOptions
 ): Promise<SearchProvider> {
   if (typeof specifier !== 'string') {
     if (!isSearchProvider(specifier)) {
@@ -102,9 +114,12 @@ export async function loadSearchProvider(
     return specifier;
   }
 
-  if (specifier === 'flexsearch') {
-    const { FlexSearchProvider } = await import('./search/flexsearch-provider.js');
-    return new FlexSearchProvider(builtinOptions?.flexsearch);
+  if (specifier === 'local') {
+    const { LocalSearchProvider } = await import('./search/local-search-provider.js');
+    return new LocalSearchProvider(builtinOptions?.localSearch);
+  }
+  if (specifier === REMOVED_BUILTIN) {
+    throw removedBuiltinError('search provider');
   }
 
   try {

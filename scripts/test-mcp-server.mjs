@@ -94,7 +94,7 @@ const BASE_URL = 'https://docs.example.com';
 
 async function main() {
   // Build search index using the provider API
-  const indexer = await loadIndexer('flexsearch');
+  const indexer = await loadIndexer('local');
   await indexer.initialize({
     baseUrl: BASE_URL,
     serverName: 'test-docs',

@@ -9,9 +9,16 @@ import {
   docsSearchTool,
   docsFetchTool,
 
-  // Provider loaders (built-in 'flexsearch' or custom indexers/providers)
+  // Provider loaders (built-in 'local' or custom indexers/providers)
   loadIndexer,
   loadSearchProvider,
+
+  // The built-in local search, for passing an instance as `search`
+  LocalSearchIndexer,
+  LocalSearchProvider,
+
+  // Measure how well a search provider ranks the right pages
+  evaluateSearch,
 
   // Resolve the MCP endpoint URL the install button uses
   resolveServerUrl,

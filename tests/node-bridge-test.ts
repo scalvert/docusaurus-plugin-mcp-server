@@ -14,7 +14,7 @@ import type { AddressInfo } from 'node:net';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { toWebRequest, writeWebResponse } from '../src/adapters/node-bridge.js';
 import { McpDocsServer } from '../src/mcp/server.js';
-import { FlexSearchIndexer } from '../src/providers/indexers/flexsearch-indexer.js';
+import { LocalSearchIndexer } from '../src/providers/indexers/local-search-indexer.js';
 import type { ProcessedDoc } from '../src/types/index.js';
 
 /** A fake IncomingMessage: a readable stream plus request metadata. */
@@ -192,7 +192,7 @@ describe('handleHttpRequest without a pre-parsed body', () => {
   let url: string;
 
   beforeAll(async () => {
-    const indexer = new FlexSearchIndexer();
+    const indexer = new LocalSearchIndexer();
     await indexer.initialize({
       baseUrl: 'https://docs.example.com',
       serverName: 'raw-body',

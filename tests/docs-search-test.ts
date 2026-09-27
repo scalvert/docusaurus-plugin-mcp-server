@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { executeDocsSearch, formatSearchResults } from '../src/mcp/tools/docs-search.js';
-import { buildSearchIndex } from '../src/search/flexsearch-core.js';
+import { formatSearchResults } from '../src/mcp/tools/docs-search.js';
+import { buildLocalSearchIndex, documentId, searchLocalIndex } from '../src/search/local-search.js';
 import type { ProcessedDoc } from '../src/types/index.js';
 
-describe('executeDocsSearch', () => {
+describe('searchLocalIndex', () => {
   const sampleDocsArray: ProcessedDoc[] = [
     {
       route: '/guides/getting-started',
@@ -41,49 +41,130 @@ describe('executeDocsSearch', () => {
   ];
 
   const BASE_URL = 'https://docs.example.com';
-
-  // Convert to Record for lookups (keyed by full URL)
-  const sampleDocs: Record<string, ProcessedDoc> = {};
-  for (const doc of sampleDocsArray) {
-    const fullUrl = `${BASE_URL}${doc.route}`;
-    sampleDocs[fullUrl] = doc;
-  }
-
-  // Build search index from array with baseUrl
-  const searchIndex = buildSearchIndex(sampleDocsArray, BASE_URL);
+  const sampleDocs = Object.fromEntries(
+    sampleDocsArray.map((doc) => [documentId(doc, BASE_URL), doc])
+  );
+  const index = buildLocalSearchIndex(sampleDocsArray, BASE_URL);
+  const search = (query: string, limit?: number) =>
+    searchLocalIndex(index, sampleDocs, query, { limit });
 
   it('finds documents matching query', () => {
-    const results = executeDocsSearch({ query: 'getting started' }, searchIndex, sampleDocs);
+    const results = search('getting started');
 
-    expect(results.length).toBeGreaterThan(0);
-    expect(results.some((r) => r.url === `${BASE_URL}/guides/getting-started`)).toBe(true);
-    expect(results.some((r) => r.route === '/guides/getting-started')).toBe(true);
+    expect(results[0]?.url).toBe(`${BASE_URL}/guides/getting-started`);
+    expect(results[0]?.route).toBe('/guides/getting-started');
   });
 
   it('finds documents by content keywords', () => {
-    const results = executeDocsSearch({ query: 'OAuth' }, searchIndex, sampleDocs);
+    const results = search('OAuth');
 
-    expect(results.length).toBeGreaterThan(0);
     expect(results.some((r) => r.url === `${BASE_URL}/api/authentication`)).toBe(true);
-    expect(results.some((r) => r.route === '/api/authentication')).toBe(true);
   });
 
   it('respects limit parameter', () => {
-    const results = executeDocsSearch({ query: 'guide', limit: 1 }, searchIndex, sampleDocs);
-
-    expect(results.length).toBeLessThanOrEqual(1);
-  });
-
-  it('throws error for empty query', () => {
-    expect(() => executeDocsSearch({ query: '' }, searchIndex, sampleDocs)).toThrow(
-      'Query parameter is required'
-    );
+    expect(search('guide', 1).length).toBeLessThanOrEqual(1);
   });
 
   it('returns empty array for no matches', () => {
-    const results = executeDocsSearch({ query: 'xyznonexistent12345' }, searchIndex, sampleDocs);
+    expect(search('xyznonexistent12345')).toEqual([]);
+  });
 
-    expect(results).toEqual([]);
+  it('returns nothing for a limit of 0', () => {
+    expect(search('guide', 0)).toEqual([]);
+  });
+
+  it('includes a snippet and matching headings', () => {
+    const [first] = search('installation');
+
+    expect(first?.snippet).toContain('install');
+    expect(first?.matchingHeadings).toContain('Installation');
+  });
+
+  it('does not list headings that only share a stopword with the query', () => {
+    const auth = search('how do I use OAuth').find((r) => r.route === '/api/authentication');
+
+    // "Authentication" shares no word with the query; only "OAuth 2.0" does.
+    expect(auth?.matchingHeadings).toEqual(['OAuth 2.0']);
+  });
+
+  it('matches headings by stem, so a plural query finds a singular heading', () => {
+    // "installations" is not a substring of "Installation"; only stems match.
+    const hit = search('installations').find((r) => r.route === '/guides/getting-started');
+
+    expect(hit?.matchingHeadings).toEqual(['Installation']);
+  });
+
+  it('does not let a 1-2 letter word prefix-match unrelated terms', () => {
+    // "op" would prefix-match "optimization" and "optimize" if short prefixes were allowed.
+    expect(search('op').map((r) => r.route)).toEqual([]);
+  });
+
+  it('folds accents so unaccented queries match accented text', () => {
+    // Routes carry none of the query words, so only the accented text can
+    // match. Accents in the middle of a word must not split it.
+    const docs: ProcessedDoc[] = [
+      {
+        route: '/a',
+        title: 'Menu',
+        description: '',
+        markdown: 'Our café serves lunch.',
+        headings: [],
+      },
+      {
+        route: '/b',
+        title: 'Guide',
+        description: '',
+        markdown: 'Déploiement rapide.',
+        headings: [],
+      },
+      { route: '/c', title: 'Keys', description: '', markdown: 'Der Schlüssel.', headings: [] },
+    ];
+    const idx = buildLocalSearchIndex(docs, BASE_URL);
+    const byId = Object.fromEntries(docs.map((d) => [documentId(d, BASE_URL), d]));
+    const top = (q: string) => searchLocalIndex(idx, byId, q)[0]?.route;
+
+    expect(top('cafe')).toBe('/a');
+    expect(top('deploiement')).toBe('/b');
+    expect(top('schlussel')).toBe('/c');
+  });
+
+  it('anchors the snippet on a stemmed match, not the start of the page', () => {
+    // The only form of the query word is "route", well past the first 200
+    // characters, so an unstemmed snippet would fall back to the page start.
+    const doc: ProcessedDoc = {
+      route: '/concepts',
+      title: 'Concepts',
+      description: '',
+      markdown: `${'Background material. '.repeat(20)}Each route maps a path to a handler.`,
+      headings: [],
+    };
+    const idx = buildLocalSearchIndex([doc], BASE_URL);
+    const [hit] = searchLocalIndex(idx, { [documentId(doc, BASE_URL)]: doc }, 'routes');
+
+    expect(hit?.snippet).toContain('Each route maps a path');
+  });
+
+  it('highlights prefix matches in the snippet and headings, as search ranks them', () => {
+    const doc: ProcessedDoc = {
+      route: '/security',
+      title: 'Security',
+      description: '',
+      markdown: `${'Overview text. '.repeat(20)}## Authentication\n\nSign in with OAuth.`,
+      headings: [
+        {
+          level: 2,
+          text: 'Authentication',
+          id: 'authentication',
+          startOffset: 300,
+          endOffset: 318,
+        },
+      ],
+    };
+    const idx = buildLocalSearchIndex([doc], BASE_URL);
+    const [hit] = searchLocalIndex(idx, { [documentId(doc, BASE_URL)]: doc }, 'auth');
+
+    expect(hit?.matchingHeadings).toEqual(['Authentication']);
+    expect(hit?.snippet).toContain('Authentication');
   });
 });
 

@@ -59,9 +59,9 @@
     },
     {
       "id": "search-respects-limit",
-      "description": "limit: 1 returns exactly one result",
+      "description": "limit: 1 returns exactly one result for a query several pages match",
       "toolName": "docs_search",
-      "args": { "query": "the", "limit": 1 },
+      "args": { "query": "guide", "limit": 1 },
       "tags": ["search"],
       "expect": {
         "isError": false,

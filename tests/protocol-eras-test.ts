@@ -12,7 +12,7 @@ import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { z } from 'zod';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { McpDocsServer } from '../src/mcp/server.js';
-import { FlexSearchIndexer } from '../src/providers/indexers/flexsearch-indexer.js';
+import { LocalSearchIndexer } from '../src/providers/indexers/local-search-indexer.js';
 import { buildSkillsArtifact } from '../src/skills/packager.js';
 import type { ProcessedDoc, SkillsArtifact } from '../src/types/index.js';
 
@@ -39,7 +39,7 @@ const docs: ProcessedDoc[] = [
 ];
 
 async function buildServer(skills?: SkillsArtifact) {
-  const indexer = new FlexSearchIndexer();
+  const indexer = new LocalSearchIndexer();
   await indexer.initialize({
     baseUrl: 'https://docs.example.com',
     serverName: 'example-docs',

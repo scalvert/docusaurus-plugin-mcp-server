@@ -1,36 +1,20 @@
 import type { SearchProvider } from '../providers/types.js';
 
-/**
- * Field name in the search index. Higher weight = ranked higher when matched.
- */
-export type FlexSearchField = 'title' | 'headings' | 'description' | 'content';
+/** Page fields the built-in local search indexes. `slug` is the route path as words. */
+export type LocalSearchField = 'title' | 'slug' | 'headings' | 'description' | 'content';
 
 /**
- * Overrides for the built-in FlexSearch index configuration.
+ * Runtime ranking options for the built-in local search.
  *
- * The defaults are tuned for English content. Sites with long compound
- * words (e.g. German, Finnish) or large doc sets may want to relax
- * `tokenize`, drop `context`, or lower `resolution` to reduce
- * index size.
- *
- * The same config must be supplied at build time (via plugin options)
- * AND at runtime (via `McpServerBaseConfig.flexsearch`). Otherwise the
- * runtime provider deserializes the index with the wrong shape and
- * returns no results.
+ * Boosts apply at query time, so they can be set on the server config without
+ * rebuilding the index.
  */
-export interface FlexSearchConfig {
-  /** Tokenization mode. Default: 'forward'. Use 'strict' for whole-word-only. */
-  tokenize?: 'strict' | 'forward' | 'reverse' | 'full';
-  /** Ranking resolution 1-9. Default: 9. Lower = smaller index. */
-  resolution?: number;
-  /** Phrase/proximity context. Default: { resolution: 2, depth: 2, bidirectional: true }. Set to false to disable (much smaller index). */
-  context?: false | { resolution?: number; depth?: number; bidirectional?: boolean };
-  /** Query result cache. Default: 100. */
-  cache?: number | boolean;
-  /** Custom tokenizer. Default: lowercase split + English stemmer. */
-  encode?: (str: string) => string[];
-  /** Weights applied per field during ranking. Defaults: title 3, headings 2, description 1.5, content 1. */
-  fieldWeights?: Partial<Record<FlexSearchField, number>>;
+export interface LocalSearchConfig {
+  /**
+   * Per-field boosts. Higher values weigh matches in that field more.
+   * Defaults: title 3, slug 3, headings 2, description 1.5, content 1.
+   */
+  fieldBoosts?: Partial<Record<LocalSearchField, number>>;
 }
 
 /**
@@ -69,33 +53,27 @@ export interface McpServerPluginOptions {
   /**
    * Indexers to run during build.
    *
-   * - undefined (default): runs 'flexsearch' for backward compatibility
-   * - ['flexsearch']: same as default, produces docs.json + search-index.json
+   * - undefined (default): runs the built-in 'local' indexer
+   * - ['local']: same as default, produces docs.json + search-index.json
    * - ['./my-indexer.js']: runs only custom indexer(s)
    * - false: disables all indexing, no artifacts produced
    *
    * Each string can be:
-   * - 'flexsearch' (built-in)
+   * - 'local' (built-in local search)
    * - './path/to/indexer.js' (relative path)
    * - '@myorg/custom-indexer' (npm package)
    */
   indexers?: string[] | false;
 
   /**
-   * Search provider module. Default: 'flexsearch'
+   * Search provider module. Default: 'local'
    *
    * Can be:
-   * - 'flexsearch' (built-in, requires FlexSearch indexer to have run)
+   * - 'local' (built-in, requires the 'local' indexer to have run)
    * - './path/to/search.js' (relative path)
    * - '@myorg/glean-search' (npm package)
    */
   search?: string;
-
-  /**
-   * Overrides for the built-in FlexSearch indexer/provider. See {@link FlexSearchConfig}.
-   * Ignored when a custom indexer/provider is used.
-   */
-  flexsearch?: FlexSearchConfig;
 
   /**
    * Agent Skills served over MCP (the `io.modelcontextprotocol/skills`
@@ -182,12 +160,10 @@ export interface ResolvedPluginOptions {
     urlBase?: 'origin' | 'site';
   };
   excludeRoutes: string[];
-  /** Indexers to run. undefined means ['flexsearch'], false disables indexing */
+  /** Indexers to run. undefined means ['local'], false disables indexing */
   indexers: string[] | false | undefined;
   /** Search provider module */
   search: string;
-  /** FlexSearch overrides for the built-in indexer/provider. */
-  flexsearch?: FlexSearchConfig;
   /** Skills options; false disables skills */
   skills?: SkillsPluginOptions | false;
 }
@@ -235,7 +211,7 @@ export interface FlattenedRoute {
 }
 
 /**
- * Search result from FlexSearch
+ * A search result returned by a search provider
  */
 export interface SearchResult {
   /** Full URL of the matching document (use this with docs_fetch) */
@@ -301,7 +277,7 @@ export interface McpServerBaseConfig {
   /** Base URL for constructing full page URLs (e.g., https://docs.example.com) */
   baseUrl?: string;
   /**
-   * Search provider. Default: 'flexsearch'.
+   * Search provider. Default: 'local'.
    *
    * Accepts either a module specifier (string) loaded via dynamic `import()`,
    * or a {@link SearchProvider} instance. Pass an instance when running in a
@@ -310,11 +286,10 @@ export interface McpServerBaseConfig {
    */
   search?: string | SearchProvider;
   /**
-   * Overrides for the built-in FlexSearch provider. See {@link FlexSearchConfig}.
-   * Must match the config used at index build time. Ignored when `search` is
-   * a custom provider.
+   * Ranking options for the built-in local search. See {@link LocalSearchConfig}.
+   * Ignored when `search` is a custom provider.
    */
-  flexsearch?: FlexSearchConfig;
+  localSearch?: LocalSearchConfig;
   /**
    * Instructions describing how to use the server and its tools.
    * Surfaced to MCP clients in the `server/discover` (2026-07-28) or
@@ -344,7 +319,7 @@ export interface McpServerFileConfig extends McpServerBaseConfig {
 export interface McpServerDataConfig extends McpServerBaseConfig {
   /** Pre-loaded docs data */
   docs: Record<string, ProcessedDoc>;
-  /** Pre-loaded search index data (exported from FlexSearch via exportSearchIndex) */
+  /** Pre-loaded `search-index.json` contents */
   searchIndexData: Record<string, unknown>;
   /** Pre-loaded skills.json contents. Optional; omit to serve no skills. */
   skills?: SkillsArtifact;
@@ -416,6 +391,6 @@ export const DEFAULT_PLUGIN_OPTIONS: ResolvedPluginOptions = {
     version: '1.0.0',
   },
   excludeRoutes: ['/404*', '/search*'],
-  indexers: undefined, // Default: ['flexsearch'] applied at runtime
-  search: 'flexsearch',
+  indexers: undefined, // Default: ['local'] applied at runtime
+  search: 'local',
 };
