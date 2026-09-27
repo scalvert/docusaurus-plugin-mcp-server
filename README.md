@@ -6,7 +6,7 @@
 
 A Docusaurus plugin that exposes an [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) server endpoint, allowing AI agents like Claude, Cursor, and other MCP-compatible tools to search and retrieve your documentation.
 
-The server speaks MCP [2026-07-28](https://modelcontextprotocol.io/specification/2026-07-28) and still serves clients on 2025-era revisions (the `initialize` handshake) from the same endpoint. It can also serve [Agent Skills](#mcp-skills) that teach agents how to use your docs tools.
+The server speaks MCP [2026-07-28](https://modelcontextprotocol.io/specification/2026-07-28) and still serves clients on 2025-era revisions (the `initialize` handshake) from the same endpoint. It can also serve [Agent Skills](#serving-agent-skills-over-mcp) that teach agents how to use your docs tools.
 
 > Upgrading from 1.x? See [Upgrading to 2.0](#upgrading-to-20).
 
@@ -58,7 +58,7 @@ export default {
 };
 ```
 
-`skills` is optional. Leave it out to serve no [skills](#mcp-skills).
+`skills` is optional. Leave it out to serve no [skills](#serving-agent-skills-over-mcp).
 
 The `export default { fetch }` form works on Cloudflare Workers, Deno, and Bun. Other runtimes use their own entry convention (e.g. modern Netlify functions `export default async (request) => Response`) — the handler is identical, only the export wrapper differs.
 
@@ -175,7 +175,7 @@ Retrieve full page content as markdown. Use this after searching to get the comp
 - Table of contents with anchor links
 - Full markdown content
 
-## MCP Skills
+## Serving Agent Skills over MCP
 
 Tool descriptions tell an agent what `docs_search` and `docs_fetch` do, not how to research your docs well. The server can also ship that guidance as [Agent Skills](https://agentskills.io) via the MCP skills extension ([SEP-2640](https://modelcontextprotocol.io/seps/2640-skills-extension), `io.modelcontextprotocol/skills`).
 
@@ -231,7 +231,7 @@ Keep skills to markdown. MCP hosts treat served skills as untrusted input and wo
 | `indexers` | `string[] \| false` | `['flexsearch']` | Indexers to run during build. Use `false` to disable. Supports built-in (`'flexsearch'`), relative paths, or npm packages. |
 | `search` | `string` | `'flexsearch'` | Search provider module for runtime queries. Supports built-in (`'flexsearch'`), relative paths, or npm packages. |
 | `flexsearch` | `FlexSearchConfig` | (tuned defaults) | Tuning for the built-in FlexSearch index (`tokenize`, `resolution`, `context`, `fieldWeights`). Must be the same at build and runtime, or the index deserializes wrong. |
-| `skills` | `{ builtin?: boolean; dir?: string } \| false` | built-in skill only | [Agent Skills](#mcp-skills) to package into `skills.json`. `dir` is relative to the site directory. `false` disables skills. |
+| `skills` | `{ builtin?: boolean; dir?: string } \| false` | built-in skill only | [Agent Skills](#serving-agent-skills-over-mcp) to package into `skills.json`. `dir` is relative to the site directory. `false` disables skills. |
 
 Build-time options control artifact generation and the install-button URL (`server.url` / `server.urlBase`). Runtime-only options such as `instructions`, `tools`, and `baseUrl` belong on the adapter/handler config — see [Server Configuration](#server-configuration).
 
@@ -606,8 +606,9 @@ import {
 - **zod >= 4.2 is required.** The v2 SDK drops zod 3, and zod 4.2 or later is needed for tool schema descriptions to reach clients.
 - **`docsSearchTool.inputSchema` and `docsFetchTool.inputSchema` are now `z.object(...)` schemas.** The raw shapes are still exported as `docsSearchInputSchema` and `docsFetchInputSchema`.
 - **Calling an unknown tool now returns a JSON-RPC error (`-32602`)** instead of a tool result with `isError: true`.
+- **2025-era clients see two small differences in responses.** `initialize` now reports `tools.listChanged: false`, which is accurate: the tool list is fixed per deploy and the server never sends list-changed notifications. Tool `inputSchema`s now declare JSON Schema 2020-12 (`$schema`) instead of draft-07.
 - **Skills are on by default.** The build now also writes `build/mcp/skills.json`. Pass it to your handler as `skills` or `skillsPath` to serve it, or set `skills: false` in the plugin options to skip it.
-- **CORS** now allows the `MCP-Protocol-Version`, `Mcp-Method`, and `Mcp-Name` request headers that 2026-07-28 clients send.
+- **CORS headers changed.** Both the web handler and the Node server now allow `Content-Type, Accept, Authorization, MCP-Protocol-Version, Mcp-Method, Mcp-Name, Mcp-Session-Id, Last-Event-ID` and expose `MCP-Protocol-Version, Mcp-Session-Id`. In 1.x the web handler allowed only `Content-Type`, the Node server only `Content-Type, Authorization`, and neither exposed any headers.
 
 ## Requirements
 

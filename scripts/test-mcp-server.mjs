@@ -6,9 +6,8 @@
  * for integration testing with @gleanwork/mcp-server-tester.
  */
 
-import { loadIndexer } from '../dist/index.js';
+import { buildSkillsArtifact, loadIndexer } from '../dist/index.js';
 import { createNodeServer } from '../dist/adapters-node.js';
-import { buildSkillsArtifact } from '../dist/index.js';
 
 const PORT = process.env.PORT || 3457;
 

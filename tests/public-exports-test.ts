@@ -13,6 +13,9 @@ import { z } from 'zod';
 import { createNodeHandler } from 'docusaurus-plugin-mcp-server/adapters/node';
 import type { LoadContext } from '@docusaurus/types';
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 
 // Locks the stable 2.0.0 public surface: these symbols are exported and
 // documented, so a regression in their shape is a breaking change.
@@ -56,11 +59,23 @@ describe('public API surface', () => {
     expect(Object.keys(docsFetchInputSchema)).toEqual(['url']);
   });
 
-  it('buildSkillsArtifact packages the built-in skill; SkillValidationError is catchable', async () => {
+  it('buildSkillsArtifact packages the built-in skill', async () => {
     const artifact = await buildSkillsArtifact({ builtin: true, siteTitle: 'Docs' });
     expect(artifact).toMatchObject({ version: 1 });
     expect(artifact.skills[0]?.frontmatter.name).toBe('docs-research');
-    expect(new SkillValidationError('x', 'y')).toBeInstanceOf(Error);
+  });
+
+  it('buildSkillsArtifact rejects an invalid skill with SkillValidationError', async () => {
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'mcp-exports-'));
+    try {
+      await fs.mkdir(path.join(dir, 'broken'));
+      await fs.writeFile(path.join(dir, 'broken', 'SKILL.md'), '# no frontmatter');
+      await expect(
+        buildSkillsArtifact({ builtin: false, dir, siteTitle: 'Docs' })
+      ).rejects.toBeInstanceOf(SkillValidationError);
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true });
+    }
   });
 
   it('createNodeHandler returns a handler that answers CORS preflight with 204', async () => {

@@ -3,7 +3,9 @@ import type { ProcessedDoc, SearchResult, DocsSearchParams } from '../../types/i
 import { querySearchIndex, type FlexSearchDocument } from '../../search/flexsearch-core.js';
 
 /**
- * Zod schema for docs_search input parameters
+ * Zod field shape for docs_search input parameters. A raw shape (not a
+ * `z.object`) so callers can extend it; `docsSearchTool.inputSchema` wraps it.
+ * The name is kept from 1.x for compatibility.
  */
 export const docsSearchInputSchema = {
   query: z.string().min(1).describe('The search query string'),

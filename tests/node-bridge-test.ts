@@ -7,7 +7,7 @@
  * repeated headers, stream errors, and response writing.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { Readable } from 'node:stream';
 import http, { type IncomingMessage, type ServerResponse } from 'node:http';
 import type { AddressInfo } from 'node:net';
@@ -70,6 +70,14 @@ function fakeResponse() {
   } as unknown as ServerResponse;
   return { res, headers, state, body: () => Buffer.concat(written).toString('utf8') };
 }
+
+// Indexer and server progress logs are expected here; keep test output readable.
+beforeAll(() => {
+  vi.spyOn(console, 'log').mockImplementation(() => {});
+});
+afterAll(() => {
+  vi.restoreAllMocks();
+});
 
 describe('toWebRequest', () => {
   it('streams a raw body across multiple chunks, strings and buffers', async () => {

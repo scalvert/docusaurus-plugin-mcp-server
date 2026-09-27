@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -8,6 +8,14 @@ import type { McpServerPluginOptions, SkillsArtifact } from '../src/types/index.
 
 const PAGE = `<!doctype html><html><head><title>Intro | Example</title></head>
 <body><article><h1>Intro</h1><p>${'Welcome to the example documentation. '.repeat(5)}</p></article></body></html>`;
+
+// Indexer and server progress logs are expected here; keep test output readable.
+beforeAll(() => {
+  vi.spyOn(console, 'log').mockImplementation(() => {});
+});
+afterAll(() => {
+  vi.restoreAllMocks();
+});
 
 describe('plugin postBuild: skills.json', () => {
   let siteDir: string;

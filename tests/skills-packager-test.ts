@@ -18,6 +18,18 @@ const sha256 = (bytes: Buffer) => `sha256:${createHash('sha256').update(bytes).d
 const skillMd = (name: string, extra = '') =>
   `---\nname: ${name}\ndescription: Does ${name} things\n${extra}---\n\n# ${name}\n`;
 
+const canSymlink = await (async () => {
+  const probe = await fs.mkdtemp(path.join(os.tmpdir(), 'mcp-symlink-'));
+  try {
+    await fs.symlink(probe, path.join(probe, 'link'));
+    return true;
+  } catch {
+    return false;
+  } finally {
+    await fs.rm(probe, { recursive: true, force: true });
+  }
+})();
+
 describe('parseSkillFrontmatter', () => {
   it('returns every frontmatter field as JSON', () => {
     const fm = parseSkillFrontmatter(
@@ -51,15 +63,11 @@ describe('packageSkill', () => {
     const ref = Buffer.from('# Reference — ünïcode\n');
     const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x00, 0x01]);
 
-    const skill = packageSkill(
-      'guide',
-      [
-        { path: 'references/api.md', bytes: ref },
-        { path: 'assets/logo.png', bytes: png },
-        { path: 'SKILL.md', bytes: md },
-      ],
-      'x'
-    );
+    const skill = packageSkill('guide', [
+      { path: 'references/api.md', bytes: ref },
+      { path: 'assets/logo.png', bytes: png },
+      { path: 'SKILL.md', bytes: md },
+    ]);
 
     expect(skill.skillPath).toBe('guide');
     expect(skill.files.map((f) => f.path)).toEqual([
@@ -85,14 +93,14 @@ describe('packageSkill', () => {
 
   it('requires the directory name to match frontmatter name', () => {
     expect(() =>
-      packageSkill('other', [{ path: 'SKILL.md', bytes: Buffer.from(skillMd('guide')) }], 'x')
+      packageSkill('other', [{ path: 'SKILL.md', bytes: Buffer.from(skillMd('guide')) }])
     ).toThrow(/must match the directory name/);
   });
 
   it('requires SKILL.md', () => {
-    expect(() =>
-      packageSkill('guide', [{ path: 'README.md', bytes: Buffer.from('x') }], 'x')
-    ).toThrow(/missing SKILL.md/);
+    expect(() => packageSkill('guide', [{ path: 'README.md', bytes: Buffer.from('x') }])).toThrow(
+      /missing SKILL.md/
+    );
   });
 
   it('enforces the per-skill file limit', () => {
@@ -100,7 +108,7 @@ describe('packageSkill', () => {
     for (let i = 0; i < MAX_SKILL_FILES; i++) {
       files.push({ path: `f${i}.md`, bytes: Buffer.from('x') });
     }
-    expect(() => packageSkill('big', files, 'x')).toThrow(/file limit/);
+    expect(() => packageSkill('big', files)).toThrow(/file limit/);
   });
 });
 
@@ -161,6 +169,7 @@ describe('buildSkillsArtifact', () => {
   });
 
   afterEach(async () => {
+    vi.restoreAllMocks();
     await fs.rm(dir, { recursive: true, force: true });
   });
 
@@ -195,9 +204,11 @@ describe('buildSkillsArtifact', () => {
 
   it('lets an author skill override the built-in one', async () => {
     await writeSkill('docs-research', { 'SKILL.md': skillMd('docs-research') });
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
     const artifact = await buildSkillsArtifact({ builtin: true, dir, siteTitle: 'Example' });
     expect(artifact.skills).toHaveLength(1);
     expect(artifact.skills[0]?.frontmatter.description).toBe('Does docs-research things');
+    expect(log).toHaveBeenCalledWith(expect.stringContaining('overrides the built-in skill'));
   });
 
   it('omits the built-in skill when disabled', async () => {
@@ -206,20 +217,23 @@ describe('buildSkillsArtifact', () => {
     expect(artifact.skills.map((s) => s.frontmatter.name)).toEqual(['only-mine']);
   });
 
-  it('skips symlinks inside a skill (no cycles, no escaping the skill dir)', async () => {
-    await writeSkill('linked', { 'SKILL.md': skillMd('linked'), 'refs/a.md': '# A' });
-    // A cycle back to the skill root and a link to a file outside it
-    await fs.symlink(path.join(dir, 'linked'), path.join(dir, 'linked', 'refs', 'loop'));
-    await fs.writeFile(path.join(dir, 'secret.txt'), 'outside');
-    await fs.symlink(path.join(dir, 'secret.txt'), path.join(dir, 'linked', 'secret.txt'));
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+  // Creating symlinks on Windows needs admin rights or Developer Mode.
+  it.skipIf(!canSymlink)(
+    'skips symlinks inside a skill (no cycles, no escaping the skill dir)',
+    async () => {
+      await writeSkill('linked', { 'SKILL.md': skillMd('linked'), 'refs/a.md': '# A' });
+      // A cycle back to the skill root and a link to a file outside it
+      await fs.symlink(path.join(dir, 'linked'), path.join(dir, 'linked', 'refs', 'loop'));
+      await fs.writeFile(path.join(dir, 'secret.txt'), 'outside');
+      await fs.symlink(path.join(dir, 'secret.txt'), path.join(dir, 'linked', 'secret.txt'));
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    const artifact = await buildSkillsArtifact({ builtin: false, dir, siteTitle: 'Example' });
+      const artifact = await buildSkillsArtifact({ builtin: false, dir, siteTitle: 'Example' });
 
-    expect(artifact.skills[0]?.files.map((f) => f.path)).toEqual(['SKILL.md', 'refs/a.md']);
-    expect(warn).toHaveBeenCalledTimes(2);
-    warn.mockRestore();
-  });
+      expect(artifact.skills[0]?.files.map((f) => f.path)).toEqual(['SKILL.md', 'refs/a.md']);
+      expect(warn).toHaveBeenCalledTimes(2);
+    }
+  );
 
   it('packages scripts but warns about them', async () => {
     await writeSkill('scripted', { 'SKILL.md': skillMd('scripted'), 'scripts/run.sh': 'echo hi' });
@@ -229,7 +243,6 @@ describe('buildSkillsArtifact', () => {
 
     expect(artifact.skills[0]?.files.map((f) => f.path)).toContain('scripts/run.sh');
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('scripts/run.sh'));
-    warn.mockRestore();
   });
 
   it('fails the build on an invalid skill', async () => {

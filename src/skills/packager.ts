@@ -159,36 +159,35 @@ function toSkillFile(filePath: string, bytes: Buffer): SkillFile {
 }
 
 /**
- * Package one skill from in-memory files. `files` must include `SKILL.md`.
+ * Package one skill from its files. `skillDir` is the skill's directory; its
+ * basename must equal the frontmatter name, and it is used in error messages.
+ * `files` must include `SKILL.md`.
  */
-export function packageSkill(
-  dirName: string,
-  files: RawSkillFile[],
-  source: string
-): SkillArtifact {
+export function packageSkill(skillDir: string, files: RawSkillFile[]): SkillArtifact {
+  const dirName = path.basename(skillDir);
   const skillMd = files.find((f) => f.path === 'SKILL.md');
   if (!skillMd) {
-    throw new SkillValidationError(source, 'missing SKILL.md at the skill root');
+    throw new SkillValidationError(skillDir, 'missing SKILL.md at the skill root');
   }
 
-  const frontmatter = parseSkillFrontmatter(skillMd.bytes.toString('utf8'), source);
+  const frontmatter = parseSkillFrontmatter(skillMd.bytes.toString('utf8'), skillDir);
   if (frontmatter.name !== dirName) {
     throw new SkillValidationError(
-      source,
+      skillDir,
       `frontmatter name "${frontmatter.name}" must match the directory name "${dirName}"`
     );
   }
 
   if (files.length > MAX_SKILL_FILES) {
     throw new SkillValidationError(
-      source,
+      skillDir,
       `${files.length} files exceeds the ${MAX_SKILL_FILES}-file limit`
     );
   }
   const totalBytes = files.reduce((sum, f) => sum + f.bytes.length, 0);
   if (totalBytes > MAX_SKILL_BYTES) {
     throw new SkillValidationError(
-      source,
+      skillDir,
       `${totalBytes} bytes exceeds the ${MAX_SKILL_BYTES}-byte limit`
     );
   }
@@ -246,22 +245,23 @@ async function readSkillFiles(root: string, relDir = ''): Promise<RawSkillFile[]
 }
 
 /**
- * Package one skill directory. `transformSkillMd` may rewrite SKILL.md
- * before validation and hashing (used to fill built-in skill templates).
+ * Package one skill directory. Built-in skills pass `renderSkillMd` to fill
+ * their `{{siteTitle}}` template before validation and hashing, so they go
+ * through exactly the same path as author skills.
  */
 export async function loadSkillDir(
   skillDir: string,
-  transformSkillMd?: (markdown: string) => string
+  renderSkillMd?: (markdown: string) => string
 ): Promise<SkillArtifact> {
   let files = await readSkillFiles(skillDir);
-  if (transformSkillMd) {
+  if (renderSkillMd) {
     files = files.map((f) =>
       f.path === 'SKILL.md'
-        ? { ...f, bytes: Buffer.from(transformSkillMd(f.bytes.toString('utf8')), 'utf8') }
+        ? { ...f, bytes: Buffer.from(renderSkillMd(f.bytes.toString('utf8')), 'utf8') }
         : f
     );
   }
-  return packageSkill(path.basename(skillDir), files, skillDir);
+  return packageSkill(skillDir, files);
 }
 
 /**

@@ -24,6 +24,8 @@ const EXPOSE_HEADERS = ['MCP-Protocol-Version', 'Mcp-Session-Id'].join(', ');
  * Standard CORS headers for MCP server responses
  *
  * These headers enable cross-origin requests from browser-based MCP clients.
+ * Shared by the web handler and the Node server so both advertise the same
+ * allow and expose lists.
  */
 export const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',

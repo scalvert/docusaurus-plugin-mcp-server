@@ -43,7 +43,7 @@ export async function findBuiltinSkillsDir(
 
 function replacePlaceholder<T>(value: T, site: string): T {
   if (typeof value === 'string') {
-    return value.split(SITE_TITLE_PLACEHOLDER).join(site) as T;
+    return value.replaceAll(SITE_TITLE_PLACEHOLDER, site) as T;
   }
   if (Array.isArray(value)) {
     return value.map((v) => replacePlaceholder(v, site)) as T;
@@ -59,18 +59,17 @@ function replacePlaceholder<T>(value: T, site: string): T {
 /**
  * Fill `{{siteTitle}}` into a built-in SKILL.md. Frontmatter is parsed and
  * re-serialized rather than string-replaced, so titles containing YAML
- * syntax (`:`, quotes, `#`) can't corrupt it.
+ * syntax (`:`, quotes, `#`) can't corrupt it. Markdown without frontmatter
+ * is returned unchanged; packaging then rejects it like any invalid skill.
  */
 export function renderSkillTemplate(markdown: string, siteTitle: string): string {
-  const site = siteTitle.trim() || 'this site';
   const match = FRONTMATTER_PATTERN.exec(markdown);
-  if (!match) {
-    return markdown.split(SITE_TITLE_PLACEHOLDER).join(site);
-  }
+  if (!match) return markdown;
 
+  const site = siteTitle.trim() || 'this site';
   const frontmatter = replacePlaceholder(parseYaml(match[1] ?? ''), site);
   const yaml = stringifyYaml(frontmatter, { lineWidth: 0 }).trimEnd();
-  const body = markdown.slice(match[0].length).split(SITE_TITLE_PLACEHOLDER).join(site);
+  const body = markdown.slice(match[0].length).replaceAll(SITE_TITLE_PLACEHOLDER, site);
 
   return `---\n${yaml}\n---\n${body}`;
 }

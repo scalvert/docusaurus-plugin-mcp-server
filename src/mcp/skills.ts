@@ -21,8 +21,14 @@ import type { SkillArtifact, SkillFile, SkillsArtifact } from '../types/index.js
 
 const SKILLS_EXTENSION_ID = 'io.modelcontextprotocol/skills';
 
+/**
+ * First protocol revision whose results carry `ttlMs`/`cacheScope` (SEP-2549).
+ * Revisions are ISO dates, so string comparison orders them.
+ */
+const FIRST_CACHE_HINT_REVISION = '2026-07-28';
+
 /** A skill entry as returned by skills/list and skills/get */
-export interface SkillEntry {
+interface SkillEntry {
   uri: string;
   frontmatter: SkillArtifact['frontmatter'];
   resources: Array<{ uri: string; digest: string; size: number }>;
@@ -63,13 +69,13 @@ export function skillsInstructions(skills: SkillArtifact[]): string {
 const ListParams = z.looseObject({ cursor: z.string().optional() }).optional();
 const GetParams = z.looseObject({ uri: z.string() });
 
-export interface RegisterSkillsOptions {
-  /** ttlMs/cacheScope stamped on skills/list and on skill resources */
+interface RegisterSkillsOptions {
+  /** ttlMs/cacheScope for skills/list and skill resources (2026-07-28 responses only) */
   cacheHint: Required<CacheHint>;
 }
 
-/** resources/read content for one skill file. Fails loudly on a malformed skills.json. */
-function readContent(uri: string, file: SkillFile) {
+/** resources/read contents for one skill file. Fails loudly on a malformed skills.json. */
+function toResourceContents(uri: string, file: SkillFile) {
   if (file.text !== undefined) {
     return { uri, mimeType: file.mimeType, text: file.text };
   }
@@ -112,17 +118,21 @@ export function registerSkills(
           ...(isSkillMd ? { description: skill.frontmatter.description } : {}),
           cacheHint,
         },
-        async () => ({ contents: [readContent(uri, file)] })
+        async () => ({ contents: [toResourceContents(uri, file)] })
       );
     }
   }
 
-  // Every entry fits in one page; any incoming cursor is ignored.
-  server.server.setRequestHandler('skills/list', { params: ListParams }, async () => ({
-    skills: [...entries.values()],
-    ttlMs: cacheHint.ttlMs,
-    cacheScope: cacheHint.cacheScope,
-  }));
+  // Every entry fits in one page; any incoming cursor is ignored. The SDK's
+  // cacheHints only cover core methods, so the extension adds its own, and
+  // (per SEP-2640) only on 2026-07-28 and later.
+  server.server.setRequestHandler('skills/list', { params: ListParams }, async () => {
+    const skills = [...entries.values()];
+    const version = server.server.getNegotiatedProtocolVersion();
+    return version !== undefined && version >= FIRST_CACHE_HINT_REVISION
+      ? { skills, ttlMs: cacheHint.ttlMs, cacheScope: cacheHint.cacheScope }
+      : { skills };
+  });
 
   server.server.setRequestHandler('skills/get', { params: GetParams }, async ({ uri }) => {
     const skill = entries.get(uri);

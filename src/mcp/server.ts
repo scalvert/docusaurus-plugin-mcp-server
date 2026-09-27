@@ -24,6 +24,8 @@ import type {
 import { docsSearchTool, formatSearchResults } from './tools/docs-search.js';
 import { docsFetchTool, formatPageContent } from './tools/docs-fetch.js';
 import { registerSkills, skillsCapabilities, skillsInstructions } from './skills.js';
+// The bridge lives with the adapters but is a dependency of handleHttpRequest,
+// which predates the web handler and stays part of this class's public API.
 import { toWebRequest, writeWebResponse } from '../adapters/node-bridge.js';
 
 /**
@@ -32,6 +34,16 @@ import { toWebRequest, writeWebResponse } from '../adapters/node-bridge.js';
  * (protocol revision 2026-07-28, SEP-2549). Legacy responses are unaffected.
  */
 const CACHE_HINT: Required<CacheHint> = { ttlMs: 5 * 60 * 1000, cacheScope: 'public' };
+
+/** A successful single-text-block tool result */
+function toolText(text: string) {
+  return { content: [{ type: 'text' as const, text }] };
+}
+
+/** A tool-level error result (the call reached the tool but failed) */
+function toolError(text: string) {
+  return { ...toolText(text), isError: true };
+}
 
 /**
  * Type guard to check if config uses file-based loading
@@ -58,13 +70,13 @@ function isDataConfig(config: McpServerConfig): config is McpServerDataConfig {
  * - Pre-loaded: Accept docs and search index data directly (Workers)
  *
  * Serves MCP protocol revision 2026-07-28 statelessly, and 2025-era clients
- * (initialize handshake) from the same endpoint via the SDK's stateless
- * legacy fallback.
+ * (initialize handshake) from the same endpoint through a stateless
+ * JSON-response transport, so their responses match 1.x (see dispatch).
  */
 export class McpDocsServer {
   private config: McpServerConfig;
   private searchProvider: SearchProvider | null = null;
-  private skills: SkillsArtifact | null = null;
+  private skillsArtifact: SkillsArtifact | null = null;
   private handler: McpHttpHandler | null = null;
   private initialized = false;
   private initPromise: Promise<void> | null = null;
@@ -79,7 +91,7 @@ export class McpDocsServer {
    * Called by the SDK once per HTTP request.
    */
   private createMcpServer(): McpServer {
-    const skills = this.skills?.skills.length ? this.skills : null;
+    const skills = this.skillsArtifact?.skills.length ? this.skillsArtifact : null;
 
     const instructions = [this.config.instructions, skills && skillsInstructions(skills.skills)]
       .filter(Boolean)
@@ -128,28 +140,15 @@ export class McpDocsServer {
       },
       async ({ query, limit }) => {
         if (!this.searchProvider || !this.searchProvider.isReady()) {
-          return {
-            content: [{ type: 'text' as const, text: 'Server not initialized. Please try again.' }],
-            isError: true,
-          };
+          return toolError('Server not initialized. Please try again.');
         }
 
         try {
           const results = await this.searchProvider.search(query, { limit });
-          return {
-            content: [{ type: 'text' as const, text: formatSearchResults(results) }],
-          };
+          return toolText(formatSearchResults(results));
         } catch (error) {
           console.error('[MCP] Search error:', error);
-          return {
-            content: [
-              {
-                type: 'text' as const,
-                text: 'An error occurred while searching. Please try again.',
-              },
-            ],
-            isError: true,
-          };
+          return toolError('An error occurred while searching. Please try again.');
         }
       }
     );
@@ -163,28 +162,15 @@ export class McpDocsServer {
       },
       async ({ url }) => {
         if (!this.searchProvider || !this.searchProvider.isReady()) {
-          return {
-            content: [{ type: 'text' as const, text: 'Server not initialized. Please try again.' }],
-            isError: true,
-          };
+          return toolError('Server not initialized. Please try again.');
         }
 
         try {
           const doc = await this.getDocument(url);
-          return {
-            content: [{ type: 'text' as const, text: formatPageContent(doc) }],
-          };
+          return toolText(formatPageContent(doc));
         } catch (error) {
           console.error('[MCP] Fetch error:', error);
-          return {
-            content: [
-              {
-                type: 'text' as const,
-                text: 'An error occurred while fetching the page. Please try again.',
-              },
-            ],
-            isError: true,
-          };
+          return toolError('An error occurred while fetching the page. Please try again.');
         }
       }
     );
@@ -254,14 +240,16 @@ export class McpDocsServer {
       // Pre-loaded data mode (Cloudflare Workers, etc.)
       initData.docs = this.config.docs;
       initData.indexData = this.config.searchIndexData;
-      this.skills = this.config.skills ?? null;
+      this.skillsArtifact = this.config.skills ?? null;
     } else if (isFileConfig(this.config)) {
       // File-based mode (Node.js)
       initData.docsPath = this.config.docsPath;
       initData.indexPath = this.config.indexPath;
       if (this.config.skillsPath) {
         const { readFile } = await import('node:fs/promises');
-        this.skills = JSON.parse(await readFile(this.config.skillsPath, 'utf8')) as SkillsArtifact;
+        this.skillsArtifact = JSON.parse(
+          await readFile(this.config.skillsPath, 'utf8')
+        ) as SkillsArtifact;
       }
     } else {
       throw new Error('Invalid server config: must provide either file paths or pre-loaded data');
@@ -368,7 +356,7 @@ export class McpDocsServer {
       version: this.config.version ?? '1.0.0',
       initialized: this.initialized,
       docCount,
-      skillCount: this.skills?.skills.length ?? 0,
+      skillCount: this.skillsArtifact?.skills.length ?? 0,
       baseUrl: this.config.baseUrl,
       searchProvider: this.searchProvider?.name,
     };

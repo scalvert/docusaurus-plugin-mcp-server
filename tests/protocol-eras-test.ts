@@ -8,13 +8,21 @@
  * wire-level fields (resultType, ttlMs, cacheScope) can be asserted.
  */
 
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { z } from 'zod';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { McpDocsServer } from '../src/mcp/server.js';
 import { FlexSearchIndexer } from '../src/providers/indexers/flexsearch-indexer.js';
 import { buildSkillsArtifact } from '../src/skills/packager.js';
 import type { ProcessedDoc, SkillsArtifact } from '../src/types/index.js';
+
+// Indexer and server progress logs are expected here; keep test output readable.
+beforeAll(() => {
+  vi.spyOn(console, 'log').mockImplementation(() => {});
+});
+afterAll(() => {
+  vi.restoreAllMocks();
+});
 
 const MODERN = '2026-07-28';
 
@@ -222,6 +230,23 @@ describe('modern wire format', () => {
     // Modern requests carry the routing headers the CORS config now allows.
     const toolsCall = wire.requests.find((r) => r.method === 'tools/list');
     expect(toolsCall?.headers.get('mcp-method')).toBe('tools/list');
+  });
+});
+
+describe('legacy wire format', () => {
+  it('carries no 2026-07-28 cache fields on core results or skills/list', async () => {
+    const skills = await buildSkillsArtifact({ builtin: true, siteTitle: 'Example' });
+    const { client, wire } = await connect(await buildServer(skills), 'legacy');
+
+    await client.listTools();
+    expect(lastResult(wire)).not.toHaveProperty('ttlMs');
+    expect(lastResult(wire)).not.toHaveProperty('resultType');
+
+    await client.request({ method: 'skills/list', params: {} }, SkillsListResult);
+    const result = lastResult(wire);
+    expect(result).toHaveProperty('skills');
+    expect(result).not.toHaveProperty('ttlMs');
+    expect(result).not.toHaveProperty('cacheScope');
   });
 });
 

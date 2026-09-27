@@ -17,7 +17,7 @@ Load this skill when the task involves:
 - Writing a custom indexer or search provider.
 - Shipping Agent Skills with the docs (the `skills` plugin option, `skills.json`).
 
-Trigger imports: `docusaurus-plugin-mcp-server`, `docusaurus-plugin-mcp-server/adapters`, `docusaurus-plugin-mcp-server/theme`.
+Trigger imports: `docusaurus-plugin-mcp-server`, `docusaurus-plugin-mcp-server/adapters`, `docusaurus-plugin-mcp-server/adapters/node`, `docusaurus-plugin-mcp-server/theme`.
 
 ## Install & import
 
@@ -25,7 +25,7 @@ Trigger imports: `docusaurus-plugin-mcp-server`, `docusaurus-plugin-mcp-server/a
 npm install docusaurus-plugin-mcp-server
 ```
 
-ESM-only. Three entry points:
+ESM-only. Four entry points:
 
 - `docusaurus-plugin-mcp-server` — the plugin (default export) + `McpDocsServer`, provider types, `DEFAULT_PLUGIN_OPTIONS`.
 - `docusaurus-plugin-mcp-server/adapters` — the web-standard deploy handler `createWebRequestHandler`.
