@@ -659,6 +659,7 @@ import {
 
 **What changed for you:**
 
+- **Node.js >= 22 is required.** Node 20 reached end of life on 2026-04-30. Node 22 is tested along with 24 and 26.
 - **zod >= 4.2 is required.** The v2 SDK drops zod 3, and zod 4.2 or later is needed for tool schema descriptions to reach clients.
 - **`docsSearchTool.inputSchema` and `docsFetchTool.inputSchema` are now `z.object(...)` schemas.** The raw shapes are still exported as `docsSearchInputSchema` and `docsFetchInputSchema`.
 - **Calling an unknown tool now returns a JSON-RPC error (`-32602`)** instead of a tool result with `isError: true`.
@@ -674,7 +675,7 @@ import {
 
 ## Requirements
 
-- Node.js >= 20
+- Node.js >= 22
 - Docusaurus 3.x
 - zod >= 4.2
 
