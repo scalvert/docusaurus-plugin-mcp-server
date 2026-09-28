@@ -55,6 +55,7 @@
   },
   "files": [
     "dist",
+    "migrations",
     "skills-builtin"
   ],
   "scripts": {

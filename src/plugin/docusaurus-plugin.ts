@@ -13,7 +13,8 @@ import { collectRoutes } from './route-collector.js';
 import { extractContent, type ExtractContentOptions } from '../processing/html-parser.js';
 import { htmlToMarkdown } from '../processing/html-to-markdown.js';
 import { extractHeadingsFromMarkdown } from '../processing/heading-extractor.js';
-import { loadIndexer } from '../providers/loader.js';
+import { loadIndexer, removedBuiltinError } from '../providers/loader.js';
+import { MIGRATION_GUIDE } from '../errors.js';
 import type { ProviderContext } from '../providers/types.js';
 import { resolveServerUrl } from './resolve-server-url.js';
 import { buildSkillsArtifact } from '../skills/packager.js';
@@ -29,8 +30,14 @@ function resolveOptions(options: McpServerPluginOptions): ResolvedPluginOptions 
       "[MCP] The 'flexsearch' plugin option was removed in docusaurus-plugin-mcp-server 2.0. " +
         'The built-in local search needs no build-time tuning; remove the option. ' +
         "Field boosts can be set at runtime with the server's 'localSearch' option. " +
-        'See "Upgrading to 2.0" in the README.'
+        `See ${MIGRATION_GUIDE}.`
     );
+  }
+  // The provider is chosen where the server runs, not at build time, so this
+  // option does nothing. A 1.x value of 'flexsearch' still means a stale
+  // config, so reject it like the indexer name.
+  if (options.search === 'flexsearch') {
+    throw removedBuiltinError('search provider');
   }
   return {
     ...DEFAULT_PLUGIN_OPTIONS,

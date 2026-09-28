@@ -23,6 +23,7 @@ import { createServer, type Server, type IncomingMessage, type ServerResponse } 
 import { McpDocsServer } from '../mcp/server.js';
 import type { McpServerConfig } from '../types/index.js';
 import { getCorsHeaders } from './cors.js';
+import { ConfigurationError, internalErrorBody } from '../errors.js';
 
 /**
  * Options for the Node.js MCP server.
@@ -78,11 +79,15 @@ export function createNodeHandler(options: NodeServerOptions) {
     if (req.method === 'GET') {
       try {
         const mcpServer = getServer();
+        // Initialize so a broken deployment shows up in the health check.
+        await mcpServer.initialize();
         const status = await mcpServer.getStatus();
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify(status, null, 2));
       } catch (error) {
-        const message = error instanceof Error ? error.message : String(error);
+        console.error('[MCP] Status error:', error);
+        const message =
+          error instanceof ConfigurationError ? error.message : 'Internal server error';
         res.writeHead(500, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ error: message }));
       }
@@ -144,16 +149,7 @@ export function createNodeHandler(options: NodeServerOptions) {
       }
 
       res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(
-        JSON.stringify({
-          jsonrpc: '2.0',
-          id: null,
-          error: {
-            code: -32603,
-            message: 'Internal server error',
-          },
-        })
-      );
+      res.end(internalErrorBody(error));
     }
   };
 }

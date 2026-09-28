@@ -2,12 +2,22 @@ import { z } from 'zod';
 import type { SearchResult } from '../../types/index.js';
 
 /**
+ * Longest accepted query. Search also caps the terms it uses (see
+ * MAX_QUERY_TERMS in search/local-search.ts); this bounds the request itself.
+ */
+export const MAX_QUERY_LENGTH = 500;
+
+/**
  * Zod field shape for docs_search input parameters. A raw shape (not a
  * `z.object`) so callers can extend it; `docsSearchTool.inputSchema` wraps it.
  * The name is kept from 1.x for compatibility.
  */
 export const docsSearchInputSchema = {
-  query: z.string().min(1).describe('The search query string'),
+  query: z
+    .string()
+    .min(1)
+    .max(MAX_QUERY_LENGTH)
+    .describe(`A few search keywords (max ${MAX_QUERY_LENGTH} characters)`),
   limit: z
     .number()
     .int()
@@ -24,7 +34,7 @@ export const docsSearchInputSchema = {
 export const docsSearchTool = {
   name: 'docs_search',
   description:
-    'Search the documentation for relevant pages. Returns matching documents with URLs, snippets, and relevance scores. Use this to find information across all documentation.',
+    'Search the documentation for relevant pages. Returns matching documents ranked by relevance, with URLs, snippets, and matching sections. Use this to find information across all documentation.',
   inputSchema: z.object(docsSearchInputSchema),
 };
 

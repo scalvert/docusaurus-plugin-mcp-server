@@ -50,6 +50,11 @@ const MIME_TYPES: Record<string, string> = {
 
 const utf8 = new TextDecoder('utf-8', { fatal: true });
 
+/**
+ * Thrown when a skill directory fails validation at build time.
+ *
+ * @experimental May change in a 2.x minor release; pin a version if you depend on it.
+ */
 export class SkillValidationError extends Error {
   constructor(source: string, message: string) {
     super(`[MCP] Invalid skill at ${source}: ${message}`);
@@ -288,6 +293,11 @@ export async function loadSkillsDir(dir: string): Promise<SkillArtifact[]> {
   return skills;
 }
 
+/**
+ * Options for {@link buildSkillsArtifact}.
+ *
+ * @experimental May change in a 2.x minor release; pin a version if you depend on it.
+ */
 export interface BuildSkillsOptions {
   /** Include the built-in docs-research skill */
   builtin: boolean;
@@ -299,7 +309,10 @@ export interface BuildSkillsOptions {
 
 /**
  * Build the `skills.json` artifact. Author skills override the built-in skill
- * when they share its name.
+ * when they share its name. The plugin calls this in `postBuild`; call it
+ * directly only to build skills outside Docusaurus.
+ *
+ * @experimental May change in a 2.x minor release; pin a version if you depend on it.
  */
 export async function buildSkillsArtifact(options: BuildSkillsOptions): Promise<SkillsArtifact> {
   const byName = new Map<string, SkillArtifact>();

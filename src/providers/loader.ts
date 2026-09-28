@@ -1,3 +1,4 @@
+import { MIGRATION_GUIDE } from '../errors.js';
 import type { LocalSearchConfig } from '../types/index.js';
 import type { ContentIndexer, SearchProvider } from './types.js';
 
@@ -14,11 +15,11 @@ export interface BuiltinSearchOptions {
 // served, and a stale config should fail at build time, not return nothing.
 const REMOVED_BUILTIN = 'flexsearch';
 
-function removedBuiltinError(kind: 'indexer' | 'search provider'): Error {
+export function removedBuiltinError(kind: 'indexer' | 'search provider'): Error {
   return new Error(
-    `The '${REMOVED_BUILTIN}' ${kind} was replaced by the built-in 'local' search in docusaurus-plugin-mcp-server 2.0. ` +
+    `[MCP] The '${REMOVED_BUILTIN}' ${kind} was replaced by the built-in 'local' search in docusaurus-plugin-mcp-server 2.0. ` +
       `Use 'local' (or omit the option), remove any 'flexsearch' options, and rebuild the site. ` +
-      `See "Upgrading to 2.0" in the README.`
+      `See ${MIGRATION_GUIDE}.`
   );
 }
 

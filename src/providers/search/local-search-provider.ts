@@ -1,3 +1,4 @@
+import { ConfigurationError } from '../../errors.js';
 import type { LocalSearchConfig, ProcessedDoc, SearchResult } from '../../types/index.js';
 import type {
   SearchProvider,
@@ -49,18 +50,23 @@ export class LocalSearchProvider implements SearchProvider {
       const { readFile } = await import('node:fs/promises');
       const readJson = async (path: string) => JSON.parse(await readFile(path, 'utf8'));
 
+      // Paths name only files the site owner configured; safe to return.
       try {
         this.docs = await readJson(initData.docsPath);
-      } catch {
-        throw new Error(`[LocalSearch] Docs file not found or unreadable: ${initData.docsPath}`);
+      } catch (cause) {
+        throw new ConfigurationError(
+          `[MCP] docs.json not found or unreadable: ${initData.docsPath}. Build the site first.`,
+          { cause }
+        );
       }
 
       let indexData: unknown;
       try {
         indexData = await readJson(initData.indexPath);
-      } catch {
-        throw new Error(
-          `[LocalSearch] Search index not found or unreadable: ${initData.indexPath}`
+      } catch (cause) {
+        throw new ConfigurationError(
+          `[MCP] search-index.json not found or unreadable: ${initData.indexPath}. Build the site first.`,
+          { cause }
         );
       }
       this.searchIndex = loadLocalSearchIndex(indexData);

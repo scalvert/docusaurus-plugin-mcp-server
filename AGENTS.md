@@ -81,3 +81,7 @@ ESM-only (`"type": "module"`). All imports use `.js` extensions in source files.
 ## Skills
 
 This repository ships an agent skill at `skills/docusaurus-plugin-mcp-server/SKILL.md`. Keep it accurate as the public API changes.
+
+## Breaking changes
+
+Every major release gets a migration guide at `migrations/<from>-<to>.md` (published with the package). List each breaking change with before/after code, and end with a "For agents" checklist that an agent can run top to bottom. Errors thrown for removed configuration should link to it (`MIGRATION_GUIDE` in `src/errors.ts`). The README's "Upgrading" section stays a short summary that links to the guide.

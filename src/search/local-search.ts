@@ -1,5 +1,6 @@
 import MiniSearch from 'minisearch';
 import { stemmer } from 'stemmer';
+import { ConfigurationError, MIGRATION_GUIDE } from '../errors.js';
 import type {
   LocalSearchConfig,
   LocalSearchField,
@@ -44,6 +45,15 @@ const STOP_WORDS = new Set(
 // prefix matches too much of the vocabulary to be useful.
 const MIN_PREFIX_LENGTH = 3;
 
+// Search cost grows with every OR'd term, and fastest with prefix terms,
+// each of which expands to every indexed word it starts with. docs_search is
+// usually unauthenticated, so a long or repetitive query must not be able to
+// exhaust memory. Real queries are a handful of words, well under both caps.
+/** Distinct terms searched per query; later terms are ignored. */
+export const MAX_QUERY_TERMS = 16;
+/** Of those, how many (in query order) also match as prefixes. */
+const MAX_PREFIX_TERMS = 8;
+
 /**
  * Split text into lowercase words, with accents folded ("déploiement" ->
  * "deploiement"). NFD separates each accent into a combining mark; the marks
@@ -79,11 +89,22 @@ function processTerm(term: string): string | null {
   return STOP_WORDS.has(term) ? null : stemmer(term);
 }
 
-/** A query's searchable terms, processed exactly as the index processes text. */
-function queryTerms(query: string): string[] {
-  return tokenize(query)
-    .map(processTerm)
-    .filter((t): t is string => t !== null);
+/**
+ * A query's searchable terms, processed exactly as the index processes text:
+ * stopwords dropped, one entry per distinct stem, at most
+ * {@link MAX_QUERY_TERMS}. `words` holds the first word seen for each stem,
+ * for handing back to MiniSearch (which stems again); `stems` is what page
+ * text is compared against for snippets and headings.
+ */
+function queryTerms(query: string): { words: string[]; stems: string[] } {
+  const byStem = new Map<string, string>();
+  for (const word of tokenize(query)) {
+    const stem = processTerm(word);
+    if (stem === null || byStem.has(stem)) continue;
+    byStem.set(stem, word);
+    if (byStem.size === MAX_QUERY_TERMS) break;
+  }
+  return { words: [...byStem.values()], stems: [...byStem.keys()] };
 }
 
 interface IndexedFields {
@@ -162,9 +183,10 @@ export function loadLocalSearchIndex(data: unknown): LocalSearchIndex {
     serialized.version !== LOCAL_SEARCH_INDEX_VERSION ||
     !serialized.index
   ) {
-    throw new Error(
-      `[LocalSearch] search-index.json was not produced by this version of docusaurus-plugin-mcp-server ` +
-        `(expected local search index v${LOCAL_SEARCH_INDEX_VERSION}). Rebuild the site to regenerate it.`
+    throw new ConfigurationError(
+      `[MCP] search-index.json was not produced by this version of docusaurus-plugin-mcp-server ` +
+        `(expected local search index v${LOCAL_SEARCH_INDEX_VERSION}). ` +
+        `Rebuild the site (docusaurus build) and redeploy build/mcp/. See ${MIGRATION_GUIDE}.`
     );
   }
   return MiniSearch.loadJS<IndexedFields>(
@@ -185,10 +207,13 @@ export function searchLocalIndex(
   if (limit <= 0) return results;
 
   const boost = { ...DEFAULT_FIELD_BOOSTS, ...options.fieldBoosts };
-  const terms = queryTerms(query);
-  const hits = index.search(query, {
+  const { words, stems: terms } = queryTerms(query);
+  if (words.length === 0) return results;
+
+  // Search the capped, de-duplicated words, not the raw query (see MAX_QUERY_TERMS).
+  const hits = index.search(words.join(' '), {
     boost,
-    prefix: (term) => term.length >= MIN_PREFIX_LENGTH,
+    prefix: (term, i) => i < MAX_PREFIX_TERMS && term.length >= MIN_PREFIX_LENGTH,
     combineWith: 'OR',
   });
 
