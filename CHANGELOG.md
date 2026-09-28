@@ -9,6 +9,21 @@
 
 
 
+
+## v2.0.0 (2026-09-28)
+
+#### :boom: Breaking Change
+
+* [#135](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/135) fix!: address the 2.0 release-readiness review (+ migration guide) ([@scalvert](https://github.com/scalvert))
+* [#134](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/134) feat!: require Node.js 22 or later ([@scalvert](https://github.com/scalvert))
+* [#133](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/133) feat!: replace FlexSearch with BM25 local search ([@scalvert](https://github.com/scalvert))
+* [#132](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/132) feat!: support MCP 2026-07-28 and serve Agent Skills over MCP ([@scalvert](https://github.com/scalvert))
+
+#### Committers: 1
+* Steve Calvert ([@scalvert](https://github.com/scalvert))
+
+
+
 ## v1.0.0 (2026-06-27)
 
 #### :boom: Breaking Change
