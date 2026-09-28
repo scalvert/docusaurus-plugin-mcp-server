@@ -113,7 +113,7 @@
     "prettier": "^3.9.9",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "release-it": "^21.1.0",
+    "release-it": "^20.2.1",
     "tsup": "^8.0.0",
     "typescript": "^5.0.0",
     "typescript-eslint": "^8.70.1",

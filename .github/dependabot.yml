@@ -14,6 +14,16 @@ updates:
     open-pull-requests-limit: 10
     labels:
       - dependencies
+    ignore:
+      # @release-it-plugins/lerna-changelog declares the release-it majors it
+      # supports, and release-it refuses to start outside them. CI never runs
+      # release-it, so a major bump only fails at release time. Raise this by
+      # hand once the plugin supports the new major.
+      - dependency-name: 'release-it'
+        update-types: ['version-update:semver-major']
+      # tsup's .d.ts build uses the TypeScript 5 compiler API (see #110)
+      - dependency-name: 'typescript'
+        update-types: ['version-update:semver-major']
     groups:
       docusaurus:
         applies-to: version-updates
