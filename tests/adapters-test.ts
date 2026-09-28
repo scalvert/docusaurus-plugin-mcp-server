@@ -6,7 +6,7 @@ import type { Server } from 'node:http';
 import { createWebRequestHandler } from '../src/adapters/web-request.js';
 import { createNodeServer } from '../src/adapters/node.js';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
-import { FlexSearchIndexer } from '../src/providers/indexers/flexsearch-indexer.js';
+import { LocalSearchIndexer } from '../src/providers/indexers/local-search-indexer.js';
 import { buildSkillsArtifact } from '../src/skills/packager.js';
 import type { ProcessedDoc } from '../src/types/index.js';
 import type { ProviderContext } from '../src/providers/types.js';
@@ -22,7 +22,7 @@ const ctx: ProviderContext = {
 };
 
 async function buildArtifacts() {
-  const indexer = new FlexSearchIndexer();
+  const indexer = new LocalSearchIndexer();
   await indexer.initialize(ctx);
   await indexer.indexDocuments(mockDocs);
   return indexer.finalize();

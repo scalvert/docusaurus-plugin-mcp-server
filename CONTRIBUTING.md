@@ -41,7 +41,7 @@ npx vitest run tests/html-to-markdown-test.ts
 - `skills-builtin/` — Built-in skills shipped with the package (`docs-research`)
 - `src/adapters/` — Runtime handlers (`web-request.ts` for serverless/edge, `node.ts` for local dev, `node-bridge.ts` for Node ↔ web request conversion)
 - `src/processing/` — HTML parsing and markdown conversion
-- `src/search/` — FlexSearch integration
+- `src/search/` — Built-in BM25 local search and the `evaluateSearch` ranking harness
 - `src/providers/` — Pluggable indexer and search provider system
 - `src/theme/` — React components (McpInstallButton)
 - `tests/` — Unit tests (Vitest) and `tests/playwright/` integration tests and eval datasets (`@gleanwork/mcp-server-tester`)

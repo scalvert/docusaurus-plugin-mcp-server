@@ -128,7 +128,7 @@ The server exposes two tools for AI agents:
 
 ### `docs_search`
 
-Search across documentation with relevance ranking. Returns matching documents with URLs, snippets, and relevance scores.
+Search across documentation with relevance ranking. Returns matching documents with URLs, snippets, and relevance scores. See [Search](#search) for how results are ranked.
 
 ```json snippet=readme/snippet-09.json
 {
@@ -228,9 +228,8 @@ Keep skills to markdown. MCP hosts treat served skills as untrusted input and wo
 | `server.url` | `string` | (derived) | Explicit MCP HTTP endpoint URL for the install button |
 | `server.urlBase` | `'origin' \| 'site'` | `'origin'` | How to derive the MCP URL when `server.url` is not set. `'origin'` → `{siteUrl}/{outputDir}`; `'site'` → under Docusaurus `baseUrl` |
 | `excludeRoutes` | `string[]` | `['/404*', '/search*']` | Routes to exclude (glob patterns) |
-| `indexers` | `string[] \| false` | `['flexsearch']` | Indexers to run during build. Use `false` to disable. Supports built-in (`'flexsearch'`), relative paths, or npm packages. |
-| `search` | `string` | `'flexsearch'` | Search provider module for runtime queries. Supports built-in (`'flexsearch'`), relative paths, or npm packages. |
-| `flexsearch` | `FlexSearchConfig` | (tuned defaults) | Tuning for the built-in FlexSearch index (`tokenize`, `resolution`, `context`, `fieldWeights`). Must be the same at build and runtime, or the index deserializes wrong. |
+| `indexers` | `string[] \| false` | `['local']` | Indexers to run during build. Use `false` to disable. Supports built-in (`'local'`), relative paths, or npm packages. |
+| `search` | `string` | `'local'` | Search provider module for runtime queries. Supports built-in (`'local'`), relative paths, or npm packages. |
 | `skills` | `{ builtin?: boolean; dir?: string } \| false` | built-in skill only | [Agent Skills](#serving-agent-skills-over-mcp) to package into `skills.json`. `dir` is relative to the site directory. `false` disables skills. |
 
 Build-time options control artifact generation and the install-button URL (`server.url` / `server.urlBase`). Runtime-only options such as `instructions`, `tools`, and `baseUrl` belong on the adapter/handler config — see [Server Configuration](#server-configuration).
@@ -256,6 +255,54 @@ Build-time options control artifact generation and the install-button URL (`serv
   '[role="contentinfo"]',
 ];
 ```
+
+## Search
+
+The built-in `'local'` search needs no external service. At build time it writes `search-index.json`; at runtime `docs_search` answers from that file.
+
+Results are ranked with [BM25+](https://en.wikipedia.org/wiki/Okapi_BM25) over each page's title, route, headings, description, and body:
+
+- **Query words are combined with OR.** A page does not need every word in the query to match; pages with more of the words, rarer words, or matches in more important fields rank higher.
+- **The route is indexed.** `/docs/errors/expired-cursor` matches "expired cursor" even if the title says something else.
+- **Long pages are not favored.** Scores are normalized by field length, so a changelog that mentions every topic does not outrank the page about the topic.
+- **Words are stemmed, accents are folded, and common words are ignored.** A Porter stemmer makes "indexing" match "index" and "route" match "routes"; "deploiement" matches "déploiement"; and "how do I" adds nothing to a query. Words of three or more letters also match as prefixes, so "auth" finds "authentication".
+
+Tokenization and stemming are fixed, so the index built at `docusaurus build` always matches the one queried at runtime. Field boosts apply at query time and can be changed on the server config without a rebuild:
+
+```javascript snippet=readme/snippet-21.js
+createWebRequestHandler({
+  docs,
+  searchIndexData: searchIndex,
+  name: 'my-docs',
+  // Defaults: title 3, slug 3, headings 2, description 1.5, content 1
+  localSearch: { fieldBoosts: { headings: 3 } },
+});
+```
+
+The built-in search is tuned for English. For other languages, or to use a hosted search service, write a [custom search provider](#searchprovider).
+
+### Measuring search quality
+
+`evaluateSearch` runs labeled queries against any search provider and reports how often the right page comes back near the top. Use it to compare providers, or to guard ranking in CI after `docusaurus build`:
+
+```javascript snippet=readme/snippet-22.js
+import { loadSearchProvider, evaluateSearch } from 'docusaurus-plugin-mcp-server';
+
+const provider = await loadSearchProvider('local');
+await provider.initialize(
+  { baseUrl: 'https://docs.example.com', serverName: 'eval', serverVersion: '0', outputDir: '' },
+  { docsPath: 'build/mcp/docs.json', indexPath: 'build/mcp/search-index.json' }
+);
+
+const report = await evaluateSearch(provider, [
+  { query: 'install the CLI', expected: ['/docs/installation'] },
+  { query: 'rotate an API token', expected: ['/docs/auth/tokens', '/docs/auth/rotation'] },
+]);
+
+console.log(report.hitsAt[3], '/', report.total, 'in the top 3; MRR', report.mrr.toFixed(2));
+```
+
+`expected` lists every page that fully answers the query, as routes or full URLs. `hitsAt[k]` counts queries whose first correct page ranked at or above `k` (defaults: 1, 3, 5), and `mrr` is the mean reciprocal rank of that page (1.0 means it was always first). `report.cases` has each query's rank and returned routes, for finding the misses.
 
 ## Custom Providers
 
@@ -334,8 +381,8 @@ module.exports = {
     [
       'docusaurus-plugin-mcp-server',
       {
-        // Run both the built-in FlexSearch indexer and a custom one
-        indexers: ['flexsearch', './my-algolia-indexer.js'],
+        // Run both the built-in local search indexer and a custom one
+        indexers: ['local', './my-algolia-indexer.js'],
         // Use a custom search provider at runtime
         search: '@myorg/glean-search',
       },
@@ -361,6 +408,8 @@ These options apply to `createWebRequestHandler`, `createNodeServer`, and `creat
 | `baseUrl` | `string` | No | Base URL for full page URLs in responses |
 | `instructions` | `string` | No | Instructions describing how to use the server, surfaced to MCP clients in the `server/discover` (2026-07-28) or `initialize` (2025-era) result. When skills are served, their URIs are appended |
 | `tools` | `object` | No | Per-tool overrides. Supports `docs_search.description` and `docs_fetch.description` to customize tool descriptions |
+| `search` | `string \| SearchProvider` | No | Search provider. Default: the built-in `'local'` search |
+| `localSearch` | `{ fieldBoosts?: {...} }` | No | Field boosts for the built-in search. See [Search](#search) |
 
 *Use file paths (`createNodeServer`, local dev) or pre-loaded data (`createWebRequestHandler`, serverless/edge).
 
@@ -465,13 +514,13 @@ curl -X POST https://docs.example.com/mcp \
 
 The plugin operates in two phases:
 
-**Build Time:** During `docusaurus build`, the plugin's `postBuild` hook processes all rendered HTML pages, extracts content, converts to markdown, builds a FlexSearch index, and outputs artifacts to `build/mcp/`.
+**Build Time:** During `docusaurus build`, the plugin's `postBuild` hook processes all rendered HTML pages, extracts content, converts to markdown, builds a search index, and outputs artifacts to `build/mcp/`.
 
 **Runtime:** A serverless function loads the pre-built artifacts and handles MCP JSON-RPC requests from AI agents. The server is stateless (MCP 2026-07-28 has no sessions), so any instance can answer any request, and list/read results carry cache hints (`ttlMs` 5 minutes, `cacheScope: public`) because content only changes on redeploy. All indexing happens at build time.
 
 ## Features
 
-- **Full-text Search** - FlexSearch-powered search with relevance ranking
+- **Full-text Search** - BM25-ranked local search, with no external service
 - **Page Retrieval** - Get complete page content as clean markdown
 - **MCP 2026-07-28, backward compatible** - Stateless modern protocol plus 2025-era clients on the same endpoint
 - **Agent Skills** - Ships a docs-research skill (and yours) over the MCP skills extension
@@ -523,9 +572,16 @@ import {
   docsSearchTool,
   docsFetchTool,
 
-  // Provider loaders (built-in 'flexsearch' or custom indexers/providers)
+  // Provider loaders (built-in 'local' or custom indexers/providers)
   loadIndexer,
   loadSearchProvider,
+
+  // The built-in local search, for passing an instance as `search`
+  LocalSearchIndexer,
+  LocalSearchProvider,
+
+  // Measure how well a search provider ranks the right pages
+  evaluateSearch,
 
   // Resolve the MCP endpoint URL the install button uses
   resolveServerUrl,
@@ -609,6 +665,12 @@ import {
 - **2025-era clients see two small differences in responses.** `initialize` now reports `tools.listChanged: false`, which is accurate: the tool list is fixed per deploy and the server never sends list-changed notifications. Tool `inputSchema`s now declare JSON Schema 2020-12 (`$schema`) instead of draft-07.
 - **Skills are on by default.** The build now also writes `build/mcp/skills.json`. Pass it to your handler as `skills` or `skillsPath` to serve it, or set `skills: false` in the plugin options to skip it.
 - **CORS headers changed.** Both the web handler and the Node server now allow `Content-Type, Accept, Authorization, MCP-Protocol-Version, Mcp-Method, Mcp-Name, Mcp-Session-Id, Last-Event-ID` and expose `MCP-Protocol-Version, Mcp-Session-Id`. In 1.x the web handler allowed only `Content-Type`, the Node server only `Content-Type, Authorization`, and neither exposed any headers.
+- **Built-in search is now `'local'` (BM25) instead of `'flexsearch'`.** Ranking is much better on natural queries (see [Search](#search)), and `search-index.json` is far smaller. To upgrade:
+  - Rebuild the site. A 1.x `search-index.json` is rejected with a message to rebuild, rather than returning no results.
+  - Replace `'flexsearch'` with `'local'` in `indexers` and `search`, or omit them to get the default. `'flexsearch'` now throws.
+  - Remove the `flexsearch` plugin and server option. The new search has no build-time tuning; to change ranking, set `localSearch.fieldBoosts` on the server config. `fieldWeights` keys carry over, plus `slug`, but the values are BM25 boosts rather than the 1.x position weights, so start from the defaults instead of copying old values.
+  - Rename the type `FlexSearchConfig` to `LocalSearchConfig` and `BuiltinIndexerOptions` to `BuiltinSearchOptions`. `loadIndexer` no longer takes a second argument.
+  - `LocalSearchIndexer` and `LocalSearchProvider` are now exported, for passing a provider instance directly (`search: new LocalSearchProvider()`).
 
 ## Requirements
 

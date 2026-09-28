@@ -221,9 +221,15 @@ export class McpDocsServer {
   }
 
   private async _doInitialize(): Promise<void> {
-    const searchSpecifier = this.config.search ?? 'flexsearch';
+    if ('flexsearch' in this.config) {
+      throw new Error(
+        "[MCP] The 'flexsearch' server option was removed in docusaurus-plugin-mcp-server 2.0. " +
+          'Remove it; use \'localSearch\' to set field boosts. See "Upgrading to 2.0" in the README.'
+      );
+    }
+    const searchSpecifier = this.config.search ?? 'local';
     this.searchProvider = await loadSearchProvider(searchSpecifier, {
-      flexsearch: this.config.flexsearch,
+      localSearch: this.config.localSearch,
     });
 
     const providerContext: ProviderContext = {

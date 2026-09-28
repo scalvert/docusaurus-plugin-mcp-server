@@ -10,5 +10,5 @@ export type {
 
 export { loadIndexer, loadSearchProvider } from './loader.js';
 
-export { FlexSearchIndexer } from './indexers/flexsearch-indexer.js';
-export { FlexSearchProvider } from './search/flexsearch-provider.js';
+export { LocalSearchIndexer } from './indexers/local-search-indexer.js';
+export { LocalSearchProvider } from './search/local-search-provider.js';

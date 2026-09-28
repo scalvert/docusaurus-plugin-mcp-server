@@ -13,7 +13,8 @@ export type {
   McpServerDataConfig,
   DocsSearchParams,
   DocsFetchParams,
-  FlexSearchConfig,
+  LocalSearchConfig,
+  LocalSearchField,
   SkillsPluginOptions,
   SkillsArtifact,
   SkillArtifact,
@@ -34,7 +35,20 @@ export type {
 } from './providers/types.js';
 
 export { loadIndexer, loadSearchProvider } from './providers/loader.js';
-export type { BuiltinIndexerOptions } from './providers/loader.js';
+export type { BuiltinSearchOptions } from './providers/loader.js';
+
+// The built-in local search, for passing a provider instance directly (e.g. in
+// bundled runtimes where `search: 'local'` cannot be resolved by name).
+export { LocalSearchIndexer } from './providers/indexers/local-search-indexer.js';
+export { LocalSearchProvider } from './providers/search/local-search-provider.js';
+
+export { evaluateSearch } from './search/evaluate.js';
+export type {
+  SearchEvalCase,
+  SearchEvalCaseResult,
+  SearchEvalReport,
+  EvaluateSearchOptions,
+} from './search/evaluate.js';
 
 export {
   buildSkillsArtifact,

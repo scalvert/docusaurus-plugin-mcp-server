@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { McpDocsServer } from '../src/mcp/server.js';
-import { FlexSearchIndexer } from '../src/providers/indexers/flexsearch-indexer.js';
+import { LocalSearchIndexer } from '../src/providers/indexers/local-search-indexer.js';
 import type { ProcessedDoc, McpServerDataConfig, McpServerFileConfig } from '../src/types/index.js';
 import type { ProviderContext } from '../src/providers/types.js';
 
@@ -33,7 +33,7 @@ const mockProviderContext: ProviderContext = {
 };
 
 async function buildArtifacts() {
-  const indexer = new FlexSearchIndexer();
+  const indexer = new LocalSearchIndexer();
   await indexer.initialize(mockProviderContext);
   await indexer.indexDocuments(mockDocs);
   return indexer.finalize();
@@ -126,7 +126,7 @@ describe('McpDocsServer', () => {
       expect(status.initialized).toBe(true);
       expect(status.docCount).toBe(2);
       expect(status.baseUrl).toBe('https://example.com');
-      expect(status.searchProvider).toBe('flexsearch');
+      expect(status.searchProvider).toBe('local');
     });
 
     it('returns defaults when version is omitted', async () => {
