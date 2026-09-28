@@ -108,7 +108,7 @@
     "@vitest/coverage-v8": "^5.0.2",
     "eslint": "^10.11.0",
     "globals": "^17.12.0",
-    "jsdom": "^29.1.1",
+    "jsdom": "^30.1.1",
     "markdown-code": "^1.1.0",
     "prettier": "^3.0.0",
     "react": "^19.3.0",
