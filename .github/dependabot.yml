@@ -42,4 +42,12 @@ updates:
         patterns:
           - 'vitest'
           - '@vitest/*'
+          - 'vite' # vitest's peer; bump them together
           - '@playwright/*'
+      react:
+        # react-dom refuses to run unless react is the exact same version
+        patterns:
+          - 'react'
+          - 'react-dom'
+          - '@types/react'
+          - '@types/react-dom'
