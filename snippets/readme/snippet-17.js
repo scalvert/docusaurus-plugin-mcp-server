@@ -17,13 +17,13 @@ import {
   LocalSearchIndexer,
   LocalSearchProvider,
 
-  // Measure how well a search provider ranks the right pages
+  // Measure how well a search provider ranks the right pages (experimental)
   evaluateSearch,
 
   // Resolve the MCP endpoint URL the install button uses
   resolveServerUrl,
 
-  // Package Agent Skills into a skills.json artifact (outside the plugin)
+  // Package Agent Skills into a skills.json artifact outside the plugin (experimental)
   buildSkillsArtifact,
 
   // Default plugin options

@@ -29,6 +29,7 @@
 import { McpDocsServer } from '../mcp/server.js';
 import type { McpServerDataConfig } from '../types/index.js';
 import { getCorsHeaders } from './cors.js';
+import { ConfigurationError, internalErrorBody } from '../errors.js';
 
 /**
  * Config for the web-standard request handler
@@ -68,11 +69,23 @@ export function createWebRequestHandler(config: WebRequestAdapterConfig) {
     // Handle GET requests for health check
     if (request.method === 'GET') {
       const mcpServer = getServer();
-      const status = await mcpServer.getStatus();
-      return new Response(JSON.stringify(status), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      try {
+        // Initialize so a broken deployment (e.g. a stale 1.x index) shows up
+        // in the health check rather than only on the first MCP request.
+        await mcpServer.initialize();
+        return new Response(JSON.stringify(await mcpServer.getStatus()), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      } catch (error) {
+        console.error('[MCP] Status error:', error);
+        const message =
+          error instanceof ConfigurationError ? error.message : 'Internal server error';
+        return new Response(JSON.stringify({ error: message }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
 
     // Only allow POST requests for MCP
@@ -110,21 +123,11 @@ export function createWebRequestHandler(config: WebRequestAdapterConfig) {
         headers: newHeaders,
       });
     } catch (error) {
-      console.error('MCP Server Error:', error);
-      return new Response(
-        JSON.stringify({
-          jsonrpc: '2.0',
-          id: null,
-          error: {
-            code: -32603,
-            message: 'Internal server error',
-          },
-        }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
+      console.error('[MCP] Request error:', error);
+      return new Response(internalErrorBody(error), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
   };
 }

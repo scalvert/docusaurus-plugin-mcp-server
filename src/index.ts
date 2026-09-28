@@ -56,5 +56,7 @@ export {
   type BuildSkillsOptions,
 } from './skills/packager.js';
 
+export { ConfigurationError } from './errors.js';
+
 export { docsSearchTool, docsSearchInputSchema } from './mcp/tools/docs-search.js';
 export { docsFetchTool, docsFetchInputSchema } from './mcp/tools/docs-fetch.js';

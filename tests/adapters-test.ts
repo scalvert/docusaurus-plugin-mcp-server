@@ -90,6 +90,66 @@ describe('createWebRequestHandler (web/edge, data mode)', () => {
   });
 });
 
+describe('a deployment with a stale 1.x search-index.json', () => {
+  // 1.x wrote a FlexSearch export; 2.0 rejects it. The site owner must see
+  // why (and how to fix it) from a request, not only in server logs.
+  const staleIndex = { reg: '{}', 'content.map': '[]' };
+  let handler: (req: Request) => Promise<Response>;
+
+  beforeAll(async () => {
+    const a = await buildArtifacts();
+    handler = createWebRequestHandler({
+      name: 't',
+      docs: a.get('docs.json') as Record<string, ProcessedDoc>,
+      searchIndexData: staleIndex,
+    });
+  });
+
+  it('POST returns the rebuild instruction in the JSON-RPC error', async () => {
+    const res = await handler(
+      new Request('https://x/mcp', { method: 'POST', headers: MCP_HEADERS, body: INIT_BODY })
+    );
+    expect(res.status).toBe(500);
+    const body = await res.json();
+    expect(body.error.code).toBe(-32603);
+    expect(body.error.message).toMatch(/Rebuild the site/);
+    expect(body.error.message).toMatch(/migrations\/1\.x-2\.0\.0\.md/);
+  });
+
+  it('GET status reports the same error instead of looking healthy', async () => {
+    const res = await handler(new Request('https://x/mcp', { method: 'GET' }));
+    expect(res.status).toBe(500);
+    expect((await res.json()).error).toMatch(/Rebuild the site/);
+  });
+});
+
+describe('unexpected errors stay generic on the wire', () => {
+  it('does not leak the message of a non-configuration error', async () => {
+    const handler = createWebRequestHandler({
+      name: 't',
+      docs: {},
+      searchIndexData: {},
+      search: {
+        name: 'broken',
+        initialize: async () => {
+          throw new Error('secret connection string postgres://user:pw@db');
+        },
+        isReady: () => false,
+        search: async () => [],
+        getDocument: async () => null,
+      },
+    });
+    const res = await handler(
+      new Request('https://x/mcp', { method: 'POST', headers: MCP_HEADERS, body: INIT_BODY })
+    );
+    const body = await res.json();
+    expect(body.error.message).toBe('Internal server error');
+
+    const status = await handler(new Request('https://x/mcp', { method: 'GET' }));
+    expect((await status.json()).error).toBe('Internal server error');
+  });
+});
+
 describe('createNodeServer (local dev, file mode)', () => {
   let server: Server;
   let baseURL: string;

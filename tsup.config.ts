@@ -15,6 +15,10 @@ export default defineConfig({
   splitting: false,
   treeshake: true,
   outDir: 'dist',
+  // Keep `node:` on built-in imports. Edge bundlers (Workers, Vercel Edge)
+  // recognize only the prefixed form, and tsup strips it by default, so the
+  // file-mode `import('node:fs/promises')` would otherwise break their build.
+  removeNodeProtocol: false,
   external: [
     'react',
     'react-dom',

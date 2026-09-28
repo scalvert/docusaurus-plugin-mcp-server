@@ -128,7 +128,7 @@ The server exposes two tools for AI agents:
 
 ### `docs_search`
 
-Search across documentation with relevance ranking. Returns matching documents with URLs, snippets, and relevance scores. See [Search](#search) for how results are ranked.
+Search across documentation with relevance ranking. Returns matching documents, best first, with URLs, snippets, and matching sections. See [Search](#search) for how results are ranked.
 
 ```json snippet=readme/snippet-09.json
 {
@@ -142,7 +142,7 @@ Search across documentation with relevance ranking. Returns matching documents w
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `query` | `string` | required | Search query |
+| `query` | `string` | required | Search query, up to 500 characters. Only the first 16 distinct terms are searched. |
 | `limit` | `number` | `16` | Max results (1-20) |
 
 **Response includes:**
@@ -283,7 +283,7 @@ The built-in search is tuned for English. For other languages, or to use a hoste
 
 ### Measuring search quality
 
-`evaluateSearch` runs labeled queries against any search provider and reports how often the right page comes back near the top. Use it to compare providers, or to guard ranking in CI after `docusaurus build`:
+`evaluateSearch` runs labeled queries against any search provider and reports how often the right page comes back near the top. Use it to compare providers, or to guard ranking in CI after `docusaurus build`. It is **experimental**: its options and report shape may change in a 2.x minor release.
 
 ```javascript snippet=readme/snippet-22.js
 import { loadSearchProvider, evaluateSearch } from 'docusaurus-plugin-mcp-server';
@@ -580,13 +580,13 @@ import {
   LocalSearchIndexer,
   LocalSearchProvider,
 
-  // Measure how well a search provider ranks the right pages
+  // Measure how well a search provider ranks the right pages (experimental)
   evaluateSearch,
 
   // Resolve the MCP endpoint URL the install button uses
   resolveServerUrl,
 
-  // Package Agent Skills into a skills.json artifact (outside the plugin)
+  // Package Agent Skills into a skills.json artifact outside the plugin (experimental)
   buildSkillsArtifact,
 
   // Default plugin options
@@ -653,25 +653,18 @@ import {
 
 ## Upgrading to 2.0
 
-2.0 moves to the MCP TypeScript SDK v2 (`@modelcontextprotocol/server`) and the 2026-07-28 protocol revision.
+**Follow [migrations/1.x-2.0.0.md](migrations/1.x-2.0.0.md).** It lists every breaking change with before/after code, and ends with a checklist an AI agent can run to migrate a project. Errors thrown for 1.x configuration link to it.
 
-**Clients:** nothing to do. Clients on 2026-07-28 are served statelessly. Clients on 2025-era revisions (`initialize` handshake) still get plain JSON responses from the same endpoint. When skills are served, all clients also see a `resources` capability, the `skill://` resources, and a short list of skill URIs appended to `instructions`.
+In short:
 
-**What changed for you:**
+- **Requirements:** Node.js >= 22 and zod >= 4.2.
+- **Rebuild and redeploy `build/mcp/`.** The `search-index.json` format changed, and a 1.x index is rejected with a message saying to rebuild. Deployment problems like this are `ConfigurationError`s: their message, which says how to fix them, is returned to clients and in the `GET` status. Other errors are still reported only as `Internal server error`.
+- **FlexSearch is replaced by the built-in `local` BM25 search.** Remove `flexsearch` options and `flexsearch` values. Tune ranking at runtime with `localSearch.fieldBoosts`. Search now matches any of the query words (OR) instead of all of them, and `query` is capped at 500 characters.
+- **`docsSearchTool.inputSchema` / `docsFetchTool.inputSchema` are `z.object(...)` schemas.** The raw shapes are still exported as `docsSearchInputSchema` / `docsFetchInputSchema`.
+- **Unknown tools return JSON-RPC `-32602`** instead of an `isError` result.
+- **Skills:** the build writes `build/mcp/skills.json`. Pass it to your handler to serve it, or set `skills: false`.
 
-- **Node.js >= 22 is required.** Node 20 reached end of life on 2026-04-30. Node 22 is tested along with 24 and 26.
-- **zod >= 4.2 is required.** The v2 SDK drops zod 3, and zod 4.2 or later is needed for tool schema descriptions to reach clients.
-- **`docsSearchTool.inputSchema` and `docsFetchTool.inputSchema` are now `z.object(...)` schemas.** The raw shapes are still exported as `docsSearchInputSchema` and `docsFetchInputSchema`.
-- **Calling an unknown tool now returns a JSON-RPC error (`-32602`)** instead of a tool result with `isError: true`.
-- **2025-era clients see two small differences in responses.** `initialize` now reports `tools.listChanged: false`, which is accurate: the tool list is fixed per deploy and the server never sends list-changed notifications. Tool `inputSchema`s now declare JSON Schema 2020-12 (`$schema`) instead of draft-07.
-- **Skills are on by default.** The build now also writes `build/mcp/skills.json`. Pass it to your handler as `skills` or `skillsPath` to serve it, or set `skills: false` in the plugin options to skip it.
-- **CORS headers changed.** Both the web handler and the Node server now allow `Content-Type, Accept, Authorization, MCP-Protocol-Version, Mcp-Method, Mcp-Name, Mcp-Session-Id, Last-Event-ID` and expose `MCP-Protocol-Version, Mcp-Session-Id`. In 1.x the web handler allowed only `Content-Type`, the Node server only `Content-Type, Authorization`, and neither exposed any headers.
-- **Built-in search is now `'local'` (BM25) instead of `'flexsearch'`.** Ranking is much better on natural queries (see [Search](#search)), and `search-index.json` is far smaller. To upgrade:
-  - Rebuild the site. A 1.x `search-index.json` is rejected with a message to rebuild, rather than returning no results.
-  - Replace `'flexsearch'` with `'local'` in `indexers` and `search`, or omit them to get the default. `'flexsearch'` now throws.
-  - Remove the `flexsearch` plugin and server option. The new search has no build-time tuning; to change ranking, set `localSearch.fieldBoosts` on the server config. `fieldWeights` keys carry over, plus `slug`, but the values are BM25 boosts rather than the 1.x position weights, so start from the defaults instead of copying old values.
-  - Rename the type `FlexSearchConfig` to `LocalSearchConfig` and `BuiltinIndexerOptions` to `BuiltinSearchOptions`. `loadIndexer` no longer takes a second argument.
-  - `LocalSearchIndexer` and `LocalSearchProvider` are now exported, for passing a provider instance directly (`search: new LocalSearchProvider()`).
+**MCP clients need no changes.** 2026-07-28 and 2025-era clients are served from the same endpoint, and the guide lists the small response differences older clients see.
 
 ## Requirements
 

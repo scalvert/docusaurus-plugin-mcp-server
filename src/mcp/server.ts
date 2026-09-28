@@ -16,6 +16,7 @@ import type {
   SkillsArtifact,
 } from '../types/index.js';
 import { loadSearchProvider } from '../providers/loader.js';
+import { ConfigurationError, MIGRATION_GUIDE } from '../errors.js';
 import type {
   SearchProvider,
   ProviderContext,
@@ -222,9 +223,9 @@ export class McpDocsServer {
 
   private async _doInitialize(): Promise<void> {
     if ('flexsearch' in this.config) {
-      throw new Error(
+      throw new ConfigurationError(
         "[MCP] The 'flexsearch' server option was removed in docusaurus-plugin-mcp-server 2.0. " +
-          'Remove it; use \'localSearch\' to set field boosts. See "Upgrading to 2.0" in the README.'
+          `Remove it; use 'localSearch' to set field boosts. See ${MIGRATION_GUIDE}.`
       );
     }
     const searchSpecifier = this.config.search ?? 'local';
@@ -253,12 +254,21 @@ export class McpDocsServer {
       initData.indexPath = this.config.indexPath;
       if (this.config.skillsPath) {
         const { readFile } = await import('node:fs/promises');
-        this.skillsArtifact = JSON.parse(
-          await readFile(this.config.skillsPath, 'utf8')
-        ) as SkillsArtifact;
+        try {
+          this.skillsArtifact = JSON.parse(
+            await readFile(this.config.skillsPath, 'utf8')
+          ) as SkillsArtifact;
+        } catch (cause) {
+          throw new ConfigurationError(
+            `[MCP] skills.json not found or unreadable: ${this.config.skillsPath}. Build the site first, or remove skillsPath.`,
+            { cause }
+          );
+        }
       }
     } else {
-      throw new Error('Invalid server config: must provide either file paths or pre-loaded data');
+      throw new ConfigurationError(
+        '[MCP] Invalid server config: provide either file paths (docsPath, indexPath) or pre-loaded data (docs, searchIndexData).'
+      );
     }
 
     await this.searchProvider.initialize(providerContext, initData);

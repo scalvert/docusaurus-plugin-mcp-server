@@ -32,7 +32,7 @@ ESM-only. Four entry points:
 - `docusaurus-plugin-mcp-server/adapters/node` — `createNodeServer`/`createNodeHandler` for local dev (Node `http`).
 - `docusaurus-plugin-mcp-server/theme` — `McpInstallButton`.
 
-Requires Node.js >= 22. Peers: `zod` (>= 4.2) is required. `@docusaurus/core` (and `react`/`react-dom` for the theme button) are optional peer deps; provide them from your Docusaurus app.
+Peers: `zod` (>= 4.2) is required. `@docusaurus/core` (and `react`/`react-dom` for the theme button) are optional peer deps; provide them from your Docusaurus app.
 
 ## Authoritative API
 
@@ -85,9 +85,12 @@ Per-platform glue to scaffold:
 - **Forgetting to pass skills.** The build writes `skills.json`, but the handler only serves skills when you pass `skills` (web) or `skillsPath` (Node).
 - **Invalid skill directories fail the build.** Frontmatter must have `name` (lowercase, hyphens, matching the directory) and `description`; each skill is capped at 512 files / 16 MiB.
 - **zod 3.** 2.x requires zod >= 4.2 (MCP SDK v2).
-- **1.x search options.** The built-in search is `'local'` (BM25). `'flexsearch'` in `indexers`/`search`, and the `flexsearch` plugin/server option, now throw. A 1.x `search-index.json` is rejected until the site is rebuilt. Tune ranking with the server option `localSearch: { fieldBoosts }`.
+- **1.x search options.** The built-in search is `'local'` (BM25). `'flexsearch'` in `indexers`/`search`, and the `flexsearch` plugin/server option, now throw. A 1.x `search-index.json` is rejected until the site is rebuilt; the error is returned in MCP responses and the GET status. Tune ranking with the server option `localSearch: { fieldBoosts }`. The plugin's `search` option does not choose the runtime provider; the server config's `search` does.
+- **Very long queries.** `docs_search` accepts up to 500 characters and searches the first 16 distinct terms.
 - **Guessing whether search is good enough.** Measure it: `evaluateSearch(provider, [{ query, expected: [routes] }])` reports top-k hits and MRR for any provider.
 
 ## Version notes
+
+**Migrating a project from 1.x to 2.0?** Follow `node_modules/docusaurus-plugin-mcp-server/migrations/1.x-2.0.0.md` (published with the package, and on GitHub at `scalvert/docusaurus-plugin-mcp-server`). Its "For agents" section is a step-by-step checklist; errors thrown for 1.x configuration link to it.
 
 Check the installed version with `npm ls docusaurus-plugin-mcp-server`. 2.0 requires Node.js >= 22, moved to the MCP TypeScript SDK v2 (`@modelcontextprotocol/server`) and protocol 2026-07-28 (2025-era clients still served), added skills, made `docsSearchTool.inputSchema`/`docsFetchTool.inputSchema` `z.object(...)` schemas (raw shapes remain as `docsSearchInputSchema`/`docsFetchInputSchema`), returns JSON-RPC `-32602` for unknown tools, and replaced the FlexSearch index with BM25 local search (`'local'`, `localSearch.fieldBoosts`, `evaluateSearch`, and exported `LocalSearchIndexer`/`LocalSearchProvider`). The adapter surface consolidated to one web-standard `createWebRequestHandler`; `createVercelHandler`/`createNetlifyHandler`/`generateAdapterFiles` are gone, and `createCloudflareHandler` was removed in 1.0.0 (it was a deprecated alias through 0.13.0). The Node server/handler moved to the `./adapters/node` subpath. Confirm exports against `dist/adapters-entry.d.ts` and `dist/adapters-node.d.ts` for the version you have.

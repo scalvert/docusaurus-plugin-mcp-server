@@ -1,6 +1,10 @@
 import type { SearchProvider } from '../providers/types.js';
 
-/** One labeled query: the pages that fully answer it. */
+/**
+ * One labeled query: the pages that fully answer it.
+ *
+ * @experimental May change in a 2.x minor release; pin a version if you depend on it.
+ */
 export interface SearchEvalCase {
   /** The query, as a user or agent would type it */
   query: string;
@@ -11,7 +15,11 @@ export interface SearchEvalCase {
   expected: string[];
 }
 
-/** Result for one {@link SearchEvalCase}. */
+/**
+ * Result for one {@link SearchEvalCase}.
+ *
+ * @experimental May change in a 2.x minor release; pin a version if you depend on it.
+ */
 export interface SearchEvalCaseResult {
   query: string;
   expected: string[];
@@ -21,7 +29,11 @@ export interface SearchEvalCaseResult {
   routes: string[];
 }
 
-/** Aggregate ranking quality over a set of cases. */
+/**
+ * Aggregate ranking quality over a set of cases.
+ *
+ * @experimental May change in a 2.x minor release; pin a version if you depend on it.
+ */
 export interface SearchEvalReport {
   /** Number of cases */
   total: number;
@@ -32,6 +44,11 @@ export interface SearchEvalReport {
   cases: SearchEvalCaseResult[];
 }
 
+/**
+ * Options for {@link evaluateSearch}.
+ *
+ * @experimental May change in a 2.x minor release; pin a version if you depend on it.
+ */
 export interface EvaluateSearchOptions {
   /** Results to request per query. Default: 10 */
   limit?: number;
@@ -55,6 +72,8 @@ export interface EvaluateSearchOptions {
  * ]);
  * expect(report.hitsAt[3] / report.total).toBeGreaterThanOrEqual(0.9);
  * ```
+ *
+ * @experimental May change in a 2.x minor release; pin a version if you depend on it.
  */
 export async function evaluateSearch(
   provider: SearchProvider,

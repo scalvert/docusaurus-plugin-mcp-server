@@ -8,6 +8,7 @@ import mcpServerPluginDefault, {
   docsFetchInputSchema,
   buildSkillsArtifact,
   SkillValidationError,
+  ConfigurationError,
   evaluateSearch,
   McpDocsServer,
   LocalSearchIndexer,
@@ -49,6 +50,10 @@ describe('public API surface', () => {
     expect(() => mcpServerPlugin(context, { flexsearch: { tokenize: 'strict' } } as never)).toThrow(
       /'flexsearch' plugin option was removed/
     );
+    // The 1.x provider name in the plugin's `search` option is rejected too.
+    expect(() => mcpServerPlugin(context, { search: 'flexsearch' })).toThrow(
+      /'flexsearch' search provider was replaced.*migrations\/1\.x-2\.0\.0\.md/
+    );
 
     const server = new McpDocsServer({
       name: 'x',
@@ -57,6 +62,7 @@ describe('public API surface', () => {
       flexsearch: {},
     } as never);
     await expect(server.initialize()).rejects.toThrow(/'flexsearch' server option was removed/);
+    await expect(server.initialize()).rejects.toBeInstanceOf(ConfigurationError);
   });
 
   it('evaluateSearch is exported', () => {

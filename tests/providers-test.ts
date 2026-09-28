@@ -3,6 +3,7 @@ import { LocalSearchIndexer } from '../src/providers/indexers/local-search-index
 import { LocalSearchProvider } from '../src/providers/search/local-search-provider.js';
 import { loadIndexer, loadSearchProvider } from '../src/providers/loader.js';
 import type { ProcessedDoc } from '../src/types/index.js';
+import { ConfigurationError } from '../src/errors.js';
 import type { ProviderContext } from '../src/providers/types.js';
 
 // Mock docs for testing
@@ -183,6 +184,12 @@ describe('LocalSearchProvider', () => {
         // The shape FlexSearch exported in 1.x
         indexData: { reg: '{}', 'content.map': '[]' },
       })
+    ).rejects.toThrow(ConfigurationError);
+    await expect(
+      provider.initialize(mockProviderContext, {
+        docs: artifacts.get('docs.json') as Record<string, ProcessedDoc>,
+        indexData: { reg: '{}' },
+      })
     ).rejects.toThrow(/Rebuild the site/);
   });
 
@@ -212,7 +219,7 @@ describe('Provider Loader', () => {
     });
 
     it("rejects the removed 1.x 'flexsearch' indexer with a migration pointer", async () => {
-      await expect(loadIndexer('flexsearch')).rejects.toThrow(/Upgrading to 2\.0/);
+      await expect(loadIndexer('flexsearch')).rejects.toThrow(/migrations\/1\.x-2\.0\.0\.md/);
     });
   });
 
@@ -224,7 +231,9 @@ describe('Provider Loader', () => {
     });
 
     it("rejects the removed 1.x 'flexsearch' provider with a migration pointer", async () => {
-      await expect(loadSearchProvider('flexsearch')).rejects.toThrow(/Upgrading to 2\.0/);
+      await expect(loadSearchProvider('flexsearch')).rejects.toThrow(
+        /migrations\/1\.x-2\.0\.0\.md/
+      );
     });
 
     it('should throw error for non-existent module', async () => {
