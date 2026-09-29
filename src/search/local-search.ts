@@ -134,7 +134,7 @@ function routeWords(route: string): string {
 }
 
 /** Document id: the full URL when a base URL is known, otherwise the route. */
-export function documentId(doc: ProcessedDoc, baseUrl?: string): string {
+export function documentId(doc: Pick<ProcessedDoc, 'route'>, baseUrl?: string): string {
   return baseUrl ? `${baseUrl.replace(/\/$/, '')}${doc.route}` : doc.route;
 }
 

@@ -13,8 +13,14 @@ import { createHash } from 'node:crypto';
 import fs from 'fs-extra';
 import { parse as parseYaml } from 'yaml';
 import type { SkillArtifact, SkillFile, SkillsArtifact } from '../types/index.js';
-import { BUILTIN_SKILL_NAME, findBuiltinSkillsDir, renderSkillTemplate } from './builtin.js';
+import {
+  BUILTIN_SKILL_NAME,
+  builtinTemplateVars,
+  findBuiltinSkillsDir,
+  renderSkillTemplate,
+} from './builtin.js';
 import { FRONTMATTER_PATTERN } from './frontmatter.js';
+import type { SiteMapDoc } from './site-map.js';
 
 /** Agent Skills naming rule: lowercase alphanumerics separated by single hyphens */
 const SKILL_NAME_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -305,6 +311,18 @@ export interface BuildSkillsOptions {
   dir?: string;
   /** Site title used in the built-in skill */
   siteTitle: string;
+  /**
+   * Absolute site URL including the base path (e.g. `https://example.com/docs/`).
+   * The built-in skill names its host, and links pages from its site map.
+   */
+  siteUrl?: string;
+  /** Site tagline, added to the built-in skill's description */
+  siteTagline?: string;
+  /**
+   * Indexed pages. With `siteUrl`, the built-in skill gets a generated
+   * "Where things are" section grouping them by URL path.
+   */
+  docs?: SiteMapDoc[];
 }
 
 /**
@@ -319,9 +337,13 @@ export async function buildSkillsArtifact(options: BuildSkillsOptions): Promise<
 
   if (options.builtin) {
     const builtinDir = path.join(await findBuiltinSkillsDir(), BUILTIN_SKILL_NAME);
-    const skill = await loadSkillDir(builtinDir, (md) =>
-      renderSkillTemplate(md, options.siteTitle)
-    );
+    const vars = builtinTemplateVars({
+      title: options.siteTitle,
+      url: options.siteUrl,
+      tagline: options.siteTagline,
+      docs: options.docs,
+    });
+    const skill = await loadSkillDir(builtinDir, (md) => renderSkillTemplate(md, vars));
     byName.set(skill.frontmatter.name, skill);
   }
 

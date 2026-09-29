@@ -232,7 +232,7 @@ export interface SearchResult {
  * Manifest metadata for the MCP artifacts
  */
 export interface McpManifest {
-  /** Plugin version */
+  /** Server version, from the plugin's `server.version` option */
   version: string;
   /** Build timestamp */
   buildTime: string;
