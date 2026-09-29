@@ -11,7 +11,13 @@ import {
   SkillValidationError,
   MAX_SKILL_FILES,
 } from '../src/skills/packager.js';
-import { findBuiltinSkillsDir, renderSkillTemplate } from '../src/skills/builtin.js';
+import {
+  builtinTemplateVars,
+  findBuiltinSkillsDir,
+  renderSkillTemplate,
+} from '../src/skills/builtin.js';
+
+const vars = (title: string) => builtinTemplateVars({ title });
 
 const sha256 = (bytes: Buffer) => `sha256:${createHash('sha256').update(bytes).digest('hex')}`;
 
@@ -117,25 +123,74 @@ describe('renderSkillTemplate', () => {
     "---\nname: guide\ndescription: 'Answers about {{siteTitle}}'\n---\n\n# {{siteTitle}} guide\n";
 
   it('fills {{siteTitle}} in frontmatter and body', () => {
-    const markdown = renderSkillTemplate(template, 'Example');
+    const markdown = renderSkillTemplate(template, vars('Example'));
     expect(parseSkillFrontmatter(markdown, 'x').description).toBe('Answers about Example');
     expect(markdown).toContain('# Example guide');
     expect(markdown).not.toContain('{{siteTitle}}');
   });
 
   it('escapes site titles containing YAML syntax', () => {
-    const markdown = renderSkillTemplate(template, 'Acme: "Docs" #1');
+    const markdown = renderSkillTemplate(template, vars('Acme: "Docs" #1'));
     expect(parseSkillFrontmatter(markdown, 'x').description).toBe('Answers about Acme: "Docs" #1');
   });
 
   it('frontmatter round-trips through a plain YAML parse', () => {
-    const markdown = renderSkillTemplate(template, 'Example');
+    const markdown = renderSkillTemplate(template, vars('Example'));
     const yamlBlock = markdown.split('---')[1] ?? '';
     expect(parseYaml(yamlBlock)).toEqual(parseSkillFrontmatter(markdown, 'x'));
   });
 
   it('falls back to "this site" for an empty title', () => {
-    expect(renderSkillTemplate(template, '  ')).toContain('# this site guide');
+    expect(renderSkillTemplate(template, vars('  '))).toContain('# this site guide');
+  });
+
+  it('leaves no extra blank lines where a placeholder renders empty', () => {
+    const md = '---\nname: g\ndescription: d\n---\n\n# A\n\n{{siteMap}}\n\n## B\n';
+    expect(renderSkillTemplate(md, vars('Example'))).toContain('# A\n\n## B\n');
+  });
+
+  it('keeps intentional blank lines elsewhere in the body', () => {
+    const md = '---\nname: g\ndescription: d\n---\n\n```\na\n\n\nb\n```\n';
+    expect(renderSkillTemplate(md, vars('Example'))).toContain('a\n\n\nb');
+  });
+
+  it('leaves unknown placeholders alone', () => {
+    const md = '---\nname: g\ndescription: d\n---\n\n{{other}} {{siteTitle}}\n';
+    expect(renderSkillTemplate(md, vars('Example'))).toContain('{{other}} Example');
+  });
+});
+
+describe('builtinTemplateVars', () => {
+  it('names the docs, host and tagline for the description', () => {
+    const v = builtinTemplateVars({
+      title: 'Acme',
+      url: 'https://acme.dev/docs/',
+      tagline: 'Build faster.',
+    });
+    expect(v.siteDocs).toBe('the Acme documentation');
+    expect(v.siteSummary).toBe('the Acme documentation at acme.dev/docs (Build faster)');
+  });
+
+  it('skips a missing tagline, one that repeats the title, and the Docusaurus default', () => {
+    for (const tagline of [undefined, '  ', 'Acme', 'Dinosaurs are cool']) {
+      expect(
+        builtinTemplateVars({ title: 'Acme', url: 'https://acme.dev/', tagline }).siteSummary
+      ).toBe('the Acme documentation at acme.dev');
+    }
+  });
+
+  it('does not repeat "documentation" for titles that already name the docs', () => {
+    expect(builtinTemplateVars({ title: 'Acme Docs' }).siteDocs).toBe('the Acme Docs');
+    expect(builtinTemplateVars({ title: 'Acme Documentation' }).siteDocs).toBe(
+      'the Acme Documentation'
+    );
+    expect(builtinTemplateVars({ title: 'Docsify' }).siteDocs).toBe('the Docsify documentation');
+  });
+
+  it('reads naturally without a title or URL', () => {
+    const v = builtinTemplateVars({ title: '' });
+    expect(v.siteSummary).toBe("this site's documentation");
+    expect(v.siteMap).toBe('');
   });
 });
 
@@ -153,11 +208,30 @@ describe('built-in skills directory', () => {
 
   it('ships a docs-research skill whose template renders to a valid skill', async () => {
     const file = path.join(await findBuiltinSkillsDir(), 'docs-research', 'SKILL.md');
-    const markdown = renderSkillTemplate(await fs.readFile(file, 'utf8'), 'Example');
+    const template = await fs.readFile(file, 'utf8');
+    const markdown = renderSkillTemplate(
+      template,
+      builtinTemplateVars({
+        title: 'Example',
+        url: 'https://example.com/',
+        docs: [
+          { route: '/guides', title: 'Guides' },
+          { route: '/guides/setup', title: 'Setup' },
+          { route: '/api/search', title: 'Search' },
+          { route: '/api/index', title: 'Index' },
+        ],
+      })
+    );
     const fm = parseSkillFrontmatter(markdown, file);
     expect(fm.name).toBe('docs-research');
-    expect(fm.description).toContain('Example');
+    expect(fm.description).toBe(
+      'Answer questions using the Example documentation at example.com. Use when the user asks about anything these docs cover, or wants answers backed by links to the docs.'
+    );
+    expect(markdown).toContain('# Researching the Example documentation');
+    expect(markdown).toContain('## Where things are');
     expect(markdown).toContain('docs_search');
+    expect(markdown).not.toMatch(/\{\{\w+\}\}/);
+    expect(markdown).not.toMatch(/\n{3,}/);
   });
 });
 
@@ -185,6 +259,25 @@ describe('buildSkillsArtifact', () => {
     const artifact = await buildSkillsArtifact({ builtin: true, siteTitle: 'Example' });
     expect(artifact.version).toBe(1);
     expect(artifact.skills.map((s) => s.frontmatter.name)).toEqual(['docs-research']);
+    expect(artifact.skills[0]?.files[0]?.text).not.toContain('## Where things are');
+  });
+
+  it('gives the built-in skill a site map when pages and a site URL are passed', async () => {
+    const artifact = await buildSkillsArtifact({
+      builtin: true,
+      siteTitle: 'Example',
+      siteUrl: 'https://example.com/',
+      siteTagline: 'Docs for Example',
+      docs: [
+        { route: '/guides/setup', title: 'Setup' },
+        { route: '/guides/deploy', title: 'Deploy' },
+        { route: '/api/search', title: 'Search' },
+        { route: '/api/index', title: 'Index' },
+      ],
+    });
+    const skill = artifact.skills[0]!;
+    expect(skill.frontmatter.description).toContain('at example.com (Docs for Example)');
+    expect(skill.files[0]?.text).toContain('- `/api` (2 pages): Includes Index; Search.');
   });
 
   it('packages author skills with nested files and skips dotfiles', async () => {

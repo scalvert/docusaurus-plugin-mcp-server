@@ -179,7 +179,14 @@ Retrieve full page content as markdown. Use this after searching to get the comp
 
 Tool descriptions tell an agent what `docs_search` and `docs_fetch` do, not how to research your docs well. The server can also ship that guidance as [Agent Skills](https://agentskills.io) via the MCP skills extension ([SEP-2640](https://modelcontextprotocol.io/seps/2640-skills-extension), `io.modelcontextprotocol/skills`).
 
-By default the plugin packages one built-in skill, `docs-research`, which covers the search → fetch → cite workflow for your site. Add your own skills (a directory per skill with a `SKILL.md` at its root) and point the plugin at them:
+By default the plugin packages one built-in skill, `docs-research`, which covers the search → fetch → cite workflow for your site. It's generated from your site at build time:
+
+- Its description names your docs, host, and `tagline`, e.g. "Answer questions using the Acme documentation at acme.dev (Build faster)". Agents read the description to decide when to load the skill.
+- A **Where things are** section groups the indexed pages by URL path, largest sections first. Each section lists its page count, a link to its overview page if there is one, and a few example page titles. It's left out when the pages don't form at least two multi-page sections.
+
+The built-in skill is generic by design. For a skill that knows your product (its terminology, where each topic lives, the questions people actually ask), **write your own `docs-research` skill: it replaces the built-in one.** Start from a copy of [`skills-builtin/docs-research/`](skills-builtin/docs-research/SKILL.md).
+
+Add your own skills (a directory per skill with a `SKILL.md` at its root) and point the plugin at them:
 
 ```javascript snippet=readme/snippet-20.js
 // docusaurus.config.js
@@ -205,7 +212,7 @@ mcp-skills/
         └── v1-to-v2.md
 ```
 
-At build time the plugin validates every skill (frontmatter `name` must match the directory name; at most 512 files and 16 MiB per skill), precomputes SHA-256 digests, and writes `build/mcp/skills.json`. Invalid skills fail the build with a `SkillValidationError`. Symlinks inside a skill are skipped, and bundled scripts (`.sh`, `.py`, `.js`, ...) are packaged with a warning. Pass it to the handler as `skills` (web) or `skillsPath` (Node). An author skill named `docs-research` replaces the built-in one. To customize it, copy [`skills-builtin/docs-research/`](skills-builtin/docs-research/SKILL.md) from this package into your skills directory and edit it; in the built-in copy, `{{siteTitle}}` is filled in with your site title at build time, so replace it with your own wording. Set `skills: { builtin: false, dir: '...' }` to ship only your own, or `skills: false` to turn skills off.
+At build time the plugin validates every skill (frontmatter `name` must match the directory name; at most 512 files and 16 MiB per skill), precomputes SHA-256 digests, and writes `build/mcp/skills.json`. Invalid skills fail the build with a `SkillValidationError`. Symlinks inside a skill are skipped, and bundled scripts (`.sh`, `.py`, `.js`, ...) are packaged with a warning. Pass it to the handler as `skills` (web) or `skillsPath` (Node). An author skill named `docs-research` replaces the built-in one. If you copy the built-in skill, replace its placeholders (`{{siteDocs}}`, `{{siteSummary}}`, `{{siteMap}}`) with your own wording: they're only filled in for the built-in copy. Set `skills: { builtin: false, dir: '...' }` to ship only your own, or `skills: false` to turn skills off.
 
 At runtime the server:
 

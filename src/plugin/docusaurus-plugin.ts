@@ -220,6 +220,9 @@ export default function mcpServerPlugin(
           builtin: skillsOptions.builtin ?? true,
           dir: skillsOptions.dir ? path.resolve(context.siteDir, skillsOptions.dir) : undefined,
           siteTitle: context.siteConfig.title,
+          siteUrl: baseUrl,
+          siteTagline: context.siteConfig.tagline,
+          docs: validDocs,
         });
         await fs.writeJson(path.join(mcpOutputDir, 'skills.json'), skills, { spaces: 0 });
         skillCount = skills.skills.length;

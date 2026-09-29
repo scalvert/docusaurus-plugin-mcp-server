@@ -3,9 +3,10 @@
  * the package root (published via package.json `files`).
  *
  * Built-in skills are ordinary skill directories. The only difference from
- * author skills is that their SKILL.md may use `{{siteTitle}}`, filled in at
- * build time. To customize one, copy its directory into your own skills dir
- * (a skill with the same name replaces the built-in) and edit it there.
+ * author skills is that their SKILL.md may use the placeholders in
+ * {@link SkillTemplateVars}, filled in at build time. To customize one, copy
+ * its directory into your own skills dir (a skill with the same name replaces
+ * the built-in) and edit it there.
  */
 
 import path from 'node:path';
@@ -13,12 +14,83 @@ import { fileURLToPath } from 'node:url';
 import fs from 'fs-extra';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import { FRONTMATTER_PATTERN } from './frontmatter.js';
+import { renderSiteMap, type SiteMapDoc } from './site-map.js';
 
 /** Name (and directory) of the built-in docs research skill */
 export const BUILTIN_SKILL_NAME = 'docs-research';
 
 const BUILTIN_DIR_NAME = 'skills-builtin';
-const SITE_TITLE_PLACEHOLDER = '{{siteTitle}}';
+
+/** The Docusaurus classic template's tagline, which says nothing about a site */
+const TEMPLATE_TAGLINE = 'dinosaurs are cool';
+
+/**
+ * Values for the `{{name}}` placeholders in a built-in SKILL.md.
+ *
+ * - `siteTitle`: the site title, e.g. `Glean Developer`
+ * - `siteDocs`: a phrase naming the docs, e.g. `the Glean Developer documentation`
+ * - `siteSummary`: `siteDocs` plus the site's host and tagline, for the
+ *   description agents use to decide when to load the skill
+ * - `siteMap`: a generated "Where things are" section, or empty
+ */
+export interface SkillTemplateVars {
+  siteTitle: string;
+  siteDocs: string;
+  siteSummary: string;
+  siteMap: string;
+}
+
+/** What the plugin knows about the site when rendering built-in skills */
+export interface BuiltinSkillSite {
+  /** Docusaurus `title` */
+  title: string;
+  /** Absolute site URL including the base path, e.g. `https://example.com/docs/` */
+  url?: string;
+  /** Docusaurus `tagline` */
+  tagline?: string;
+  /** Indexed pages, for the generated site map */
+  docs?: SiteMapDoc[];
+}
+
+/** `https://example.com/docs/` -> `example.com/docs` */
+function displayHost(url: string): string {
+  try {
+    const parsed = new URL(url);
+    return `${parsed.host}${parsed.pathname}`.replace(/\/+$/, '');
+  } catch {
+    return '';
+  }
+}
+
+function usefulTagline(tagline: string | undefined, title: string): string {
+  const cleaned = (tagline ?? '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/[.!]+$/, '');
+  const lower = cleaned.toLowerCase();
+  if (!cleaned || lower === title.toLowerCase() || lower === TEMPLATE_TAGLINE) return '';
+  return cleaned;
+}
+
+/** Placeholder values for the built-in skills, derived from the site */
+export function builtinTemplateVars(site: BuiltinSkillSite): SkillTemplateVars {
+  const title = site.title.replace(/\s+/g, ' ').trim();
+  // "Acme Docs" -> "the Acme Docs", not "the Acme Docs documentation"
+  const namesDocs = /\b(docs|documentation)$/i.test(title);
+  const siteDocs = !title
+    ? "this site's documentation"
+    : namesDocs
+      ? `the ${title}`
+      : `the ${title} documentation`;
+  const host = site.url ? displayHost(site.url) : '';
+  const tagline = usefulTagline(site.tagline, title);
+  return {
+    siteTitle: title || 'this site',
+    siteDocs,
+    siteSummary: `${siteDocs}${host ? ` at ${host}` : ''}${tagline ? ` (${tagline})` : ''}`,
+    siteMap: site.docs && site.url ? renderSiteMap(site.docs, site.url) : '',
+  };
+}
 
 /**
  * Locate `skills-builtin/` by walking up from this module. The module is
@@ -41,35 +113,56 @@ export async function findBuiltinSkillsDir(
   }
 }
 
-function replacePlaceholder<T>(value: T, site: string): T {
+const PLACEHOLDER_PATTERN = /\{\{(\w+)\}\}/g;
+/** A placeholder alone on its line, with the blank line after it */
+const PLACEHOLDER_LINE_PATTERN = /^[ \t]*\{\{(\w+)\}\}[ \t]*\n(?:[ \t]*\n)?/gm;
+
+const isVar = (vars: SkillTemplateVars, name: string): name is keyof SkillTemplateVars =>
+  Object.hasOwn(vars, name);
+
+/** Fill known placeholders; unknown ones are left as written */
+function fill(text: string, vars: SkillTemplateVars): string {
+  return text.replace(PLACEHOLDER_PATTERN, (match, name: string) =>
+    isVar(vars, name) ? vars[name] : match
+  );
+}
+
+/** Drop lines holding only a placeholder that renders empty, then fill the rest */
+function fillBody(text: string, vars: SkillTemplateVars): string {
+  const withoutEmpty = text.replace(PLACEHOLDER_LINE_PATTERN, (match, name: string) =>
+    isVar(vars, name) && vars[name] === '' ? '' : match
+  );
+  return fill(withoutEmpty, vars);
+}
+
+function fillValue<T>(value: T, vars: SkillTemplateVars): T {
   if (typeof value === 'string') {
-    return value.replaceAll(SITE_TITLE_PLACEHOLDER, site) as T;
+    return fill(value, vars) as T;
   }
   if (Array.isArray(value)) {
-    return value.map((v) => replacePlaceholder(v, site)) as T;
+    return value.map((v) => fillValue(v, vars)) as T;
   }
   if (value !== null && typeof value === 'object') {
-    return Object.fromEntries(
-      Object.entries(value).map(([k, v]) => [k, replacePlaceholder(v, site)])
-    ) as T;
+    return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, fillValue(v, vars)])) as T;
   }
   return value;
 }
 
 /**
- * Fill `{{siteTitle}}` into a built-in SKILL.md. Frontmatter is parsed and
- * re-serialized rather than string-replaced, so titles containing YAML
- * syntax (`:`, quotes, `#`) can't corrupt it. Markdown without frontmatter
- * is returned unchanged; packaging then rejects it like any invalid skill.
+ * Fill the {@link SkillTemplateVars} placeholders into a built-in SKILL.md.
+ * Frontmatter is parsed and re-serialized rather than string-replaced, so
+ * values containing YAML syntax (`:`, quotes, `#`) can't corrupt it. An empty
+ * placeholder on a line of its own (such as `{{siteMap}}` with no map) leaves
+ * no extra blank lines. Markdown without frontmatter is returned unchanged;
+ * packaging then rejects it like any invalid skill.
  */
-export function renderSkillTemplate(markdown: string, siteTitle: string): string {
+export function renderSkillTemplate(markdown: string, vars: SkillTemplateVars): string {
   const match = FRONTMATTER_PATTERN.exec(markdown);
   if (!match) return markdown;
 
-  const site = siteTitle.trim() || 'this site';
-  const frontmatter = replacePlaceholder(parseYaml(match[1] ?? ''), site);
+  const frontmatter = fillValue(parseYaml(match[1] ?? ''), vars);
   const yaml = stringifyYaml(frontmatter, { lineWidth: 0 }).trimEnd();
-  const body = markdown.slice(match[0].length).replaceAll(SITE_TITLE_PLACEHOLDER, site);
+  const body = fillBody(markdown.slice(match[0].length), vars);
 
   return `---\n${yaml}\n---\n${body}`;
 }

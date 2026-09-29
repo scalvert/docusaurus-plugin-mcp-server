@@ -55,6 +55,7 @@ export {
   SkillValidationError,
   type BuildSkillsOptions,
 } from './skills/packager.js';
+export type { SiteMapDoc } from './skills/site-map.js';
 
 export { ConfigurationError } from './errors.js';
 
