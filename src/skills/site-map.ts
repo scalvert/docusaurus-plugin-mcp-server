@@ -7,7 +7,11 @@
 import { documentId } from '../search/local-search.js';
 import type { ProcessedDoc } from '../types/index.js';
 
-/** The fields of a page the site map uses */
+/**
+ * The fields of a page the site map uses.
+ *
+ * @experimental May change in a 2.x minor release; pin a version if you depend on it.
+ */
 export type SiteMapDoc = Pick<ProcessedDoc, 'route' | 'title'>;
 
 /** Most sections to list; the rest are summarized in one line */
@@ -23,19 +27,31 @@ interface Page {
 }
 
 interface Section {
-  /** Route prefix shared by the section's pages, e.g. `/guides` */
-  path: string;
+  /** Path segments shared by the section's pages, e.g. `['api', 'client']` */
+  prefix: string[];
   pages: Page[];
   /** The page at the section path itself, if there is one */
   overview?: Page;
 }
 
+/**
+ * Locale-independent ordering. `localeCompare` depends on the build machine's
+ * ICU data and locale, and this text is hashed into the skill's digest.
+ */
+const compareStrings = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0);
+
+const pagesLabel = (n: number) => (n === 1 ? '1 page' : `${n} pages`);
+
+/** Collapse whitespace and cap the length of a page title */
 function cleanTitle(title: string): string {
   const oneLine = title.replace(/\s+/g, ' ').trim();
   return oneLine.length > MAX_TITLE_LENGTH
     ? `${oneLine.slice(0, MAX_TITLE_LENGTH - 1).trimEnd()}…`
     : oneLine;
 }
+
+/** Escape the characters that would end link text or start HTML in markdown */
+const escapeText = (text: string) => text.replace(/[\\[\]<>]/g, '\\$&');
 
 function toPages(docs: SiteMapDoc[]): Page[] {
   const pages: Page[] = [];
@@ -48,33 +64,16 @@ function toPages(docs: SiteMapDoc[]): Page[] {
 }
 
 /**
- * Group pages by the first path segment where they differ. Sites whose pages
- * all live under one prefix (for example `/docs/...`) are grouped one level
- * further down, so they don't collapse into a single section.
+ * Group the pages below `prefix` by their next path segment. Pages at the
+ * prefix itself belong to no child section.
  */
-function groupSections(pages: Page[]): Section[] {
-  let depth = 0;
-  let prefix: string[] = [];
-  for (;;) {
-    const below = pages.filter(
-      (p) => p.segments.length > depth && prefix.every((s, i) => p.segments[i] === s)
-    );
-    const heads = new Set(below.map((p) => p.segments[depth]));
-    const onlyHead = heads.size === 1 ? [...heads][0] : undefined;
-    const deeper = below.some((p) => p.segments.length > depth + 1);
-    if (onlyHead === undefined || !deeper) break;
-    prefix = [...prefix, onlyHead];
-    depth += 1;
-  }
-
+function groupBelow(pages: Page[], prefix: string[]): Section[] {
+  const depth = prefix.length;
   const byHead = new Map<string, Section>();
   for (const page of pages) {
-    if (page.segments.length <= depth || !prefix.every((s, i) => page.segments[i] === s)) {
-      continue;
-    }
-    const head = page.segments[depth] as string;
-    const path = `/${[...prefix, head].join('/')}`;
-    const section = byHead.get(head) ?? { path, pages: [] };
+    const head = page.segments[depth];
+    if (head === undefined) continue;
+    const section = byHead.get(head) ?? { prefix: [...prefix, head], pages: [] };
     section.pages.push(page);
     if (page.segments.length === depth + 1) section.overview = page;
     byHead.set(head, section);
@@ -82,36 +81,71 @@ function groupSections(pages: Page[]): Section[] {
   return [...byHead.values()];
 }
 
-/** Shallowest pages first (usually overviews), then by route, without repeats */
+/**
+ * Group pages by top-level path, then split any section holding more than
+ * half of the grouped pages into its subsections, as long as at least one
+ * subsection has several pages (otherwise the split just lists pages). A
+ * typical site with `/docs/...` next to a small `/blog/...` is grouped by the
+ * sections under `/docs`, rather than listing the docs as one section.
+ */
+function groupSections(pages: Page[]): Section[] {
+  let sections = groupBelow(pages, []);
+  for (;;) {
+    const total = sections.reduce((n, s) => n + s.pages.length, 0);
+    const largest = sections.reduce<Section | undefined>(
+      (max, s) => (!max || s.pages.length > max.pages.length ? s : max),
+      undefined
+    );
+    if (!largest || largest.pages.length * 2 <= total) return sections;
+
+    const children = groupBelow(largest.pages, largest.prefix);
+    if (!children.some((c) => c.pages.length > 1)) return sections;
+    sections = sections.filter((s) => s !== largest).concat(children);
+  }
+}
+
+/**
+ * Example titles: one per subsection before any subsection repeats, so they
+ * show the section's range. Within that, shallowest pages first (usually
+ * overviews), then by route. Titles aren't repeated.
+ */
 function examples(section: Section): string[] {
-  const seen = new Set<string>();
-  if (section.overview) seen.add(section.overview.title.toLowerCase());
-  const titles: string[] = [];
+  const depth = section.prefix.length;
   const candidates = section.pages
     .filter((p) => p !== section.overview)
-    .sort((a, b) => a.segments.length - b.segments.length || a.route.localeCompare(b.route));
-  for (const page of candidates) {
-    const key = page.title.toLowerCase();
-    if (seen.has(key)) continue;
-    seen.add(key);
-    titles.push(page.title);
-    if (titles.length === MAX_EXAMPLES) break;
+    .sort((a, b) => a.segments.length - b.segments.length || compareStrings(a.route, b.route));
+
+  const seen = new Set<string>();
+  if (section.overview) seen.add(section.overview.title.toLowerCase());
+  const usedHeads = new Set<string>();
+  const titles: string[] = [];
+  for (const onePerSubsection of [true, false]) {
+    for (const page of candidates) {
+      if (titles.length === MAX_EXAMPLES) return titles;
+      const key = page.title.toLowerCase();
+      const head = page.segments[depth] ?? '';
+      if (seen.has(key) || (onePerSubsection && usedHeads.has(head))) continue;
+      seen.add(key);
+      usedHeads.add(head);
+      titles.push(page.title);
+    }
   }
   return titles;
 }
 
 function renderSection(section: Section, siteUrl: string): string {
+  const path = `/${section.prefix.join('/')}`.replaceAll('`', '');
   const count = section.pages.length;
-  const pages = count === 1 ? '1 page' : `${count} pages`;
-  const parts = [`- \`${section.path}\` (${pages})`];
+  let line = count === 1 ? `- \`${path}\`` : `- \`${path}\` (${pagesLabel(count)})`;
   if (section.overview) {
-    parts.push(`: [${section.overview.title}](${documentId(section.overview, siteUrl)})`);
+    const url = documentId(section.overview, siteUrl);
+    line += `: [${escapeText(section.overview.title)}](<${url}>)`;
   }
   const titles = examples(section);
   if (titles.length > 0) {
-    parts.push(`${section.overview ? '.' : ':'} Includes ${titles.join('; ')}.`);
+    line += `${section.overview ? '.' : ':'} Includes ${titles.map(escapeText).join('; ')}.`;
   }
-  return parts.join('');
+  return line;
 }
 
 /**
@@ -123,9 +157,9 @@ function renderSection(section: Section, siteUrl: string): string {
  * section's overview page with the same URL `docs_fetch` expects.
  */
 export function renderSiteMap(docs: SiteMapDoc[], siteUrl: string): string {
-  const pages = toPages(docs);
-  const sections = groupSections(pages).sort(
-    (a, b) => b.pages.length - a.pages.length || a.path.localeCompare(b.path)
+  const sections = groupSections(toPages(docs)).sort(
+    (a, b) =>
+      b.pages.length - a.pages.length || compareStrings(a.prefix.join('/'), b.prefix.join('/'))
   );
   if (sections.filter((s) => s.pages.length > 1).length < 2) return '';
 
@@ -134,15 +168,15 @@ export function renderSiteMap(docs: SiteMapDoc[], siteUrl: string): string {
   const lines = shown.map((s) => renderSection(s, siteUrl));
   if (rest.length > 0) {
     const restPages = rest.reduce((n, s) => n + s.pages.length, 0);
-    lines.push(
-      `- …and ${restPages === 1 ? '1 page' : `${restPages} pages`} in ${rest.length} smaller ${rest.length === 1 ? 'section' : 'sections'}.`
-    );
+    const restSections =
+      rest.length === 1 ? '1 smaller section' : `${rest.length} smaller sections`;
+    lines.push(`- …and ${pagesLabel(restPages)} in ${restSections}.`);
   }
 
   return [
     '## Where things are',
     '',
-    `The ${pages.length === 1 ? '1 indexed page' : `${pages.length} indexed pages`}, grouped by URL path, largest sections first. Use a section's terms in searches to narrow results, or fetch its linked overview page to see what it covers.`,
+    "The site's pages, grouped by URL path, largest sections first. Use a section's terms in searches to narrow results, or fetch its linked overview page to see what it covers.",
     '',
     ...lines,
   ].join('\n');

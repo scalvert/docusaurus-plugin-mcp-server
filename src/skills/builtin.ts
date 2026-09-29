@@ -113,10 +113,26 @@ export async function findBuiltinSkillsDir(
   }
 }
 
-const PLACEHOLDER_PATTERN = /\{\{(siteTitle|siteDocs|siteSummary|siteMap)\}\}/g;
+const PLACEHOLDER_PATTERN = /\{\{(\w+)\}\}/g;
+/** A placeholder alone on its line, with the blank line after it */
+const PLACEHOLDER_LINE_PATTERN = /^[ \t]*\{\{(\w+)\}\}[ \t]*\n(?:[ \t]*\n)?/gm;
 
+const isVar = (vars: SkillTemplateVars, name: string): name is keyof SkillTemplateVars =>
+  Object.hasOwn(vars, name);
+
+/** Fill known placeholders; unknown ones are left as written */
 function fill(text: string, vars: SkillTemplateVars): string {
-  return text.replace(PLACEHOLDER_PATTERN, (_, name: keyof SkillTemplateVars) => vars[name]);
+  return text.replace(PLACEHOLDER_PATTERN, (match, name: string) =>
+    isVar(vars, name) ? vars[name] : match
+  );
+}
+
+/** Drop lines holding only a placeholder that renders empty, then fill the rest */
+function fillBody(text: string, vars: SkillTemplateVars): string {
+  const withoutEmpty = text.replace(PLACEHOLDER_LINE_PATTERN, (match, name: string) =>
+    isVar(vars, name) && vars[name] === '' ? '' : match
+  );
+  return fill(withoutEmpty, vars);
 }
 
 function fillValue<T>(value: T, vars: SkillTemplateVars): T {
@@ -146,7 +162,7 @@ export function renderSkillTemplate(markdown: string, vars: SkillTemplateVars): 
 
   const frontmatter = fillValue(parseYaml(match[1] ?? ''), vars);
   const yaml = stringifyYaml(frontmatter, { lineWidth: 0 }).trimEnd();
-  const body = fill(markdown.slice(match[0].length), vars).replace(/\n{3,}/g, '\n\n');
+  const body = fillBody(markdown.slice(match[0].length), vars);
 
   return `---\n${yaml}\n---\n${body}`;
 }

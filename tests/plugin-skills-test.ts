@@ -104,7 +104,7 @@ describe('plugin postBuild: skills.json', () => {
     expect(text).toContain('## Where things are');
 
     const docs = await readJson<Record<string, unknown>>('docs.json');
-    const links = [...text.matchAll(/\]\((https:[^)]+)\)/g)].map((m) => m[1]);
+    const links = [...text.matchAll(/\]\(<(https:[^>]+)>\)/g)].map((m) => m[1]);
     expect(links).toEqual(['https://docs.example.com/v2/guides']);
     for (const link of links) expect(docs).toHaveProperty([link!]);
   });

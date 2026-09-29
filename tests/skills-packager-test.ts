@@ -149,6 +149,11 @@ describe('renderSkillTemplate', () => {
     expect(renderSkillTemplate(md, vars('Example'))).toContain('# A\n\n## B\n');
   });
 
+  it('keeps intentional blank lines elsewhere in the body', () => {
+    const md = '---\nname: g\ndescription: d\n---\n\n```\na\n\n\nb\n```\n';
+    expect(renderSkillTemplate(md, vars('Example'))).toContain('a\n\n\nb');
+  });
+
   it('leaves unknown placeholders alone', () => {
     const md = '---\nname: g\ndescription: d\n---\n\n{{other}} {{siteTitle}}\n';
     expect(renderSkillTemplate(md, vars('Example'))).toContain('{{other}} Example');
