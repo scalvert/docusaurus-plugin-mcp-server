@@ -483,6 +483,11 @@ export class McpDocsServer {
    * Pass `parsedBody` when the body has already been consumed (e.g. by a
    * body-parsing middleware).
    *
+   * @deprecated Since 2.2. Use `createNodeHandler()` from
+   * `docusaurus-plugin-mcp-server/adapters/node`: it also answers the status
+   * check, CORS preflight, and 405, bounds the body, and uses `req.body` when
+   * a body parser has read the request. Removed in 3.0.
+   *
    * @param req - Node.js IncomingMessage or compatible request object
    * @param res - Node.js ServerResponse or compatible response object
    * @param parsedBody - Optional pre-parsed request body

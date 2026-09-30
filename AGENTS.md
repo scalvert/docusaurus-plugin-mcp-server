@@ -54,6 +54,7 @@ The package has four export paths configured in `package.json`:
 - `src/mcp/skills.ts` - Skills extension runtime (`io.modelcontextprotocol/skills`: `skills/list`, `skills/get`, `skill://` resources); edge-safe
 - `src/skills/` - Build-time skill packaging (`packager.ts`) and built-in skill loading/templating (`builtin.ts`)
 - `skills-builtin/` - Built-in skills shipped in the package (`docs-research/SKILL.md`, with `{{siteDocs}}`/`{{siteSummary}}`/`{{siteMap}}` placeholders filled by `src/skills/builtin.ts`; the site map is generated in `src/skills/site-map.ts`). Published via package.json `files`; distinct from `skills/`, which is this repo's own developer skill
+- `src/adapters/http.ts` - The one HTTP policy (preflight, GET status, 405, CORS, error mapping) on web `Request`/`Response`. `createWebRequestHandler` is this policy; `createNodeHandler` bounds and reads the body, then bridges into it. Change HTTP behavior here, not in an adapter
 - `src/adapters/node-bridge.ts` - Node `IncomingMessage`/`ServerResponse` ↔ web `Request`/`Response`
 - `src/processing/` - HTML parsing, markdown conversion, heading extraction
 - `src/search/` - Built-in BM25 local search (`local-search.ts`, MiniSearch) and the `evaluateSearch` ranking harness (`evaluate.ts`)
