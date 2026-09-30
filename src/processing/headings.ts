@@ -65,7 +65,7 @@ export function extractHeadingsFromMarkdown(markdown: string): DocHeading[] {
 /**
  * Generate a URL-safe heading ID (Docusaurus style)
  */
-export function generateHeadingId(text: string): string {
+function generateHeadingId(text: string): string {
   return (
     text
       .toLowerCase()
@@ -78,21 +78,4 @@ export function generateHeadingId(text: string): string {
       // Remove leading/trailing hyphens
       .replace(/^-|-$/g, '')
   );
-}
-
-/**
- * Extract a specific section from markdown by heading ID
- */
-export function extractSection(
-  markdown: string,
-  headingId: string,
-  headings: DocHeading[]
-): string | null {
-  const heading = headings.find((h) => h.id === headingId);
-
-  if (!heading) {
-    return null;
-  }
-
-  return markdown.slice(heading.startOffset, heading.endOffset).trim();
 }

@@ -18,7 +18,7 @@ npm run test:all       # Run lint, typecheck, and all tests
 
 Run a single test file:
 ```bash
-npx vitest run tests/html-to-markdown-test.ts
+npx vitest run tests/markdown-test.ts
 ```
 
 ## Architecture Overview
@@ -56,7 +56,7 @@ The package has four export paths configured in `package.json`:
 - `skills-builtin/` - Built-in skills shipped in the package (`docs-research/SKILL.md`, with `{{siteDocs}}`/`{{siteSummary}}`/`{{siteMap}}` placeholders filled by `src/skills/builtin.ts`; the site map is generated in `src/skills/site-map.ts`). Published via package.json `files`; distinct from `skills/`, which is this repo's own developer skill
 - `src/adapters/http.ts` - The one HTTP policy (preflight, GET status, 405, CORS, error mapping) on web `Request`/`Response`. `createWebRequestHandler` is this policy; `createNodeHandler` bounds and reads the body, then bridges into it. Change HTTP behavior here, not in an adapter
 - `src/adapters/node-bridge.ts` - Node `IncomingMessage`/`ServerResponse` ↔ web `Request`/`Response`
-- `src/processing/` - HTML parsing, markdown conversion, heading extraction
+- `src/processing/` - Page extraction: `extractDocs(outDir, options)` turns a build directory into documents (`extract-docs.ts`; page discovery in `pages.ts`, tree-to-Markdown in `markdown.ts`, headings in `headings.ts`). Each page is parsed once. Output changes must show up as a reviewed diff in `tests/extract-golden-test.ts` (regenerate with `-u`)
 - `src/search/` - Built-in BM25 local search (`local-search.ts`, MiniSearch) and the `evaluateSearch` ranking harness (`evaluate.ts`)
 - `src/providers/` - Pluggable indexer/search provider system
 - `src/artifacts/` - The artifact bundle: shape, member filenames, format version, and validation (`bundle.ts`, edge-safe); file IO (`node.ts`, Node only). Add new filenames under `build/mcp/` here, not in callers

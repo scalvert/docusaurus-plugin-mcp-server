@@ -1,8 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import {
-  extractHeadingsFromMarkdown,
-  extractSection,
-} from '../src/processing/heading-extractor.js';
+import { extractHeadingsFromMarkdown } from '../src/processing/headings.js';
+import type { DocHeading } from '../src/types/index.js';
+
+/** A section by heading ID, sliced by the heading offsets (what custom indexers may do). */
+function extractSection(markdown: string, id: string, headings: DocHeading[]): string | null {
+  const heading = headings.find((h) => h.id === id);
+  return heading ? markdown.slice(heading.startOffset, heading.endOffset).trim() : null;
+}
 
 describe('extractHeadingsFromMarkdown', () => {
   it('extracts headings with IDs', () => {
@@ -95,7 +99,7 @@ More content.`;
   });
 });
 
-describe('extractSection', () => {
+describe('heading offsets delimit sections', () => {
   const markdown = `# Main Title {#main-title}
 
 Introduction paragraph.
