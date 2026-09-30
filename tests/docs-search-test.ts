@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { formatSearchResults } from '../src/mcp/tools/docs-search.js';
-import { buildLocalSearchIndex, documentId, searchLocalIndex } from '../src/search/local-search.js';
+import { documentId } from '../src/artifacts/bundle.js';
+import { buildLocalSearchIndex, searchLocalIndex } from '../src/search/local-search.js';
 import type { ProcessedDoc } from '../src/types/index.js';
 
 describe('searchLocalIndex', () => {

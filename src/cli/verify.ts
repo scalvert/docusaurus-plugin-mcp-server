@@ -37,7 +37,7 @@ async function main(): Promise<void> {
   console.log('🔍 MCP Build Verification');
   console.log('='.repeat(50));
   console.log(`Build directory: ${path.resolve(buildDir)}`);
-  console.log(`MCP directory:   ${path.resolve(buildDir, outputDir)}`);
+  console.log(`MCP directory:   ${path.resolve(path.join(buildDir, outputDir))}`);
   console.log('');
 
   // Verify build output

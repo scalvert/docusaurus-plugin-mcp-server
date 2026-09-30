@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { renderSiteMap, type SiteMapDoc } from '../src/skills/site-map.js';
-import { documentId } from '../src/search/local-search.js';
+import { documentId } from '../src/artifacts/bundle.js';
 
 const SITE = 'https://acme.dev/';
 const doc = (route: string, title = route.split('/').pop() || 'Home'): SiteMapDoc => ({
