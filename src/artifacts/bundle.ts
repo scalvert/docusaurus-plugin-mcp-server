@@ -81,19 +81,39 @@ const CORE_OWNED = new Set<string>([
   ARTIFACT_FILES.skills,
 ]);
 
-/** Throws on an extras filename that could escape the output directory. */
-function assertSafeFilename(indexer: string, filename: string): void {
+/** Member filenames, compared as the filesystem may: case-insensitively. */
+const MEMBER_FILES = new Set<string>(Object.values(ARTIFACT_FILES).map((f) => f.toLowerCase()));
+
+/**
+ * Where an extra lands on disk, as a comparison key: `/` separators and
+ * lowercase, so names that collide on Windows or macOS compare equal.
+ */
+function extraKey(filename: string): string {
+  return filename.replace(/\\/g, '/').toLowerCase();
+}
+
+/**
+ * Throws on an extras filename that could escape the output directory or
+ * overwrite a bundle member (`./manifest.json`, `Manifest.json`, ...).
+ */
+function assertExtraFilename(indexer: string, filename: string): void {
   const segments = filename.split(/[/\\]/);
   if (
     filename.length === 0 ||
     filename.startsWith('/') ||
     filename.startsWith('\\') ||
     /^[A-Za-z]:/.test(filename) ||
-    segments.some((segment) => segment === '..' || segment === '')
+    segments.some((segment) => segment === '..' || segment === '.' || segment === '')
   ) {
     throw new ConfigurationError(
       `[MCP] Indexer "${indexer}" returned an invalid artifact filename "${filename}". ` +
         'Use a relative path inside the MCP output directory, such as "my-index.json".'
+    );
+  }
+  if (MEMBER_FILES.has(extraKey(filename))) {
+    throw new ConfigurationError(
+      `[MCP] Indexer "${indexer}" returned ${filename}, which would overwrite a file the plugin writes. ` +
+        'Rename the artifact in its finalize() result.'
     );
   }
 }
@@ -116,7 +136,7 @@ export function buildArtifactBundle(input: BuildArtifactBundleInput): ArtifactBu
   let searchIndex: Record<string, unknown> | undefined;
   let searchIndexOwner: string | undefined;
   const extras: Record<string, unknown> = {};
-  const extrasOwner = new Map<string, string>();
+  const extrasOwner = new Map<string, { indexer: string; filename: string }>();
   const indexerData: Record<string, Record<string, unknown>> = {};
 
   for (const indexer of input.indexers) {
@@ -158,15 +178,22 @@ export function buildArtifactBundle(input: BuildArtifactBundleInput): ArtifactBu
         continue;
       }
 
-      assertSafeFilename(indexer.name, filename);
-      const previous = extrasOwner.get(filename);
+      assertExtraFilename(indexer.name, filename);
+      const key = extraKey(filename);
+      const previous = extrasOwner.get(key);
       if (previous !== undefined) {
-        throw new ConfigurationError(
-          `[MCP] Indexers "${previous}" and "${indexer.name}" both returned ${filename}. Rename one of them.`
-        );
+        const who =
+          previous.indexer === indexer.name
+            ? `Indexer "${indexer.name}" returned`
+            : `Indexers "${previous.indexer}" and "${indexer.name}" both returned`;
+        const what =
+          previous.filename === filename
+            ? filename
+            : `${previous.filename} and ${filename}, the same file on case-insensitive filesystems`;
+        throw new ConfigurationError(`[MCP] ${who} ${what}. Rename one of them.`);
       }
       extras[filename] = content;
-      extrasOwner.set(filename, indexer.name);
+      extrasOwner.set(key, { indexer: indexer.name, filename });
     }
   }
 

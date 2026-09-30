@@ -207,14 +207,71 @@ describe('buildArtifactBundle', () => {
     ).toThrow('"a" and "b" both returned shared.json');
   });
 
-  it.each(['../escape.json', '/abs.json', 'C:\\x.json', 'a//b.json', 'a/../../b.json', ''])(
-    'rejects the unsafe extras filename %j',
+  it.each([
+    '../escape.json',
+    '/abs.json',
+    '\\abs.json',
+    'C:\\x.json',
+    'a//b.json',
+    'a/../../b.json',
+    './x.json',
+    'a/./b.json',
+    '',
+  ])('rejects the unsafe extras filename %j', (filename) => {
+    expect(() =>
+      buildArtifactBundle(input({ indexers: [{ name: 'x', files: new Map([[filename, {}]]) }] }))
+    ).toThrow('invalid artifact filename');
+  });
+
+  // Each of these would land on a bundle member's path on disk.
+  it.each(['Manifest.json', 'DOCS.json', 'Search-Index.json', 'SKILLS.JSON', 'Bundle.json'])(
+    'rejects the extra %j, which would overwrite a plugin-written file',
     (filename) => {
       expect(() =>
         buildArtifactBundle(input({ indexers: [{ name: 'x', files: new Map([[filename, {}]]) }] }))
-      ).toThrow('invalid artifact filename');
+      ).toThrow(`"x" returned ${filename}, which would overwrite a file the plugin writes`);
     }
   );
+
+  it('rejects extras that are the same file on case-insensitive filesystems', () => {
+    expect(() =>
+      buildArtifactBundle(
+        input({
+          indexers: [
+            { name: 'a', files: new Map([['Shared.json', {}]]) },
+            { name: 'b', files: new Map([['shared.json', {}]]) },
+          ],
+        })
+      )
+    ).toThrow(
+      '"a" and "b" both returned Shared.json and shared.json, the same file on case-insensitive filesystems'
+    );
+  });
+
+  it('treats \\ and / as the same separator when comparing extras', () => {
+    expect(() =>
+      buildArtifactBundle(
+        input({
+          indexers: [
+            {
+              name: 'a',
+              files: new Map([
+                ['dir/x.json', {}],
+                ['dir\\x.json', {}],
+              ]),
+            },
+          ],
+        })
+      )
+    ).toThrow('Indexer "a" returned dir/x.json and dir\\x.json');
+  });
+
+  it('allows an extra nested under a member-like name', () => {
+    const bundle = buildArtifactBundle(
+      input({ indexers: [{ name: 'x', files: new Map([['x/manifest.json', { ok: true }]]) }] })
+    );
+    expect(bundle.extras).toEqual({ 'x/manifest.json': { ok: true } });
+  });
 });
 
 describe('parseArtifactBundle', () => {
@@ -230,8 +287,8 @@ describe('parseArtifactBundle', () => {
     expect(() => parseArtifactBundle(bundle)).toThrow(/Upgrade docusaurus-plugin-mcp-server/);
   });
 
-  it.each<[string, (b: Record<string, unknown>) => void, RegExp]>([
-    ['not an object', () => {}, /expected a JSON object/],
+  it.each<[string, (b: Record<string, unknown>) => unknown, RegExp]>([
+    ['not an object', () => 'nope', /expected a JSON object/],
     ['no formatVersion', (b) => delete b.formatVersion, /missing formatVersion/],
     ['an older formatVersion', (b) => (b.formatVersion = 0), /unsupported formatVersion 0/],
     ['no manifest', (b) => delete b.manifest, /missing manifest/],
@@ -253,11 +310,12 @@ describe('parseArtifactBundle', () => {
     ],
     ['a non-object searchIndex', (b) => (b.searchIndex = []), /searchIndex must be an object/],
     ['skills without a skills array', (b) => (b.skills = { version: 1 }), /skills array/],
-    ['non-object extras', (b) => (b.extras = 'x'), /extras must be an object/],
+    ['non-object extras', (b) => void (b.extras = 'x'), /extras must be an object/],
   ])('rejects %s with a rebuild instruction', (_label, mutate, message) => {
+    // A mutator edits the bundle in place, or returns a replacement for it.
     const bundle = valid() as unknown as Record<string, unknown>;
-    mutate(bundle);
-    const data = _label === 'not an object' ? 'nope' : bundle;
+    const replacement = mutate(bundle);
+    const data = typeof replacement === 'string' ? replacement : bundle;
 
     let error: unknown;
     try {
@@ -415,6 +473,15 @@ describe('plugin postBuild writes the artifact bundle', () => {
     expect(bundle.manifest.indexers).toEqual(['algolia']);
     expect(bundle.extras).toEqual({ 'algolia.json': { records: 1 } });
     expect(bundle).not.toHaveProperty('searchIndex');
+  });
+
+  it('fails the build before writing when an extra would overwrite a core file', async () => {
+    const rogue = await writeIndexer('rogue', `[['Docs.json', { hijacked: true }]]`);
+
+    await expect(runBuild({ indexers: ['local', rogue] })).rejects.toThrow(
+      '"rogue" returned Docs.json, which would overwrite a file the plugin writes'
+    );
+    await expect(fs.access(path.join(outDir, 'mcp', 'bundle.json'))).rejects.toThrow();
   });
 
   it('fails the build when an indexer overwrites a plugin-owned file', async () => {
