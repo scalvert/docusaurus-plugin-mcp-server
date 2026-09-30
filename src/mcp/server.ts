@@ -303,7 +303,7 @@ export class McpDocsServer {
    * fails exactly as in 2.1. The server's own copy of the documents is read
    * best-effort and only backs the `docs_fetch` and doc-count fallbacks.
    */
-  private async loadBundle(): Promise<{
+  private async loadBundle(searchProvider: SearchProvider): Promise<{
     bundle: ArtifactBundle;
     initData: SearchProviderInitData;
   }> {
@@ -347,7 +347,11 @@ export class McpDocsServer {
             'Build the site first, or remove skillsPath.'
           )
         : undefined;
-      const docs = await readConfiguredJson(config.docsPath, 'docs.json');
+      // Only the fallbacks need the server's own copy of the documents.
+      const providerServesDocs = Boolean(searchProvider.getDocument && searchProvider.getDocCount);
+      const docs = providerServesDocs
+        ? undefined
+        : await readConfiguredJson(config.docsPath, 'docs.json');
       return {
         bundle: legacyBundle(
           config,
@@ -408,13 +412,20 @@ export class McpDocsServer {
       localSearch: this.config.localSearch,
     });
 
-    const { bundle, initData } = await this.loadBundle();
+    // Kept even if initialization fails below, so getStatus() then reports
+    // the provider and what loaded, as in 2.1.
+    this.searchProvider = searchProvider;
+
+    const { bundle, initData } = await this.loadBundle(searchProvider);
     const { manifest } = bundle;
     const identity: ServerIdentity = {
       name: this.config.name ?? manifest.serverName,
       version: this.config.version ?? manifest.version,
       baseUrl: this.config.baseUrl ?? manifest.baseUrl,
     };
+    this.bundle = bundle;
+    this.identity = identity;
+    this.skillsArtifact = bundle.skills ?? null;
 
     const providerContext: ProviderContext = {
       baseUrl: identity.baseUrl ?? '',
@@ -424,11 +435,6 @@ export class McpDocsServer {
     };
 
     await searchProvider.initialize(providerContext, initData);
-
-    this.bundle = bundle;
-    this.identity = identity;
-    this.searchProvider = searchProvider;
-    this.skillsArtifact = bundle.skills ?? null;
 
     this.handler = createMcpHandler(() => this.createMcpServer(), {
       // Legacy traffic is routed separately (see dispatch) to keep v1's JSON responses.
