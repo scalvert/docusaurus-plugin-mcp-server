@@ -1,0 +1,536 @@
+{
+  "https://docs.example.com/docs/api/authentication": {
+    "route": "/docs/api/authentication",
+    "title": "Authentication",
+    "description": "All API requests require authentication using an API key.",
+    "markdown": "# Authentication\n\nAll API requests require authentication using an API key.\n\n## API Keys[​](#api-keys \"Direct link to API Keys\")\n\nAPI keys are used to authenticate requests to our API. You can manage your API keys in the [dashboard](https://dashboard.example.com).\n\n### Creating an API Key[​](#creating-an-api-key \"Direct link to Creating an API Key\")\n\n1. Log in to your dashboard\n2. Navigate to **Settings** > **API Keys**\n3. Click **Create New Key**\n4. Give your key a descriptive name\n5. Copy and securely store the key (it won't be shown again)\n\n### Key Types[​](#key-types \"Direct link to Key Types\")\n\n## Using API Keys[​](#using-api-keys \"Direct link to Using API Keys\")\n\nInclude your API key in the `Authorization` header:\n\n```\ncurl https://api.example.com/v1/users \\\n  -H \"Authorization: Bearer YOUR_API_KEY\"\n```\n\nOr using the SDK:\n\n```\nconst client = new Client({\n  apiKey: 'your-api-key',\n});\n```\n\n## OAuth Configuration[​](#oauth-configuration \"Direct link to OAuth Configuration\")\n\nFor applications that need to act on behalf of users, we support OAuth 2.0.\n\n### OAuth Flow[​](#oauth-flow \"Direct link to OAuth Flow\")\n\n1. Redirect user to authorization URL\n2. User grants permission\n3. Receive authorization code\n4. Exchange code for access token\n5. Use access token for API requests\n\n### Implementation[​](#implementation \"Direct link to Implementation\")\n\n```\nimport { OAuth } from '@example/sdk';\n\nconst oauth = new OAuth({\n  clientId: 'your-client-id',\n  clientSecret: 'your-client-secret',\n  redirectUri: 'https://yourapp.com/callback',\n});\n\n// Generate authorization URL\nconst authUrl = oauth.getAuthorizationUrl({\n  scopes: ['read', 'write'],\n  state: 'random-state-string',\n});\n\n// Exchange code for token\nconst tokens = await oauth.exchangeCode(authorizationCode);\n```\n\n### Scopes[​](#scopes \"Direct link to Scopes\")\n\n## Token Refresh[​](#token-refresh \"Direct link to Token Refresh\")\n\nAccess tokens expire after 1 hour. Use the refresh token to get a new access token:\n\n```\nconst newTokens = await oauth.refreshToken(refreshToken);\n```\n\n## Security Best Practices[​](#security-best-practices \"Direct link to Security Best Practices\")\n\n- Never expose API keys in client-side code\n- Use environment variables for key storage\n- Rotate keys periodically\n- Use the minimum required scopes\n- Monitor API key usage in your dashboard\n",
+    "headings": [
+      {
+        "level": 1,
+        "text": "Authentication",
+        "id": "authentication",
+        "startOffset": 0,
+        "endOffset": 2347
+      },
+      {
+        "level": 2,
+        "text": "API Keys[​](#api-keys \"Direct link to API Keys\")",
+        "id": "api-keysapi-keys-direct-link-to-api-keys",
+        "startOffset": 77,
+        "endOffset": 607
+      },
+      {
+        "level": 3,
+        "text": "Creating an API Key[​](#creating-an-api-key \"Direct link to Creating an API Key\")",
+        "id": "creating-an-api-keycreating-an-api-key-direct-link-to-creating-an-api-key",
+        "startOffset": 266,
+        "endOffset": 550
+      },
+      {
+        "level": 3,
+        "text": "Key Types[​](#key-types \"Direct link to Key Types\")",
+        "id": "key-typeskey-types-direct-link-to-key-types",
+        "startOffset": 550,
+        "endOffset": 607
+      },
+      {
+        "level": 2,
+        "text": "Using API Keys[​](#using-api-keys \"Direct link to Using API Keys\")",
+        "id": "using-api-keysusing-api-keys-direct-link-to-using-api-keys",
+        "startOffset": 607,
+        "endOffset": 908
+      },
+      {
+        "level": 2,
+        "text": "OAuth Configuration[​](#oauth-configuration \"Direct link to OAuth Configuration\")",
+        "id": "oauth-configurationoauth-configuration-direct-link-to-oauth-configuration",
+        "startOffset": 908,
+        "endOffset": 1838
+      },
+      {
+        "level": 3,
+        "text": "OAuth Flow[​](#oauth-flow \"Direct link to OAuth Flow\")",
+        "id": "oauth-flowoauth-flow-direct-link-to-oauth-flow",
+        "startOffset": 1071,
+        "endOffset": 1297
+      },
+      {
+        "level": 3,
+        "text": "Implementation[​](#implementation \"Direct link to Implementation\")",
+        "id": "implementationimplementation-direct-link-to-implementation",
+        "startOffset": 1297,
+        "endOffset": 1790
+      },
+      {
+        "level": 3,
+        "text": "Scopes[​](#scopes \"Direct link to Scopes\")",
+        "id": "scopesscopes-direct-link-to-scopes",
+        "startOffset": 1790,
+        "endOffset": 1838
+      },
+      {
+        "level": 2,
+        "text": "Token Refresh[​](#token-refresh \"Direct link to Token Refresh\")",
+        "id": "token-refreshtoken-refresh-direct-link-to-token-refresh",
+        "startOffset": 1838,
+        "endOffset": 2058
+      },
+      {
+        "level": 2,
+        "text": "Security Best Practices[​](#security-best-practices \"Direct link to Security Best Practices\")",
+        "id": "security-best-practicessecurity-best-practices-direct-link-to-security-best-practices",
+        "startOffset": 2058,
+        "endOffset": 2347
+      }
+    ]
+  },
+  "https://docs.example.com/docs/api/endpoints": {
+    "route": "/docs/api/endpoints",
+    "title": "API Endpoints",
+    "description": "Reference documentation for all available API endpoints.",
+    "markdown": "# API Endpoints\n\nReference documentation for all available API endpoints.\n\n## Users[​](#users \"Direct link to Users\")\n\n### List Users[​](#list-users \"Direct link to List Users\")\n\nRetrieve a paginated list of users.\n\n```\nGET /v1/users\n```\n\n**Query Parameters:**\n\n**Example Request:**\n\n```\ncurl https://api.example.com/v1/users?limit=10 \\\n  -H \"Authorization: Bearer YOUR_API_KEY\"\n```\n\n**Example Response:**\n\n```\n{\n  \"data\": [\n    {\n      \"id\": \"user_123\",\n      \"email\": \"john@example.com\",\n      \"name\": \"John Doe\",\n      \"status\": \"active\",\n      \"createdAt\": \"2024-01-15T10:30:00Z\"\n    }\n  ],\n  \"pagination\": {\n    \"page\": 1,\n    \"limit\": 10,\n    \"total\": 42\n  }\n}\n```\n\n### Get User[​](#get-user \"Direct link to Get User\")\n\nRetrieve a single user by ID.\n\n```\nGET /v1/users/:id\n```\n\n**Example Request:**\n\n```\ncurl https://api.example.com/v1/users/user_123 \\\n  -H \"Authorization: Bearer YOUR_API_KEY\"\n```\n\n### Create User[​](#create-user \"Direct link to Create User\")\n\nCreate a new user.\n\n```\nPOST /v1/users\n```\n\n**Request Body:**\n\n```\n{\n  \"email\": \"jane@example.com\",\n  \"name\": \"Jane Smith\",\n  \"role\": \"member\"\n}\n```\n\n**Example Request:**\n\n```\ncurl -X POST https://api.example.com/v1/users \\\n  -H \"Authorization: Bearer YOUR_API_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"email\": \"jane@example.com\", \"name\": \"Jane Smith\"}'\n```\n\n### Update User[​](#update-user \"Direct link to Update User\")\n\nUpdate an existing user.\n\n```\nPATCH /v1/users/:id\n```\n\n### Delete User[​](#delete-user \"Direct link to Delete User\")\n\nDelete a user.\n\n```\nDELETE /v1/users/:id\n```\n\n## Projects[​](#projects \"Direct link to Projects\")\n\n### List Projects[​](#list-projects \"Direct link to List Projects\")\n\n```\nGET /v1/projects\n```\n\n### Create Project[​](#create-project \"Direct link to Create Project\")\n\n```\nPOST /v1/projects\n```\n\n**Request Body:**\n\n```\n{\n  \"name\": \"My Project\",\n  \"description\": \"A sample project\"\n}\n```\n\n## Error Handling[​](#error-handling \"Direct link to Error Handling\")\n\nAll endpoints return errors in a consistent format:\n\n```\n{\n  \"error\": {\n    \"code\": \"invalid_request\",\n    \"message\": \"The request was invalid\",\n    \"details\": {\n      \"field\": \"email\",\n      \"issue\": \"Invalid email format\"\n    }\n  }\n}\n```\n\n### Error Codes[​](#error-codes \"Direct link to Error Codes\")\n\n## Rate Limiting[​](#rate-limiting \"Direct link to Rate Limiting\")\n\nAPI requests are limited to:\n\n- **100 requests per minute** for standard plans\n- **1000 requests per minute** for enterprise plans\n\nRate limit headers are included in all responses:\n\n```\nX-RateLimit-Limit: 100\nX-RateLimit-Remaining: 95\nX-RateLimit-Reset: 1704067200\n```\n",
+    "headings": [
+      {
+        "level": 1,
+        "text": "API Endpoints",
+        "id": "api-endpoints",
+        "startOffset": 0,
+        "endOffset": 2620
+      },
+      {
+        "level": 2,
+        "text": "Users[​](#users \"Direct link to Users\")",
+        "id": "usersusers-direct-link-to-users",
+        "startOffset": 75,
+        "endOffset": 1568
+      },
+      {
+        "level": 3,
+        "text": "List Users[​](#list-users \"Direct link to List Users\")",
+        "id": "list-userslist-users-direct-link-to-list-users",
+        "startOffset": 119,
+        "endOffset": 672
+      },
+      {
+        "level": 3,
+        "text": "Get User[​](#get-user \"Direct link to Get User\")",
+        "id": "get-userget-user-direct-link-to-get-user",
+        "startOffset": 672,
+        "endOffset": 906
+      },
+      {
+        "level": 3,
+        "text": "Create User[​](#create-user \"Direct link to Create User\")",
+        "id": "create-usercreate-user-direct-link-to-create-user",
+        "startOffset": 906,
+        "endOffset": 1341
+      },
+      {
+        "level": 3,
+        "text": "Update User[​](#update-user \"Direct link to Update User\")",
+        "id": "update-userupdate-user-direct-link-to-update-user",
+        "startOffset": 1341,
+        "endOffset": 1459
+      },
+      {
+        "level": 3,
+        "text": "Delete User[​](#delete-user \"Direct link to Delete User\")",
+        "id": "delete-userdelete-user-direct-link-to-delete-user",
+        "startOffset": 1459,
+        "endOffset": 1568
+      },
+      {
+        "level": 2,
+        "text": "Projects[​](#projects \"Direct link to Projects\")",
+        "id": "projectsprojects-direct-link-to-projects",
+        "startOffset": 1568,
+        "endOffset": 1907
+      },
+      {
+        "level": 3,
+        "text": "List Projects[​](#list-projects \"Direct link to List Projects\")",
+        "id": "list-projectslist-projects-direct-link-to-list-projects",
+        "startOffset": 1621,
+        "endOffset": 1716
+      },
+      {
+        "level": 3,
+        "text": "Create Project[​](#create-project \"Direct link to Create Project\")",
+        "id": "create-projectcreate-project-direct-link-to-create-project",
+        "startOffset": 1716,
+        "endOffset": 1907
+      },
+      {
+        "level": 2,
+        "text": "Error Handling[​](#error-handling \"Direct link to Error Handling\")",
+        "id": "error-handlingerror-handling-direct-link-to-error-handling",
+        "startOffset": 1907,
+        "endOffset": 2282
+      },
+      {
+        "level": 3,
+        "text": "Error Codes[​](#error-codes \"Direct link to Error Codes\")",
+        "id": "error-codeserror-codes-direct-link-to-error-codes",
+        "startOffset": 2219,
+        "endOffset": 2282
+      },
+      {
+        "level": 2,
+        "text": "Rate Limiting[​](#rate-limiting \"Direct link to Rate Limiting\")",
+        "id": "rate-limitingrate-limiting-direct-link-to-rate-limiting",
+        "startOffset": 2282,
+        "endOffset": 2620
+      }
+    ]
+  },
+  "https://docs.example.com/docs/getting-started/configuration": {
+    "route": "/docs/getting-started/configuration",
+    "title": "Configuration",
+    "description": "Learn how to configure the SDK for your use case.",
+    "markdown": "# Configuration\n\nLearn how to configure the SDK for your use case.\n\n## Basic Configuration[​](#basic-configuration \"Direct link to Basic Configuration\")\n\nThe simplest configuration requires only an API key:\n\n```\nimport { Client } from '@example/sdk';\n\nconst client = new Client({\n  apiKey: 'your-api-key',\n});\n```\n\n## Advanced Options[​](#advanced-options \"Direct link to Advanced Options\")\n\nFor more control, you can specify additional options:\n\n```\nconst client = new Client({\n  apiKey: 'your-api-key',\n  baseUrl: 'https://api.example.com/v2',\n  timeout: 30000, // 30 seconds\n  retries: 3,\n  debug: true,\n});\n```\n\n### Option Reference[​](#option-reference \"Direct link to Option Reference\")\n\n## Environment-Specific Configuration[​](#environment-specific-configuration \"Direct link to Environment-Specific Configuration\")\n\n### Development[​](#development \"Direct link to Development\")\n\n```\nconst client = new Client({\n  apiKey: process.env.EXAMPLE_API_KEY,\n  baseUrl: 'https://sandbox.example.com/v1',\n  debug: true,\n});\n```\n\n### Production[​](#production \"Direct link to Production\")\n\n```\nconst client = new Client({\n  apiKey: process.env.EXAMPLE_API_KEY,\n  timeout: 5000,\n  retries: 5,\n});\n```\n\n## Logging[​](#logging \"Direct link to Logging\")\n\nEnable detailed logging by setting `debug: true`:\n\n```\nconst client = new Client({\n  apiKey: 'your-api-key',\n  debug: true,\n});\n```\n\nThis will log all requests and responses to the console.\n\n## Next Steps[​](#next-steps \"Direct link to Next Steps\")\n\nWith configuration complete, check out the [API Reference](/docs/api/authentication) to start making requests.\n",
+    "headings": [
+      {
+        "level": 1,
+        "text": "Configuration",
+        "id": "configuration",
+        "startOffset": 0,
+        "endOffset": 1610
+      },
+      {
+        "level": 2,
+        "text": "Basic Configuration[​](#basic-configuration \"Direct link to Basic Configuration\")",
+        "id": "basic-configurationbasic-configuration-direct-link-to-basic-configuration",
+        "startOffset": 68,
+        "endOffset": 315
+      },
+      {
+        "level": 2,
+        "text": "Advanced Options[​](#advanced-options \"Direct link to Advanced Options\")",
+        "id": "advanced-optionsadvanced-options-direct-link-to-advanced-options",
+        "startOffset": 315,
+        "endOffset": 694
+      },
+      {
+        "level": 3,
+        "text": "Option Reference[​](#option-reference \"Direct link to Option Reference\")",
+        "id": "option-referenceoption-reference-direct-link-to-option-reference",
+        "startOffset": 616,
+        "endOffset": 694
+      },
+      {
+        "level": 2,
+        "text": "Environment-Specific Configuration[​](#environment-specific-configuration \"Direct link to Environment-Specific Configuration\")",
+        "id": "environment-specific-configurationenvironment-specific-configuration-direct-link-to-environment-specific-configuration",
+        "startOffset": 694,
+        "endOffset": 1199
+      },
+      {
+        "level": 3,
+        "text": "Development[​](#development \"Direct link to Development\")",
+        "id": "developmentdevelopment-direct-link-to-development",
+        "startOffset": 825,
+        "endOffset": 1028
+      },
+      {
+        "level": 3,
+        "text": "Production[​](#production \"Direct link to Production\")",
+        "id": "productionproduction-direct-link-to-production",
+        "startOffset": 1028,
+        "endOffset": 1199
+      },
+      {
+        "level": 2,
+        "text": "Logging[​](#logging \"Direct link to Logging\")",
+        "id": "logginglogging-direct-link-to-logging",
+        "startOffset": 1199,
+        "endOffset": 1440
+      },
+      {
+        "level": 2,
+        "text": "Next Steps[​](#next-steps \"Direct link to Next Steps\")",
+        "id": "next-stepsnext-steps-direct-link-to-next-steps",
+        "startOffset": 1440,
+        "endOffset": 1610
+      }
+    ]
+  },
+  "https://docs.example.com/docs/getting-started/installation": {
+    "route": "/docs/getting-started/installation",
+    "title": "Installation",
+    "description": "This guide will walk you through installing our SDK in your project.",
+    "markdown": "# Installation\n\nThis guide will walk you through installing our SDK in your project.\n\n## Prerequisites[​](#prerequisites \"Direct link to Prerequisites\")\n\nBefore you begin, make sure you have:\n\n- Node.js 18 or higher\n- npm or yarn package manager\n- A basic understanding of JavaScript/TypeScript\n\n## Installing the SDK[​](#installing-the-sdk \"Direct link to Installing the SDK\")\n\nInstall the package using npm:\n\n```\nnpm install @example/sdk\n```\n\nOr using yarn:\n\n```\nyarn add @example/sdk\n```\n\n## Verifying Installation[​](#verifying-installation \"Direct link to Verifying Installation\")\n\nAfter installation, verify it works by importing the SDK:\n\n```\nimport { Client } from '@example/sdk';\n\nconst client = new Client({\n  apiKey: 'your-api-key',\n});\n\nconsole.log('SDK version:', client.version);\n```\n\n## Environment Variables[​](#environment-variables \"Direct link to Environment Variables\")\n\nWe recommend storing your API key in an environment variable:\n\n```\nexport EXAMPLE_API_KEY=your-api-key\n```\n\nThen access it in your code:\n\n```\nconst client = new Client({\n  apiKey: process.env.EXAMPLE_API_KEY,\n});\n```\n\n## Next Steps[​](#next-steps \"Direct link to Next Steps\")\n\nNow that you have the SDK installed, proceed to [Configuration](/docs/getting-started/configuration) to set up your client.\n",
+    "headings": [
+      {
+        "level": 1,
+        "text": "Installation",
+        "id": "installation",
+        "startOffset": 0,
+        "endOffset": 1292
+      },
+      {
+        "level": 2,
+        "text": "Prerequisites[​](#prerequisites \"Direct link to Prerequisites\")",
+        "id": "prerequisitesprerequisites-direct-link-to-prerequisites",
+        "startOffset": 86,
+        "endOffset": 296
+      },
+      {
+        "level": 2,
+        "text": "Installing the SDK[​](#installing-the-sdk \"Direct link to Installing the SDK\")",
+        "id": "installing-the-sdkinstalling-the-sdk-direct-link-to-installing-the-sdk",
+        "startOffset": 296,
+        "endOffset": 492
+      },
+      {
+        "level": 2,
+        "text": "Verifying Installation[​](#verifying-installation \"Direct link to Verifying Installation\")",
+        "id": "verifying-installationverifying-installation-direct-link-to-verifying-installation",
+        "startOffset": 492,
+        "endOffset": 799
+      },
+      {
+        "level": 2,
+        "text": "Environment Variables[​](#environment-variables \"Direct link to Environment Variables\")",
+        "id": "environment-variablesenvironment-variables-direct-link-to-environment-variables",
+        "startOffset": 799,
+        "endOffset": 1109
+      },
+      {
+        "level": 2,
+        "text": "Next Steps[​](#next-steps \"Direct link to Next Steps\")",
+        "id": "next-stepsnext-steps-direct-link-to-next-steps",
+        "startOffset": 1109,
+        "endOffset": 1292
+      }
+    ]
+  },
+  "https://docs.example.com/docs/intro": {
+    "route": "/docs/intro",
+    "title": "Introduction",
+    "description": "Welcome to our Example Documentation! This site demonstrates how to use the docusaurus-plugin-mcp-server to expose your documentation to AI agents.",
+    "markdown": "# Introduction\n\nWelcome to our Example Documentation! This site demonstrates how to use the `docusaurus-plugin-mcp-server` to expose your documentation to AI agents.\n\n## What is MCP?[​](#what-is-mcp \"Direct link to What is MCP?\")\n\nThe Model Context Protocol (MCP) is an open standard that allows AI assistants to connect to external data sources. This plugin creates an MCP server from your Docusaurus documentation, allowing AI tools like Claude and Cursor to search and read your docs.\n\n## Features[​](#features \"Direct link to Features\")\n\n- **Full-text search** - AI agents can search across all your documentation\n- **Page retrieval** - Get complete page content as clean markdown\n- **Section extraction** - Extract specific sections by heading ID\n- **Build-time processing** - All indexing happens during build, making runtime fast\n\n## Quick Example[​](#quick-example \"Direct link to Quick Example\")\n\nOnce configured, AI agents can query your documentation like this:\n\n```\nSearch for \"authentication\" in the docs\nGet the page at /docs/api/authentication\nGet the \"oauth-configuration\" section from the authentication page\n```\n\n## Next Steps[​](#next-steps \"Direct link to Next Steps\")\n\nHead to [Installation](/docs/getting-started/installation) to get started!\n",
+    "headings": [
+      {
+        "level": 1,
+        "text": "Introduction",
+        "id": "introduction",
+        "startOffset": 0,
+        "endOffset": 1265
+      },
+      {
+        "level": 2,
+        "text": "What is MCP?[​](#what-is-mcp \"Direct link to What is MCP?\")",
+        "id": "what-is-mcpwhat-is-mcp-direct-link-to-what-is-mcp",
+        "startOffset": 167,
+        "endOffset": 489
+      },
+      {
+        "level": 2,
+        "text": "Features[​](#features \"Direct link to Features\")",
+        "id": "featuresfeatures-direct-link-to-features",
+        "startOffset": 489,
+        "endOffset": 838
+      },
+      {
+        "level": 2,
+        "text": "Quick Example[​](#quick-example \"Direct link to Quick Example\")",
+        "id": "quick-examplequick-example-direct-link-to-quick-example",
+        "startOffset": 838,
+        "endOffset": 1131
+      },
+      {
+        "level": 2,
+        "text": "Next Steps[​](#next-steps \"Direct link to Next Steps\")",
+        "id": "next-stepsnext-steps-direct-link-to-next-steps",
+        "startOffset": 1131,
+        "endOffset": 1265
+      }
+    ]
+  },
+  "https://docs.example.com/docs/nested/deep": {
+    "route": "/docs/nested/deep",
+    "title": "Deeply Nested Page",
+    "description": "This page lives in a nested directory so that its route is /docs/nested/deep. It exists to verify that the extractor handles nested build output paths correctly.",
+    "markdown": "# Deeply Nested Page\n\nThis page lives in a nested directory so that its route is `/docs/nested/deep`. It exists to verify that the extractor handles nested build output paths correctly.\n\n## Nested section[​](#nested-section \"Direct link to Nested section\")\n\nContent in a nested section with a list:\n\n- First item\n- Second item\n- Third item\n",
+    "headings": [
+      {
+        "level": 1,
+        "text": "Deeply Nested Page",
+        "id": "deeply-nested-page",
+        "startOffset": 0,
+        "endOffset": 340
+      },
+      {
+        "level": 2,
+        "text": "Nested section[​](#nested-section \"Direct link to Nested section\")",
+        "id": "nested-sectionnested-section-direct-link-to-nested-section",
+        "startOffset": 187,
+        "endOffset": 340
+      }
+    ]
+  },
+  "https://docs.example.com/docs/rich": {
+    "route": "/docs/rich",
+    "title": "Rich Content",
+    "description": "A page exercising many Docusaurus rendering features.",
+    "markdown": "# Rich Content\n\nThis page exercises **bold text**, *italic text*, ***bold italic***, and `inline code` so the extractor can be tested against real Docusaurus output. See the [installation guide](/docs/getting-started/installation) or the [Docusaurus website](https://docusaurus.io/docs).\n\n![Example diagram alt text](https://example.com/images/diagram.png)\n\n## Setup[​](#setup \"Direct link to Setup\")\n\nFirst setup section. Install the dependencies before continuing.\n\n### Prerequisites[​](#prerequisites \"Direct link to Prerequisites\")\n\nYou need Node.js 18 or newer.\n\n#### Optional tools[​](#optional-tools \"Direct link to Optional tools\")\n\nA text editor with MDX support is helpful.\n\n## Setup[​](#setup-1 \"Direct link to Setup\")\n\nSecond setup section with the same heading text, so Docusaurus assigns a `-1` suffix to its id.\n\n## Custom[​](#my-custom-id \"Direct link to Custom\")\n\nThis heading uses an explicit custom id.\n\n## Admonitions[​](#admonitions \"Direct link to Admonitions\")\n\n## Tabs[​](#tabs \"Direct link to Tabs\")\n\n- npm\n- Yarn\n\n## Details[​](#details \"Direct link to Details\")\n\n## Table[​](#table \"Direct link to Table\")\n\n## Task list[​](#task-list \"Direct link to Task list\")\n\n- <!-- -->\n  Write the docs\n- <!-- -->\n  Review the docs\n- <!-- -->\n  Publish the docs\n\n## Footnotes[​](#footnotes \"Direct link to Footnotes\")\n\nThis sentence has a footnote.[1](#user-content-fn-1)\n\n## Code blocks[​](#code-blocks \"Direct link to Code blocks\")\n\ninstall.sh\n\n```\n# Install it\n## not a heading\nnpm install example-package\n```\n\n```\nconst greeting = 'hello';\nconsole.log(greeting);\n```\n\n## Diagram[​](#diagram \"Direct link to Diagram\")\n\n<!-- -->\n\n## Entities and breaks[​](#entities-and-breaks \"Direct link to Entities and breaks\")\n\nTom & Jerry use 1 < 2 comparisons with a non-breaking space.\\\nThis text follows a line break.\n\n> This is a blockquote with **emphasis** inside.\n>\n> It spans two paragraphs.\n\n<!-- -->\n\n## Footnotes[​](#footnote-label \"Direct link to Footnotes\")\n\n1. This is the footnote text. [↩](#user-content-fnref-1)\n",
+    "headings": [
+      {
+        "level": 1,
+        "text": "Rich Content",
+        "id": "rich-content",
+        "startOffset": 0,
+        "endOffset": 1466
+      },
+      {
+        "level": 2,
+        "text": "Setup[​](#setup \"Direct link to Setup\")",
+        "id": "setupsetup-direct-link-to-setup",
+        "startOffset": 358,
+        "endOffset": 685
+      },
+      {
+        "level": 3,
+        "text": "Prerequisites[​](#prerequisites \"Direct link to Prerequisites\")",
+        "id": "prerequisitesprerequisites-direct-link-to-prerequisites",
+        "startOffset": 468,
+        "endOffset": 685
+      },
+      {
+        "level": 4,
+        "text": "Optional tools[​](#optional-tools \"Direct link to Optional tools\")",
+        "id": "optional-toolsoptional-tools-direct-link-to-optional-tools",
+        "startOffset": 568,
+        "endOffset": 685
+      },
+      {
+        "level": 2,
+        "text": "Setup[​](#setup-1 \"Direct link to Setup\")",
+        "id": "setupsetup-1-direct-link-to-setup",
+        "startOffset": 685,
+        "endOffset": 828
+      },
+      {
+        "level": 2,
+        "text": "Custom[​](#my-custom-id \"Direct link to Custom\")",
+        "id": "custommy-custom-id-direct-link-to-custom",
+        "startOffset": 828,
+        "endOffset": 923
+      },
+      {
+        "level": 2,
+        "text": "Admonitions[​](#admonitions \"Direct link to Admonitions\")",
+        "id": "admonitionsadmonitions-direct-link-to-admonitions",
+        "startOffset": 923,
+        "endOffset": 985
+      },
+      {
+        "level": 2,
+        "text": "Tabs[​](#tabs \"Direct link to Tabs\")",
+        "id": "tabstabs-direct-link-to-tabs",
+        "startOffset": 985,
+        "endOffset": 1040
+      },
+      {
+        "level": 2,
+        "text": "Details[​](#details \"Direct link to Details\")",
+        "id": "detailsdetails-direct-link-to-details",
+        "startOffset": 1040,
+        "endOffset": 1090
+      },
+      {
+        "level": 2,
+        "text": "Table[​](#table \"Direct link to Table\")",
+        "id": "tabletable-direct-link-to-table",
+        "startOffset": 1090,
+        "endOffset": 1134
+      },
+      {
+        "level": 2,
+        "text": "Task list[​](#task-list \"Direct link to Task list\")",
+        "id": "task-listtask-list-direct-link-to-task-list",
+        "startOffset": 1134,
+        "endOffset": 1278
+      },
+      {
+        "level": 2,
+        "text": "Footnotes[​](#footnotes \"Direct link to Footnotes\")",
+        "id": "footnotesfootnotes-direct-link-to-footnotes",
+        "startOffset": 1278,
+        "endOffset": 1388
+      },
+      {
+        "level": 2,
+        "text": "Code blocks[​](#code-blocks \"Direct link to Code blocks\")",
+        "id": "code-blockscode-blocks-direct-link-to-code-blocks",
+        "startOffset": 1388,
+        "endOffset": 1466
+      },
+      {
+        "level": 1,
+        "text": "Install it",
+        "id": "install-it",
+        "startOffset": 1466,
+        "endOffset": 2035
+      },
+      {
+        "level": 2,
+        "text": "not a heading",
+        "id": "not-a-heading",
+        "startOffset": 1479,
+        "endOffset": 1587
+      },
+      {
+        "level": 2,
+        "text": "Diagram[​](#diagram \"Direct link to Diagram\")",
+        "id": "diagramdiagram-direct-link-to-diagram",
+        "startOffset": 1587,
+        "endOffset": 1647
+      },
+      {
+        "level": 2,
+        "text": "Entities and breaks[​](#entities-and-breaks \"Direct link to Entities and breaks\")",
+        "id": "entities-and-breaksentities-and-breaks-direct-link-to-entities-and-breaks",
+        "startOffset": 1647,
+        "endOffset": 1917
+      },
+      {
+        "level": 2,
+        "text": "Footnotes[​](#footnote-label \"Direct link to Footnotes\")",
+        "id": "footnotesfootnote-label-direct-link-to-footnotes",
+        "startOffset": 1917,
+        "endOffset": 2035
+      }
+    ]
+  },
+  "https://docs.example.com/docs/tiny": {
+    "route": "/docs/tiny",
+    "title": "Tiny",
+    "description": "Short page.",
+    "markdown": "[Skip to main content](#__docusaurus_skipToContent_fallback)\n\n[**Example Docs**](/)[Docs](/docs/intro)\n\n- [Introduction](/docs/intro)\n- [Getting Started](/docs/getting-started/installation)\n- [API Reference](/docs/api/authentication)\n- [Rich Content](/docs/rich)\n- [Tiny](/docs/tiny)\n- [Deeply Nested Page](/docs/nested/deep)\n\n* [](/)\n* Tiny\n\n# Tiny\n\nShort page.\n\n[Previous](/docs/rich)\n\n[Rich Content](/docs/rich)\n\n[Next](/docs/nested/deep)\n\n[Deeply Nested Page](/docs/nested/deep)\n\nCopyright © 2025 Example. Built with Docusaurus.\n",
+    "headings": [
+      {
+        "level": 1,
+        "text": "Tiny",
+        "id": "tiny",
+        "startOffset": 343,
+        "endOffset": 533
+      }
+    ]
+  },
+  "https://docs.example.com/no-article": {
+    "route": "/no-article",
+    "title": "No Article Page",
+    "description": "",
+    "markdown": "# No Article Page\n\nThis page has no article element and no main element. All of its content sits inside a plain div so that the extractor has to fall back to a broader selector, such as the body, to find anything useful.\n\nIt includes a second paragraph so the total amount of text comfortably exceeds three hundred characters, which keeps it above any minimum content length threshold the extractor might apply to pages.\n",
+    "headings": [
+      {
+        "level": 1,
+        "text": "No Article Page",
+        "id": "no-article-page",
+        "startOffset": 0,
+        "endOffset": 421
+      }
+    ]
+  }
+}

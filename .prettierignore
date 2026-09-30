@@ -5,3 +5,4 @@ node_modules/
 .omc/
 .remember/
 build/
+tests/fixtures/
