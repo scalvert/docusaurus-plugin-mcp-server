@@ -7,8 +7,8 @@
  * runtimes can't access the filesystem, import the artifact bundle
  * (`build/mcp/bundle.json`) through your bundler and pass it as `artifacts`.
  *
- * Uses the MCP SDK's WebStandardStreamableHTTPServerTransport for proper
- * protocol handling with Web Standard Request/Response.
+ * The HTTP policy (preflight, status, 405, CORS, errors) lives in `./http.ts`
+ * and is shared with the Node adapter.
  *
  * @example
  * // Cloudflare Workers — src/worker.js
@@ -23,7 +23,7 @@
 import { McpDocsServer } from '../mcp/server.js';
 import type { McpServerBundleConfig, McpServerDataConfig } from '../types/index.js';
 import { getCorsHeaders } from './cors.js';
-import { ConfigurationError, internalErrorBody } from '../errors.js';
+import { createHttpPolicy } from './http.js';
 
 /**
  * The 2.0/2.1 config for the web-standard request handler: pre-loaded data
@@ -54,90 +54,18 @@ export type WebRequestHandlerConfig =
  * the MCP server, suitable for any web-standard runtime (Cloudflare Workers,
  * modern Netlify functions, Deno, Bun, etc).
  *
- * Uses the MCP SDK's WebStandardStreamableHTTPServerTransport for
- * proper protocol handling.
+ * `OPTIONS` answers the CORS preflight, `GET` initializes and returns the
+ * server status, `POST` carries MCP, and anything else gets a 405.
  */
-export function createWebRequestHandler(config: WebRequestHandlerConfig) {
-  let server: McpDocsServer | null = null;
+export function createWebRequestHandler(
+  config: WebRequestHandlerConfig
+): (request: Request) => Promise<Response> {
   const { corsOrigin, ...serverConfig } = config;
+  let server: McpDocsServer | null = null;
 
-  function getServer(): McpDocsServer {
-    if (!server) {
-      server = new McpDocsServer(serverConfig);
-    }
-    return server;
-  }
-
-  return async function fetch(request: Request): Promise<Response> {
-    const corsHeaders = getCorsHeaders(corsOrigin);
-
-    // Handle CORS preflight
-    if (request.method === 'OPTIONS') {
-      return new Response(null, { status: 204, headers: corsHeaders });
-    }
-
-    // Handle GET requests for health check
-    if (request.method === 'GET') {
-      const mcpServer = getServer();
-      try {
-        // Initialize so a broken deployment (e.g. a stale 1.x index) shows up
-        // in the health check rather than only on the first MCP request.
-        await mcpServer.initialize();
-        return new Response(JSON.stringify(await mcpServer.getStatus()), {
-          status: 200,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      } catch (error) {
-        console.error('[MCP] Status error:', error);
-        const message =
-          error instanceof ConfigurationError ? error.message : 'Internal server error';
-        return new Response(JSON.stringify({ error: message }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-    }
-
-    // Only allow POST requests for MCP
-    if (request.method !== 'POST') {
-      return new Response(
-        JSON.stringify({
-          jsonrpc: '2.0',
-          id: null,
-          error: {
-            code: -32600,
-            message: 'Method not allowed. Use POST for MCP requests, GET for status.',
-          },
-        }),
-        {
-          status: 405,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
-
-    try {
-      const mcpServer = getServer();
-      // Use the SDK's Web Standard transport to handle the request
-      const response = await mcpServer.handleWebRequest(request);
-
-      // Add CORS headers to the response
-      const newHeaders = new Headers(response.headers);
-      Object.entries(corsHeaders).forEach(([key, value]) => {
-        newHeaders.set(key, value);
-      });
-
-      return new Response(response.body, {
-        status: response.status,
-        statusText: response.statusText,
-        headers: newHeaders,
-      });
-    } catch (error) {
-      console.error('[MCP] Request error:', error);
-      return new Response(internalErrorBody(error), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-  };
+  return createHttpPolicy({
+    // Created on first use, so module scope stays cheap in a Worker.
+    getServer: async () => (server ??= new McpDocsServer(serverConfig)),
+    corsHeaders: getCorsHeaders(corsOrigin),
+  });
 }

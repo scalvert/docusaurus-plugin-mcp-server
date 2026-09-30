@@ -50,10 +50,12 @@ function fakeRequest(
 /** A fake ServerResponse that records what was written. */
 function fakeResponse() {
   const headers: Record<string, string | number | readonly string[]> = {};
+  const names: string[] = [];
   const written: Buffer[] = [];
-  const state = { status: 0, statusText: '', ended: false };
+  const state = { status: 0, statusText: '', ended: false, writes: 0 };
   const res = {
     setHeader: (k: string, v: string | number | readonly string[]) => {
+      names.push(k);
       headers[k.toLowerCase()] = v;
     },
     writeHead: (status: number, statusText?: string) => {
@@ -61,14 +63,16 @@ function fakeResponse() {
       state.statusText = statusText ?? '';
     },
     write: (chunk: Uint8Array) => {
+      state.writes++;
       written.push(Buffer.from(chunk));
       return true;
     },
-    end: () => {
+    end: (chunk?: string | Uint8Array) => {
+      if (chunk !== undefined) written.push(Buffer.from(chunk));
       state.ended = true;
     },
   } as unknown as ServerResponse;
-  return { res, headers, state, body: () => Buffer.concat(written).toString('utf8') };
+  return { res, headers, names, state, body: () => Buffer.concat(written).toString('utf8') };
 }
 
 // Indexer and server progress logs are expected here; keep test output readable.
@@ -140,29 +144,47 @@ describe('toWebRequest', () => {
 });
 
 describe('writeWebResponse', () => {
+  const twoChunks = (first: string, second: string) =>
+    new ReadableStream<Uint8Array>({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode(first));
+        controller.enqueue(new TextEncoder().encode(second));
+        controller.close();
+      },
+    });
+
   it('copies status and headers, keeps headers already set on res, and streams the body', async () => {
     const { res, headers, state, body } = fakeResponse();
     res.setHeader('Access-Control-Allow-Origin', '*');
 
-    const stream = new ReadableStream<Uint8Array>({
-      start(controller) {
-        controller.enqueue(new TextEncoder().encode('{"a":'));
-        controller.enqueue(new TextEncoder().encode('1}'));
-        controller.close();
-      },
-    });
     await writeWebResponse(
-      new Response(stream, {
+      new Response(twoChunks('data: 1\n\n', 'data: 2\n\n'), {
         status: 200,
         statusText: 'OK',
-        headers: { 'content-type': 'application/json' },
+        headers: { 'content-type': 'text/event-stream' },
       }),
       res
     );
 
-    expect(state).toEqual({ status: 200, statusText: 'OK', ended: true });
+    expect(state).toEqual({ status: 200, statusText: 'OK', ended: true, writes: 2 });
     expect(headers['access-control-allow-origin']).toBe('*');
-    expect(headers['content-type']).toBe('application/json');
+    expect(headers['content-type']).toBe('text/event-stream');
+    expect(body()).toBe('data: 1\n\ndata: 2\n\n');
+  });
+
+  it('writes a JSON body in one end(), with canonical header names', async () => {
+    const { res, names, state, body } = fakeResponse();
+
+    await writeWebResponse(
+      new Response(twoChunks('{"a":', '1}'), {
+        status: 200,
+        headers: { 'content-type': 'application/json', 'mcp-protocol-version': '2026-07-28' },
+      }),
+      res
+    );
+
+    expect(state).toEqual({ status: 200, statusText: '', ended: true, writes: 0 });
+    expect(names).toEqual(['Content-Type', 'Mcp-Protocol-Version']);
     expect(body()).toBe('{"a":1}');
   });
 

@@ -638,7 +638,18 @@ import {
 ```
 
 - `createNodeServer(options)` — Creates a complete Node.js HTTP server for local development. Returns an `http.Server` ready to `.listen()`.
-- `createNodeHandler(options)` — Creates a request handler function compatible with `http.createServer()`. Use this when you need to integrate with an existing server.
+- `createNodeHandler(options)` — Creates a request handler function compatible with `http.createServer()` and Connect-style frameworks such as Express. Use this when you need to integrate with an existing server. Mount it for all methods (`GET` is the status check, `OPTIONS` the CORS preflight). If a body parser such as `express.json()` has already read the request, the handler uses its `req.body`:
+
+  ```javascript snippet=readme/snippet-23.js
+  import express from 'express';
+  import { createNodeHandler } from 'docusaurus-plugin-mcp-server/adapters/node';
+
+  const app = express();
+  app.use(express.json());
+  app.all('/mcp', createNodeHandler({ artifactsDir: './build/mcp' }));
+  app.listen(3456);
+  ```
+
 - `readArtifactBundle(dir)` — Reads and validates the artifact bundle in a build directory (`bundle.json`, or the 2.0/2.1 per-file layout). Pass the result as `artifacts` to `McpDocsServer`, or as `initData.bundle` to a search provider you drive yourself.
 
 The `ArtifactBundle` type is exported from all three entry points.
@@ -664,7 +675,7 @@ import {
 
 ## Moving off the deprecated server configs (2.2)
 
-2.2 changes nothing you have to act on. It adds `build/mcp/bundle.json` and the `artifacts` / `artifactsDir` server options, and deprecates the file (`docsPath`, `indexPath`, `skillsPath`) and pre-loaded data (`docs`, `searchIndexData`, `skills`) configs. Those still work through 2.x and are removed in 3.0. [migrations/2.x-3.0.0.md](migrations/2.x-3.0.0.md) has the before/after code and a checklist for an agent to run.
+2.2 changes nothing you have to act on. It adds `build/mcp/bundle.json` and the `artifacts` / `artifactsDir` server options, and deprecates the file (`docsPath`, `indexPath`, `skillsPath`) and pre-loaded data (`docs`, `searchIndexData`, `skills`) configs, and `McpDocsServer.handleHttpRequest()` (use `createNodeHandler`). Those still work through 2.x and are removed in 3.0. [migrations/2.x-3.0.0.md](migrations/2.x-3.0.0.md) has the before/after code and a checklist for an agent to run.
 
 ## Upgrading to 2.0
 

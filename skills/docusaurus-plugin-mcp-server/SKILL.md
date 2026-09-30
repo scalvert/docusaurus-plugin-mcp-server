@@ -67,7 +67,7 @@ Per-platform glue to scaffold:
 - **Modern Netlify functions** — `export default async (request) => handler(request)` (the new web-standard functions API, not the legacy `event`/`context` one).
 - **Vercel** — use the Edge runtime: `export const config = { runtime: 'edge' }` and `export default handler`.
 
-**3. Run locally.** From `docusaurus-plugin-mcp-server/adapters/node`, `createNodeServer({ artifactsDir: './build/mcp' })` returns an `http.Server` you `.listen()`. Use `createNodeHandler(...)` to mount into an existing `http.createServer`. For `new McpDocsServer(...)` in Node, pass `artifacts: await readArtifactBundle('./build/mcp')`.
+**3. Run locally.** From `docusaurus-plugin-mcp-server/adapters/node`, `createNodeServer({ artifactsDir: './build/mcp' })` returns an `http.Server` you `.listen()`. Use `createNodeHandler(...)` to mount into an existing `http.createServer` or Express app (`app.all('/mcp', ...)`; it uses `req.body` if `express.json()` ran first). `McpDocsServer.handleHttpRequest` is deprecated in its favor. For `new McpDocsServer(...)` in Node, pass `artifacts: await readArtifactBundle('./build/mcp')`.
 
 **Custom indexers and search providers.** The plugin always writes the documents. An indexer's `finalize()` may return `search-index.json` (becomes the bundle's search index; only one indexer may) and other relative ASCII filenames (indexer extras); `bundle.json`/`manifest.json`/`skills.json`, or anything that would overwrite them, fails the build. With an `artifacts`/`artifactsDir` server config, a `SearchProvider` gets it all as `initData.bundle` (`docs`, `searchIndex`, `extras`); with the deprecated configs it gets the 2.1 `initData`. `getDocument`/`getDocCount` are optional.
 

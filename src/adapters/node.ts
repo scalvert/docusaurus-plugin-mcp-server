@@ -20,7 +20,9 @@ import { McpDocsServer } from '../mcp/server.js';
 import type { McpServerBundleConfig, McpServerConfig } from '../types/index.js';
 import { readArtifactBundle } from '../artifacts/node.js';
 import { getCorsHeaders } from './cors.js';
-import { ConfigurationError, internalErrorBody } from '../errors.js';
+import { createHttpPolicy, jsonResponse, jsonRpcErrorBody } from './http.js';
+import { toWebRequest, writeWebResponse } from './node-bridge.js';
+import { internalErrorBody } from '../errors.js';
 
 /**
  * Server config that reads the artifact bundle from a directory, such as
@@ -59,11 +61,17 @@ export type NodeAdapterOptions =
 /**
  * Create a Node.js request handler for the MCP server.
  *
- * This returns a handler function compatible with `http.createServer()`.
- * For a complete server, use `createNodeServer()` instead.
+ * Compatible with `http.createServer()` and with Connect-style frameworks
+ * such as Express: mount it for all methods on your MCP path. If a body
+ * parser (e.g. `express.json()`) has already read the request, its
+ * `req.body` is used. For a complete server, use `createNodeServer()`.
+ *
+ * The HTTP policy (preflight, status, 405, CORS, errors) is the same as the
+ * web handler's; this adapter adds a 1MB body limit and JSON validation.
  */
 export function createNodeHandler(options: NodeAdapterOptions) {
   const { corsOrigin = '*', ...config } = options;
+  const corsHeaders = corsOrigin === false ? {} : getCorsHeaders(corsOrigin);
   let server: Promise<McpDocsServer> | null = null;
 
   // Created once. A bundle that fails to read stays failed, like a server
@@ -82,99 +90,28 @@ export function createNodeHandler(options: NodeAdapterOptions) {
     return server;
   }
 
-  function setCorsHeaders(res: ServerResponse): void {
-    if (corsOrigin !== false) {
-      for (const [key, value] of Object.entries(getCorsHeaders(corsOrigin))) {
-        res.setHeader(key, value);
-      }
-    }
-  }
+  const policy = createHttpPolicy({ getServer, corsHeaders, statusIndent: 2 });
 
   return async function handler(req: IncomingMessage, res: ServerResponse): Promise<void> {
-    setCorsHeaders(res);
-
-    // Handle CORS preflight
-    if (req.method === 'OPTIONS') {
-      res.writeHead(204);
-      res.end();
-      return;
-    }
-
-    // Handle GET requests for health check
-    if (req.method === 'GET') {
-      try {
-        const mcpServer = await getServer();
-        // Initialize so a broken deployment shows up in the health check.
-        await mcpServer.initialize();
-        const status = await mcpServer.getStatus();
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(status, null, 2));
-      } catch (error) {
-        console.error('[MCP] Status error:', error);
-        const message =
-          error instanceof ConfigurationError ? error.message : 'Internal server error';
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ error: message }));
-      }
-      return;
-    }
-
-    // Only allow POST requests for MCP
-    if (req.method !== 'POST') {
-      res.writeHead(405, { 'Content-Type': 'application/json' });
-      res.end(
-        JSON.stringify({
-          jsonrpc: '2.0',
-          id: null,
-          error: {
-            code: -32600,
-            message: 'Method not allowed. Use POST for MCP requests, GET for status.',
-          },
-        })
-      );
-      return;
-    }
-
-    // Parse request body
     try {
-      const body = await parseRequestBody(req);
-      const mcpServer = await getServer();
-      await mcpServer.handleHttpRequest(req, res, body);
+      await writeWebResponse(await policy(await toRequest(req)), res);
     } catch (error) {
+      if (error instanceof RequestBodyError) {
+        await writeWebResponse(
+          jsonResponse(jsonRpcErrorBody(error.code, error.message), error.status, corsHeaders),
+          res
+        );
+        return;
+      }
+      // The policy answers its own errors, so this is a failure reading the
+      // request stream or writing the response.
       console.error('[MCP] Request error:', error);
-
-      if (error instanceof Error && error.message === 'Request body too large') {
-        res.writeHead(413, { 'Content-Type': 'application/json' });
-        res.end(
-          JSON.stringify({
-            jsonrpc: '2.0',
-            id: null,
-            error: {
-              code: -32600,
-              message: 'Request body too large',
-            },
-          })
-        );
-        return;
+      if (!res.headersSent) {
+        res.writeHead(500, { ...corsHeaders, 'Content-Type': 'application/json' });
+        res.end(internalErrorBody(error));
+      } else {
+        res.destroy(error instanceof Error ? error : undefined);
       }
-
-      if (error instanceof Error && error.message === 'Invalid JSON in request body') {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(
-          JSON.stringify({
-            jsonrpc: '2.0',
-            id: null,
-            error: {
-              code: -32700,
-              message: 'Parse error: invalid JSON in request body',
-            },
-          })
-        );
-        return;
-      }
-
-      res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(internalErrorBody(error));
     }
   };
 }
@@ -189,12 +126,55 @@ export function createNodeServer(options: NodeAdapterOptions): Server {
   return createServer(handler);
 }
 
+/**
+ * Convert the Node request. Only a POST body is read (bounded, and checked
+ * to be JSON) before the policy runs; other methods never read theirs.
+ */
+async function toRequest(req: IncomingMessage): Promise<Request> {
+  if (req.method !== 'POST') {
+    return toWebRequest(req, undefined, { stream: false });
+  }
+  return toWebRequest(req, await readJsonBody(req), { stream: false });
+}
+
 const MAX_BODY_SIZE = 1024 * 1024; // 1MB
 
+/** A request body the adapter rejects before the MCP server sees it. */
+class RequestBodyError extends Error {
+  constructor(
+    readonly status: number,
+    readonly code: number,
+    message: string
+  ) {
+    super(message);
+  }
+}
+
+const tooLarge = () => new RequestBodyError(413, -32600, 'Request body too large');
+const invalidJson = () =>
+  new RequestBodyError(400, -32700, 'Parse error: invalid JSON in request body');
+
+function parseJson(text: string): unknown {
+  if (!text) return undefined;
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw invalidJson();
+  }
+}
+
 /**
- * Parse the request body as JSON
+ * The parsed JSON body, or undefined for an empty one. Uses `req.body` when a
+ * body parser has already consumed the stream.
  */
-async function parseRequestBody(req: IncomingMessage): Promise<unknown> {
+async function readJsonBody(req: IncomingMessage): Promise<unknown> {
+  if (req.readableEnded) {
+    const { body } = req as IncomingMessage & { body?: unknown };
+    if (typeof body === 'string') return parseJson(body);
+    if (body instanceof Uint8Array) return parseJson(Buffer.from(body).toString());
+    return body;
+  }
+
   return new Promise((resolve, reject) => {
     let body = '';
     let size = 0;
@@ -204,16 +184,16 @@ async function parseRequestBody(req: IncomingMessage): Promise<unknown> {
       if (size > MAX_BODY_SIZE) {
         // Stop accumulating (bounded memory) and reject so the handler can send
         // a 413. Don't destroy the socket here, or the client never sees it.
-        reject(new Error('Request body too large'));
+        reject(tooLarge());
         return;
       }
       body += chunk.toString();
     });
     req.on('end', () => {
       try {
-        resolve(body ? JSON.parse(body) : undefined);
-      } catch {
-        reject(new Error('Invalid JSON in request body'));
+        resolve(parseJson(body));
+      } catch (error) {
+        reject(error);
       }
     });
     req.on('error', reject);
