@@ -10,6 +10,18 @@
 
 
 
+
+## v2.1.0 (2026-09-30)
+
+#### :rocket: Enhancement
+
+* [#146](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/146) feat(skills): generate the built-in docs-research skill from the site ([@scalvert](https://github.com/scalvert))
+
+#### Committers: 1
+* Steve Calvert ([@scalvert](https://github.com/scalvert))
+
+
+
 ## v2.0.0 (2026-09-28)
 
 #### :boom: Breaking Change
