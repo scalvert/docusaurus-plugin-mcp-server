@@ -10,3 +10,4 @@
  */
 
 export { createWebRequestHandler, type WebRequestAdapterConfig } from './adapters/web-request.js';
+export type { ArtifactBundle } from './artifacts/bundle.js';

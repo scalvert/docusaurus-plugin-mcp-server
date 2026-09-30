@@ -217,6 +217,12 @@ describe('buildArtifactBundle', () => {
     './x.json',
     'a/./b.json',
     '',
+    'a\\b.json',
+    'manifest.json::$DATA',
+    'x.json.',
+    'x.json ',
+    '.hidden.json',
+    'manifeſt.json',
   ])('rejects the unsafe extras filename %j', (filename) => {
     expect(() =>
       buildArtifactBundle(input({ indexers: [{ name: 'x', files: new Map([[filename, {}]]) }] }))
@@ -248,7 +254,7 @@ describe('buildArtifactBundle', () => {
     );
   });
 
-  it('treats \\ and / as the same separator when comparing extras', () => {
+  it('names one indexer once when it returns two names for the same file', () => {
     expect(() =>
       buildArtifactBundle(
         input({
@@ -256,14 +262,14 @@ describe('buildArtifactBundle', () => {
             {
               name: 'a',
               files: new Map([
+                ['dir/X.json', {}],
                 ['dir/x.json', {}],
-                ['dir\\x.json', {}],
               ]),
             },
           ],
         })
       )
-    ).toThrow('Indexer "a" returned dir/x.json and dir\\x.json');
+    ).toThrow('Indexer "a" returned dir/X.json and dir/x.json');
   });
 
   it('allows an extra nested under a member-like name', () => {

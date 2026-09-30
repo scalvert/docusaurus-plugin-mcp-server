@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { McpDocsServer } from '../src/mcp/server.js';
-import { LocalSearchIndexer } from '../src/providers/indexers/local-search-indexer.js';
-import type { ProcessedDoc, McpServerDataConfig, McpServerFileConfig } from '../src/types/index.js';
-import type { ProviderContext } from '../src/providers/types.js';
+import { ConfigurationError } from '../src/errors.js';
+import type { ArtifactBundle } from '../src/artifacts/bundle.js';
+import type { ProcessedDoc, McpServerBundleConfig } from '../src/types/index.js';
+import type { SearchProvider, SearchProviderInitData } from '../src/providers/types.js';
+import { buildTestBundle } from './helpers/bundle.js';
 
 const mockDocs: ProcessedDoc[] = [
   {
@@ -24,20 +26,6 @@ const mockDocs: ProcessedDoc[] = [
     ],
   },
 ];
-
-const mockProviderContext: ProviderContext = {
-  baseUrl: 'https://example.com',
-  serverName: 'test-server',
-  serverVersion: '1.0.0',
-  outputDir: '/tmp/test',
-};
-
-async function buildArtifacts() {
-  const indexer = new LocalSearchIndexer();
-  await indexer.initialize(mockProviderContext);
-  await indexer.indexDocuments(mockDocs);
-  return indexer.finalize();
-}
 
 /**
  * Send a JSON-RPC request through the server's public Web Standard path
@@ -68,41 +56,42 @@ const initializeParams = {
   clientInfo: { name: 'test-client', version: '1.0.0' },
 };
 
+/** A search provider with none of the optional methods, recording what it was given. */
+function bareProvider(): SearchProvider & { initData?: SearchProviderInitData } {
+  const provider: SearchProvider & { initData?: SearchProviderInitData } = {
+    name: 'bare',
+    initialize: async (_context, initData) => {
+      provider.initData = initData;
+    },
+    isReady: () => true,
+    search: async () => [],
+  };
+  return provider;
+}
+
 describe('McpDocsServer', () => {
-  let artifacts: Map<string, unknown>;
-  let dataConfig: McpServerDataConfig;
+  let bundle: ArtifactBundle;
+  let dataConfig: McpServerBundleConfig;
 
   beforeEach(async () => {
-    artifacts = await buildArtifacts();
-    dataConfig = {
+    bundle = await buildTestBundle(mockDocs, {
       name: 'test-docs',
       version: '2.0.0',
       baseUrl: 'https://example.com',
-      docs: artifacts.get('docs.json') as Record<string, ProcessedDoc>,
-      searchIndexData: artifacts.get('search-index.json') as Record<string, unknown>,
-    };
+    });
+    // Name, version, and base URL come from the bundle's manifest.
+    dataConfig = { artifacts: bundle };
   });
 
   describe('constructor', () => {
-    it('creates a server with data-based config', () => {
+    it('creates a server from an artifact bundle', () => {
       const server = new McpDocsServer(dataConfig);
-      expect(server).toBeInstanceOf(McpDocsServer);
-    });
-
-    it('creates a server with file-based config', () => {
-      const fileConfig: McpServerFileConfig = {
-        name: 'file-docs',
-        version: '1.0.0',
-        docsPath: '/tmp/docs.json',
-        indexPath: '/tmp/search-index.json',
-      };
-      const server = new McpDocsServer(fileConfig);
       expect(server).toBeInstanceOf(McpDocsServer);
     });
   });
 
   describe('initialize()', () => {
-    it('initializes successfully with pre-loaded data', async () => {
+    it('initializes successfully from an artifact bundle', async () => {
       const server = new McpDocsServer(dataConfig);
       await expect(server.initialize()).resolves.not.toThrow();
     });
@@ -129,16 +118,30 @@ describe('McpDocsServer', () => {
       expect(status.searchProvider).toBe('local');
     });
 
-    it('returns defaults when version is omitted', async () => {
-      const config: McpServerDataConfig = {
+    it('prefers name, version, and baseUrl from config over the manifest', async () => {
+      const server = new McpDocsServer({
         ...dataConfig,
-        version: undefined,
-      };
-      const server = new McpDocsServer(config);
+        name: 'renamed',
+        version: '9.9.9',
+        baseUrl: 'https://mirror.example.com',
+      });
       await server.initialize();
 
       const status = await server.getStatus();
-      expect(status.version).toBe('1.0.0');
+      expect(status).toMatchObject({
+        name: 'renamed',
+        version: '9.9.9',
+        baseUrl: 'https://mirror.example.com',
+      });
+
+      const result = await callMcp(server, 'initialize', initializeParams);
+      expect(result.serverInfo).toMatchObject({ name: 'renamed', version: '9.9.9' });
+    });
+
+    it('reports the manifest name in serverInfo when config has none', async () => {
+      const server = new McpDocsServer(dataConfig);
+      const result = await callMcp(server, 'initialize', initializeParams);
+      expect(result.serverInfo).toMatchObject({ name: 'test-docs', version: '2.0.0' });
     });
 
     it('returns initialized false and docCount 0 before init', async () => {
@@ -147,6 +150,40 @@ describe('McpDocsServer', () => {
 
       expect(status.initialized).toBe(false);
       expect(status.docCount).toBe(0);
+    });
+
+    it('counts the bundle documents when the provider has no getDocCount', async () => {
+      const server = new McpDocsServer({ ...dataConfig, search: bareProvider() });
+      await server.initialize();
+      expect((await server.getStatus()).docCount).toBe(2);
+    });
+  });
+
+  describe('search providers', () => {
+    it('receives the bundle, with the deprecated fields still populated', async () => {
+      const provider = bareProvider();
+      const withExtras = { ...bundle, extras: { 'custom.json': { a: 1 } } };
+      const server = new McpDocsServer({ artifacts: withExtras, search: provider });
+      await server.initialize();
+
+      expect(provider.initData?.bundle).toBe(withExtras);
+      expect(provider.initData?.bundle?.extras).toEqual({ 'custom.json': { a: 1 } });
+      expect(provider.initData?.docs).toBe(bundle.docs);
+      expect(provider.initData?.indexData).toBe(bundle.searchIndex);
+      expect(provider.initData).not.toHaveProperty('docsPath');
+    });
+
+    it('docs_fetch reads the bundle when the provider has no getDocument', async () => {
+      const server = new McpDocsServer({ ...dataConfig, search: bareProvider() });
+
+      const result = await callMcp(server, 'tools/call', {
+        name: 'docs_fetch',
+        arguments: { url: 'https://example.com/docs/api' },
+      });
+      const text = (result.content as Array<{ text: string }>)[0]?.text ?? '';
+
+      expect(result.isError).toBeFalsy();
+      expect(text).toContain('Endpoints listed here.');
     });
   });
 
@@ -224,19 +261,32 @@ describe('McpDocsServer', () => {
   });
 
   describe('initialize() error handling', () => {
-    it('rejects on invalid config (neither file paths nor pre-loaded data)', async () => {
-      const server = new McpDocsServer({ name: 'bad' } as unknown as McpServerDataConfig);
-      await expect(server.initialize()).rejects.toThrow(/Invalid server config/);
+    it('rejects on invalid config (no artifacts, file paths, or pre-loaded data)', async () => {
+      const server = new McpDocsServer({ name: 'bad' } as unknown as McpServerBundleConfig);
+      await expect(server.initialize()).rejects.toThrow(/Invalid server config: pass artifacts/);
+    });
+
+    it('rejects artifacts that are not a bundle, saying what to pass', async () => {
+      // A common mistake: passing docs.json instead of bundle.json.
+      const server = new McpDocsServer({ artifacts: bundle.docs });
+      const error = await server.initialize().catch((e: unknown) => e);
+
+      expect(error).toBeInstanceOf(ConfigurationError);
+      expect((error as Error).message).toMatch(
+        /artifacts option \(expected the contents of build\/mcp\/bundle.json\).*missing formatVersion/
+      );
+    });
+
+    it('explains a bundle built without the local indexer', async () => {
+      const { searchIndex: _searchIndex, ...withoutIndex } = bundle;
+      const server = new McpDocsServer({ artifacts: withoutIndex });
+      await expect(server.initialize()).rejects.toThrow(/has no search index.*'local'/);
     });
 
     it('caches the init error — a second initialize() also rejects (fail-fast)', async () => {
-      const server = new McpDocsServer({
-        name: 'missing-files',
-        docsPath: '/no/such/docs.json',
-        indexPath: '/no/such/search-index.json',
-      });
-      await expect(server.initialize()).rejects.toThrow();
-      await expect(server.initialize()).rejects.toThrow();
+      const server = new McpDocsServer({ artifacts: {} });
+      await expect(server.initialize()).rejects.toThrow(ConfigurationError);
+      await expect(server.initialize()).rejects.toThrow(ConfigurationError);
     });
   });
 });

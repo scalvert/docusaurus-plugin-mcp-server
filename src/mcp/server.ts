@@ -10,11 +10,18 @@ import {
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type {
   ProcessedDoc,
+  McpServerBaseConfig,
+  McpServerBundleConfig,
   McpServerConfig,
   McpServerFileConfig,
   McpServerDataConfig,
   SkillsArtifact,
 } from '../types/index.js';
+import {
+  ARTIFACT_BUNDLE_FORMAT_VERSION,
+  parseArtifactBundle,
+  type ArtifactBundle,
+} from '../artifacts/bundle.js';
 import { loadSearchProvider } from '../providers/loader.js';
 import { ConfigurationError, MIGRATION_GUIDE } from '../errors.js';
 import type {
@@ -47,6 +54,13 @@ function toolError(text: string) {
 }
 
 /**
+ * Type guard to check if config passes an artifact bundle
+ */
+function isBundleConfig(config: McpServerConfig): config is McpServerBundleConfig {
+  return 'artifacts' in config;
+}
+
+/**
  * Type guard to check if config uses file-based loading
  */
 function isFileConfig(config: McpServerConfig): config is McpServerFileConfig {
@@ -61,14 +75,62 @@ function isDataConfig(config: McpServerConfig): config is McpServerDataConfig {
 }
 
 /**
+ * Wrap the members passed with a deprecated config in an artifact bundle, so
+ * everything after loading has one shape. The manifest comes from config.
+ */
+function legacyBundle(
+  config: McpServerBaseConfig,
+  docs: Record<string, ProcessedDoc>,
+  searchIndex: Record<string, unknown> | undefined,
+  skills: SkillsArtifact | undefined
+): ArtifactBundle {
+  return {
+    formatVersion: ARTIFACT_BUNDLE_FORMAT_VERSION,
+    manifest: {
+      serverName: config.name,
+      version: config.version ?? '1.0.0',
+      buildTime: '',
+      docCount: Object.keys(docs).length,
+      ...(config.baseUrl ? { baseUrl: config.baseUrl } : {}),
+    },
+    docs,
+    ...(searchIndex ? { searchIndex } : {}),
+    ...(skills ? { skills } : {}),
+  };
+}
+
+/** Read a JSON file named by a deprecated file config. Node only. */
+async function readConfiguredJson(file: string, what: string, hint: string): Promise<unknown> {
+  // Imported dynamically so the edge (artifacts) path pulls in no Node built-ins.
+  const { readFile } = await import('node:fs/promises');
+  try {
+    return JSON.parse(await readFile(file, 'utf8'));
+  } catch (cause) {
+    // Paths name only files the site owner configured; safe to return.
+    throw new ConfigurationError(`[MCP] ${what} not found or unreadable: ${file}. ${hint}`, {
+      cause,
+    });
+  }
+}
+
+/** Name, version, and base URL the server reports: config first, then the bundle's manifest. */
+interface ServerIdentity {
+  name: string;
+  version: string;
+  baseUrl?: string;
+}
+
+/**
  * MCP Server for documentation
  *
  * This class provides the MCP server implementation that can be used
  * with any HTTP framework (Express, Vercel, Cloudflare Workers, etc.)
  *
- * Supports two modes:
- * - File-based: Load docs and search index from filesystem (Node.js)
- * - Pre-loaded: Accept docs and search index data directly (Workers)
+ * Serves an artifact bundle: pass `artifacts`, the contents of
+ * `build/mcp/bundle.json` (import it on edge runtimes, or use
+ * `readArtifactBundle()` in Node). The file-based (`docsPath`/`indexPath`)
+ * and pre-loaded (`docs`/`searchIndexData`) configs still work but are
+ * deprecated.
  *
  * Serves MCP protocol revision 2026-07-28 statelessly, and 2025-era clients
  * (initialize handshake) from the same endpoint through a stateless
@@ -76,6 +138,8 @@ function isDataConfig(config: McpServerConfig): config is McpServerDataConfig {
  */
 export class McpDocsServer {
   private config: McpServerConfig;
+  private bundle: ArtifactBundle | null = null;
+  private identity: ServerIdentity | null = null;
   private searchProvider: SearchProvider | null = null;
   private skillsArtifact: SkillsArtifact | null = null;
   private handler: McpHttpHandler | null = null;
@@ -98,11 +162,9 @@ export class McpDocsServer {
       .filter(Boolean)
       .join('\n\n');
 
+    const { name, version } = this.getIdentity();
     const server = new McpServer(
-      {
-        name: this.config.name,
-        version: this.config.version ?? '1.0.0',
-      },
+      { name, version },
       {
         capabilities: {
           tools: { listChanged: false },
@@ -178,18 +240,77 @@ export class McpDocsServer {
   }
 
   /**
-   * Get a document by URL using the search provider
+   * Get a document by URL: from the search provider if it implements
+   * `getDocument`, otherwise from the bundle's documents.
    */
   private async getDocument(url: string): Promise<ProcessedDoc | null> {
-    if (!this.searchProvider) {
-      return null;
-    }
-
-    if (this.searchProvider.getDocument) {
+    if (this.searchProvider?.getDocument) {
       return this.searchProvider.getDocument(url);
     }
 
-    return null;
+    return this.bundle?.docs[url] ?? null;
+  }
+
+  /** The identity to report, falling back to config before initialization. */
+  private getIdentity(): ServerIdentity {
+    return (
+      this.identity ?? {
+        name: this.config.name ?? 'docs',
+        version: this.config.version ?? '1.0.0',
+        baseUrl: this.config.baseUrl,
+      }
+    );
+  }
+
+  /**
+   * Resolve any config to an artifact bundle. The deprecated file config
+   * also returns its paths, which custom search providers may still read.
+   */
+  private async loadBundle(): Promise<{
+    bundle: ArtifactBundle;
+    paths?: { docsPath: string; indexPath: string };
+  }> {
+    const config = this.config;
+
+    if (isBundleConfig(config)) {
+      return {
+        bundle: parseArtifactBundle(
+          config.artifacts,
+          "The server's artifacts option (expected the contents of build/mcp/bundle.json)"
+        ),
+      };
+    }
+
+    if (isDataConfig(config)) {
+      return { bundle: legacyBundle(config, config.docs, config.searchIndexData, config.skills) };
+    }
+
+    if (isFileConfig(config)) {
+      const hint = 'Build the site first.';
+      const docs = await readConfiguredJson(config.docsPath, 'docs.json', hint);
+      const searchIndex = await readConfiguredJson(config.indexPath, 'search-index.json', hint);
+      const skills = config.skillsPath
+        ? await readConfiguredJson(
+            config.skillsPath,
+            'skills.json',
+            'Build the site first, or remove skillsPath.'
+          )
+        : undefined;
+      return {
+        bundle: legacyBundle(
+          config,
+          docs as Record<string, ProcessedDoc>,
+          searchIndex as Record<string, unknown>,
+          skills as SkillsArtifact | undefined
+        ),
+        paths: { docsPath: config.docsPath, indexPath: config.indexPath },
+      };
+    }
+
+    throw new ConfigurationError(
+      '[MCP] Invalid server config: pass artifacts (the contents of build/mcp/bundle.json). ' +
+        'The deprecated file paths (docsPath, indexPath) and pre-loaded data (docs, searchIndexData) also work.'
+    );
   }
 
   /**
@@ -228,50 +349,41 @@ export class McpDocsServer {
           `Remove it; use 'localSearch' to set field boosts. See ${MIGRATION_GUIDE}.`
       );
     }
+    const { bundle, paths } = await this.loadBundle();
+    const { manifest } = bundle;
+    const identity: ServerIdentity = {
+      name: this.config.name ?? manifest.serverName,
+      version: this.config.version ?? manifest.version,
+      baseUrl: this.config.baseUrl ?? manifest.baseUrl,
+    };
+
     const searchSpecifier = this.config.search ?? 'local';
-    this.searchProvider = await loadSearchProvider(searchSpecifier, {
+    const searchProvider = await loadSearchProvider(searchSpecifier, {
       localSearch: this.config.localSearch,
     });
 
     const providerContext: ProviderContext = {
-      baseUrl: this.config.baseUrl ?? '',
-      serverName: this.config.name,
-      serverVersion: this.config.version ?? '1.0.0',
+      baseUrl: identity.baseUrl ?? '',
+      serverName: identity.name,
+      serverVersion: identity.version,
       outputDir: '', // Not relevant for runtime
     };
 
-    // Build init data based on config type
-    const initData: SearchProviderInitData = {};
+    // `docs`/`indexData` (and the paths, in file mode) stay populated for
+    // providers written before `bundle` existed.
+    const initData: SearchProviderInitData = {
+      bundle,
+      docs: bundle.docs,
+      ...(bundle.searchIndex ? { indexData: bundle.searchIndex } : {}),
+      ...paths,
+    };
 
-    if (isDataConfig(this.config)) {
-      // Pre-loaded data mode (Cloudflare Workers, etc.)
-      initData.docs = this.config.docs;
-      initData.indexData = this.config.searchIndexData;
-      this.skillsArtifact = this.config.skills ?? null;
-    } else if (isFileConfig(this.config)) {
-      // File-based mode (Node.js)
-      initData.docsPath = this.config.docsPath;
-      initData.indexPath = this.config.indexPath;
-      if (this.config.skillsPath) {
-        const { readFile } = await import('node:fs/promises');
-        try {
-          this.skillsArtifact = JSON.parse(
-            await readFile(this.config.skillsPath, 'utf8')
-          ) as SkillsArtifact;
-        } catch (cause) {
-          throw new ConfigurationError(
-            `[MCP] skills.json not found or unreadable: ${this.config.skillsPath}. Build the site first, or remove skillsPath.`,
-            { cause }
-          );
-        }
-      }
-    } else {
-      throw new ConfigurationError(
-        '[MCP] Invalid server config: provide either file paths (docsPath, indexPath) or pre-loaded data (docs, searchIndexData).'
-      );
-    }
+    await searchProvider.initialize(providerContext, initData);
 
-    await this.searchProvider.initialize(providerContext, initData);
+    this.bundle = bundle;
+    this.identity = identity;
+    this.searchProvider = searchProvider;
+    this.skillsArtifact = bundle.skills ?? null;
 
     this.handler = createMcpHandler(() => this.createMcpServer(), {
       // Legacy traffic is routed separately (see dispatch) to keep v1's JSON responses.
@@ -361,19 +473,18 @@ export class McpDocsServer {
     baseUrl?: string;
     searchProvider?: string;
   }> {
-    let docCount = 0;
-
-    if (this.searchProvider?.getDocCount) {
-      docCount = this.searchProvider.getDocCount();
-    }
+    const docCount =
+      this.searchProvider?.getDocCount?.() ??
+      (this.bundle ? Object.keys(this.bundle.docs).length : 0);
+    const { name, version, baseUrl } = this.getIdentity();
 
     return {
-      name: this.config.name,
-      version: this.config.version ?? '1.0.0',
+      name,
+      version,
       initialized: this.initialized,
       docCount,
       skillCount: this.skillsArtifact?.skills.length ?? 0,
-      baseUrl: this.config.baseUrl,
+      baseUrl,
       searchProvider: this.searchProvider?.name,
     };
   }

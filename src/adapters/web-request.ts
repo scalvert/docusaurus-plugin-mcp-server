@@ -4,8 +4,8 @@
  * Creates a handler with the standard `(request: Request) => Promise<Response>`
  * signature, so it runs on any web-standard runtime — Cloudflare Workers,
  * Netlify (modern web-standard functions), Deno, Bun, and others. Because these
- * runtimes can't access the filesystem, this adapter requires pre-loaded docs
- * and search index data.
+ * runtimes can't access the filesystem, import the artifact bundle
+ * (`build/mcp/bundle.json`) through your bundler and pass it as `artifacts`.
  *
  * Uses the MCP SDK's WebStandardStreamableHTTPServerTransport for proper
  * protocol handling with Web Standard Request/Response.
@@ -13,31 +13,27 @@
  * @example
  * // Cloudflare Workers — src/worker.js
  * import { createWebRequestHandler } from 'docusaurus-plugin-mcp-server/adapters';
- * import docs from '../build/mcp/docs.json';
- * import searchIndex from '../build/mcp/search-index.json';
+ * import bundle from '../build/mcp/bundle.json';
  *
  * export default {
- *   fetch: createWebRequestHandler({
- *     docs,
- *     searchIndexData: searchIndex,
- *     name: 'my-docs',
- *     baseUrl: 'https://docs.example.com',
- *   }),
+ *   fetch: createWebRequestHandler({ artifacts: bundle }),
  * };
  */
 
 import { McpDocsServer } from '../mcp/server.js';
-import type { McpServerDataConfig } from '../types/index.js';
+import type { McpServerBundleConfig, McpServerDataConfig } from '../types/index.js';
 import { getCorsHeaders } from './cors.js';
 import { ConfigurationError, internalErrorBody } from '../errors.js';
 
 /**
- * Config for the web-standard request handler
+ * Config for the web-standard request handler: `{ artifacts }` (the contents
+ * of `bundle.json`), or the deprecated pre-loaded `{ docs, searchIndexData }`,
+ * plus a CORS override.
  */
-export interface WebRequestAdapterConfig extends McpServerDataConfig {
+export type WebRequestAdapterConfig = (McpServerBundleConfig | McpServerDataConfig) & {
   /** CORS origin to allow. Defaults to '*' (all origins). */
   corsOrigin?: string;
-}
+};
 
 /**
  * Create a web-standard `(request: Request) => Promise<Response>` handler for
@@ -53,7 +49,7 @@ export function createWebRequestHandler(config: WebRequestAdapterConfig) {
 
   function getServer(): McpDocsServer {
     if (!server) {
-      server = new McpDocsServer(serverConfig satisfies McpServerDataConfig);
+      server = new McpDocsServer(serverConfig);
     }
     return server;
   }

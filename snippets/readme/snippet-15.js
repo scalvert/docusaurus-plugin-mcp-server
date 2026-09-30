@@ -1,4 +1,4 @@
-// docusaurus.config.js
+// docusaurus.config.js: build time
 module.exports = {
   plugins: [
     [
@@ -6,9 +6,12 @@ module.exports = {
       {
         // Run both the built-in local search indexer and a custom one
         indexers: ['local', './my-algolia-indexer.js'],
-        // Use a custom search provider at runtime
-        search: '@myorg/glean-search',
       },
     ],
   ],
 };
+
+// worker.js: runtime. The search provider is chosen where the server runs.
+import GleanSearchProvider from '@myorg/glean-search';
+
+createWebRequestHandler({ artifacts: bundle, search: new GleanSearchProvider() });

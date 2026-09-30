@@ -1,3 +1,4 @@
+import type { ArtifactBundle } from '../artifacts/bundle.js';
 import type { ProcessedDoc, SearchResult } from '../types/index.js';
 
 /**
@@ -95,16 +96,33 @@ export interface ContentIndexer {
 
 /**
  * Data passed to search provider during initialization.
- * Supports both file-based and pre-loaded data modes.
  */
 export interface SearchProviderInitData {
-  /** Path to docs.json (file mode) */
+  /**
+   * The artifact bundle the server is serving: documents, the search index
+   * (if an indexer produced one), and indexer extras. Always set by
+   * `McpDocsServer` since 2.2.
+   */
+  bundle?: ArtifactBundle;
+  /**
+   * Path to docs.json. Set only with the deprecated file config.
+   * @deprecated Since 2.2. Read `bundle.docs`. Removed in 3.0.
+   */
   docsPath?: string;
-  /** Path to search-index.json (file mode) */
+  /**
+   * Path to search-index.json. Set only with the deprecated file config.
+   * @deprecated Since 2.2. Read `bundle.searchIndex`. Removed in 3.0.
+   */
   indexPath?: string;
-  /** Pre-loaded docs (data mode) */
+  /**
+   * Documents keyed by document ID; the same object as `bundle.docs`.
+   * @deprecated Since 2.2. Read `bundle.docs`. Removed in 3.0.
+   */
   docs?: Record<string, ProcessedDoc>;
-  /** Pre-loaded index data (data mode) */
+  /**
+   * The search index; the same object as `bundle.searchIndex`.
+   * @deprecated Since 2.2. Read `bundle.searchIndex`. Removed in 3.0.
+   */
   indexData?: Record<string, unknown>;
 }
 
@@ -170,14 +188,14 @@ export interface SearchProvider {
   search(query: string, options?: SearchOptions): Promise<SearchResult[]>;
 
   /**
-   * Get a document by its route.
-   * Used by docs_get_page and docs_get_section tools.
+   * Get a document by its document ID (full URL). Used by `docs_fetch`.
+   * Optional: without it, `docs_fetch` reads the bundle's documents.
    */
-  getDocument?(route: string): Promise<ProcessedDoc | null>;
+  getDocument?(url: string): Promise<ProcessedDoc | null>;
 
   /**
-   * Get the number of indexed documents.
-   * Used for status reporting and health checks.
+   * Get the number of indexed documents, for the status endpoint.
+   * Optional: without it, the status reports the bundle's document count.
    */
   getDocCount?(): number;
 

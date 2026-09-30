@@ -14,8 +14,8 @@ import type { AddressInfo } from 'node:net';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { toWebRequest, writeWebResponse } from '../src/adapters/node-bridge.js';
 import { McpDocsServer } from '../src/mcp/server.js';
-import { LocalSearchIndexer } from '../src/providers/indexers/local-search-indexer.js';
 import type { ProcessedDoc } from '../src/types/index.js';
+import { buildTestBundle } from './helpers/bundle.js';
 
 /** A fake IncomingMessage: a readable stream plus request metadata. */
 function fakeRequest(
@@ -192,13 +192,6 @@ describe('handleHttpRequest without a pre-parsed body', () => {
   let url: string;
 
   beforeAll(async () => {
-    const indexer = new LocalSearchIndexer();
-    await indexer.initialize({
-      baseUrl: 'https://docs.example.com',
-      serverName: 'raw-body',
-      serverVersion: '1.0.0',
-      outputDir: '/tmp',
-    });
     const docs: ProcessedDoc[] = [
       {
         route: '/docs/intro',
@@ -208,14 +201,11 @@ describe('handleHttpRequest without a pre-parsed body', () => {
         headings: [],
       },
     ];
-    await indexer.indexDocuments(docs);
-    const artifacts = await indexer.finalize();
-
     const mcp = new McpDocsServer({
-      name: 'raw-body',
-      baseUrl: 'https://docs.example.com',
-      docs: artifacts.get('docs.json') as Record<string, ProcessedDoc>,
-      searchIndexData: artifacts.get('search-index.json') as Record<string, unknown>,
+      artifacts: await buildTestBundle(docs, {
+        name: 'raw-body',
+        baseUrl: 'https://docs.example.com',
+      }),
     });
 
     // Mounted the way a user would in their own server: no body parsing.

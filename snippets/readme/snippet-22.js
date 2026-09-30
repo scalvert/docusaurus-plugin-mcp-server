@@ -1,9 +1,10 @@
 import { loadSearchProvider, evaluateSearch } from 'docusaurus-plugin-mcp-server';
+import { readArtifactBundle } from 'docusaurus-plugin-mcp-server/adapters/node';
 
 const provider = await loadSearchProvider('local');
 await provider.initialize(
   { baseUrl: 'https://docs.example.com', serverName: 'eval', serverVersion: '0', outputDir: '' },
-  { docsPath: 'build/mcp/docs.json', indexPath: 'build/mcp/search-index.json' }
+  { bundle: await readArtifactBundle('build/mcp') }
 );
 
 const report = await evaluateSearch(provider, [

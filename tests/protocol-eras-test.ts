@@ -12,9 +12,9 @@ import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { z } from 'zod';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { McpDocsServer } from '../src/mcp/server.js';
-import { LocalSearchIndexer } from '../src/providers/indexers/local-search-indexer.js';
 import { buildSkillsArtifact } from '../src/skills/packager.js';
 import type { ProcessedDoc, SkillsArtifact } from '../src/types/index.js';
+import { buildTestBundle } from './helpers/bundle.js';
 
 // Indexer and server progress logs are expected here; keep test output readable.
 beforeAll(() => {
@@ -39,25 +39,14 @@ const docs: ProcessedDoc[] = [
 ];
 
 async function buildServer(skills?: SkillsArtifact) {
-  const indexer = new LocalSearchIndexer();
-  await indexer.initialize({
-    baseUrl: 'https://docs.example.com',
-    serverName: 'example-docs',
-    serverVersion: '2.0.0',
-    outputDir: '/tmp',
-  });
-  await indexer.indexDocuments(docs);
-  const artifacts = await indexer.finalize();
-
-  return new McpDocsServer({
+  const artifacts = await buildTestBundle(docs, {
     name: 'example-docs',
     version: '2.0.0',
     baseUrl: 'https://docs.example.com',
-    instructions: 'Search first.',
-    docs: artifacts.get('docs.json') as Record<string, ProcessedDoc>,
-    searchIndexData: artifacts.get('search-index.json') as Record<string, unknown>,
     skills,
   });
+
+  return new McpDocsServer({ artifacts, instructions: 'Search first.' });
 }
 
 interface Wire {

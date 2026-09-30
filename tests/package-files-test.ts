@@ -27,6 +27,10 @@ describe('published package contents', () => {
     expect(paths).toContain('migrations/1.x-2.0.0.md');
   });
 
+  it('includes the 2.x -> 3.0 guide for the configs deprecated in 2.2', () => {
+    expect(paths).toContain('migrations/2.x-3.0.0.md');
+  });
+
   it('points errors at a migration guide that exists', () => {
     const relative = MIGRATION_GUIDE.split('/blob/main/')[1]!;
     expect(existsSync(new URL(`../${relative}`, import.meta.url))).toBe(true);

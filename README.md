@@ -39,26 +39,19 @@ module.exports = {
 
 ### 2. Create the API Endpoint
 
-The MCP server runs on any web-standard serverless or edge runtime — Cloudflare Workers, modern Netlify functions, Vercel Edge, Deno, Bun. Import the build artifacts and pass them to `createWebRequestHandler`, which returns a standard `(request: Request) => Promise<Response>`. (These runtimes can't read the filesystem, so the data is imported as modules rather than loaded from disk.)
+The MCP server runs on any web-standard serverless or edge runtime — Cloudflare Workers, modern Netlify functions, Vercel Edge, Deno, Bun. Import the artifact bundle the build writes (`build/mcp/bundle.json`) and pass it to `createWebRequestHandler`, which returns a standard `(request: Request) => Promise<Response>`. (These runtimes can't read the filesystem, so the bundle is imported as a module rather than loaded from disk.)
 
 ```javascript snippet=readme/snippet-06.js
 import { createWebRequestHandler } from 'docusaurus-plugin-mcp-server/adapters';
-import docs from '../build/mcp/docs.json';
-import searchIndex from '../build/mcp/search-index.json';
-import skills from '../build/mcp/skills.json';
+import bundle from '../build/mcp/bundle.json';
 
 export default {
-  fetch: createWebRequestHandler({
-    docs,
-    searchIndexData: searchIndex,
-    skills,
-    name: 'my-docs',
-    baseUrl: 'https://docs.example.com',
-  }),
+  // Name, version, and site URL come from the build; pass them here to override.
+  fetch: createWebRequestHandler({ artifacts: bundle }),
 };
 ```
 
-`skills` is optional. Leave it out to serve no [skills](#serving-agent-skills-over-mcp).
+The bundle holds the documents, the search index, and the [skills](#serving-agent-skills-over-mcp) (when enabled), so there's nothing else to wire up. A stale or malformed bundle fails with a message saying how to fix it, both on requests and on `GET` (the status endpoint).
 
 The `export default { fetch }` form works on Cloudflare Workers, Deno, and Bun. Other runtimes use their own entry convention (e.g. modern Netlify functions `export default async (request) => Response`) — the handler is identical, only the export wrapper differs.
 
@@ -212,7 +205,7 @@ mcp-skills/
         └── v1-to-v2.md
 ```
 
-At build time the plugin validates every skill (frontmatter `name` must match the directory name; at most 512 files and 16 MiB per skill), precomputes SHA-256 digests, and writes `build/mcp/skills.json`. Invalid skills fail the build with a `SkillValidationError`. Symlinks inside a skill are skipped, and bundled scripts (`.sh`, `.py`, `.js`, ...) are packaged with a warning. Pass it to the handler as `skills` (web) or `skillsPath` (Node). An author skill named `docs-research` replaces the built-in one. If you copy the built-in skill, replace its placeholders (`{{siteDocs}}`, `{{siteSummary}}`, `{{siteMap}}`) with your own wording: they're only filled in for the built-in copy. Set `skills: { builtin: false, dir: '...' }` to ship only your own, or `skills: false` to turn skills off.
+At build time the plugin validates every skill (frontmatter `name` must match the directory name; at most 512 files and 16 MiB per skill), precomputes SHA-256 digests, and writes `build/mcp/skills.json`. Invalid skills fail the build with a `SkillValidationError`. Symlinks inside a skill are skipped, and bundled scripts (`.sh`, `.py`, `.js`, ...) are packaged with a warning. The skills are part of the artifact bundle, so the handler serves them with no extra config. An author skill named `docs-research` replaces the built-in one. If you copy the built-in skill, replace its placeholders (`{{siteDocs}}`, `{{siteSummary}}`, `{{siteMap}}`) with your own wording: they're only filled in for the built-in copy. Set `skills: { builtin: false, dir: '...' }` to ship only your own, or `skills: false` to turn skills off.
 
 At runtime the server:
 
@@ -265,7 +258,7 @@ Build-time options control artifact generation and the install-button URL (`serv
 
 ## Search
 
-The built-in `'local'` search needs no external service. At build time it writes `search-index.json`; at runtime `docs_search` answers from that file.
+The built-in `'local'` search needs no external service. At build time it adds a search index to the artifact bundle; at runtime `docs_search` answers from it.
 
 Results are ranked with [BM25+](https://en.wikipedia.org/wiki/Okapi_BM25) over each page's title, route, headings, description, and body:
 
@@ -278,9 +271,7 @@ Tokenization and stemming are fixed, so the index built at `docusaurus build` al
 
 ```javascript snippet=readme/snippet-21.js
 createWebRequestHandler({
-  docs,
-  searchIndexData: searchIndex,
-  name: 'my-docs',
+  artifacts: bundle,
   // Defaults: title 3, slug 3, headings 2, description 1.5, content 1
   localSearch: { fieldBoosts: { headings: 3 } },
 });
@@ -294,11 +285,12 @@ The built-in search is tuned for English. For other languages, or to use a hoste
 
 ```javascript snippet=readme/snippet-22.js
 import { loadSearchProvider, evaluateSearch } from 'docusaurus-plugin-mcp-server';
+import { readArtifactBundle } from 'docusaurus-plugin-mcp-server/adapters/node';
 
 const provider = await loadSearchProvider('local');
 await provider.initialize(
   { baseUrl: 'https://docs.example.com', serverName: 'eval', serverVersion: '0', outputDir: '' },
-  { docsPath: 'build/mcp/docs.json', indexPath: 'build/mcp/search-index.json' }
+  { bundle: await readArtifactBundle('build/mcp') }
 );
 
 const report = await evaluateSearch(provider, [
@@ -386,10 +378,12 @@ export default class GleanSearchProvider implements SearchProvider {
 }
 ```
 
+`initialize` receives the artifact bundle as `initData.bundle`: the documents, the search index (if an indexer produced one), and any indexer extras. So a provider can read what its indexer wrote without touching the filesystem. `getDocument` and `getDocCount` are optional: without them, `docs_fetch` and the status endpoint use the bundle's documents.
+
 ### Configuring Custom Providers
 
 ```javascript snippet=readme/snippet-15.js
-// docusaurus.config.js
+// docusaurus.config.js: build time
 module.exports = {
   plugins: [
     [
@@ -397,45 +391,43 @@ module.exports = {
       {
         // Run both the built-in local search indexer and a custom one
         indexers: ['local', './my-algolia-indexer.js'],
-        // Use a custom search provider at runtime
-        search: '@myorg/glean-search',
       },
     ],
   ],
 };
+
+// worker.js: runtime. The search provider is chosen where the server runs.
+import GleanSearchProvider from '@myorg/glean-search';
+
+createWebRequestHandler({ artifacts: bundle, search: new GleanSearchProvider() });
 ```
 
 ## Server Configuration
 
-These options apply to `createWebRequestHandler`, `createNodeServer`, and `createNodeHandler` — where the MCP server actually runs. They are **not** `McpServerPluginOptions`; the Docusaurus plugin only builds `docs.json` and the search index at build time.
+These options apply to `McpDocsServer`, `createWebRequestHandler`, `createNodeServer`, and `createNodeHandler`: where the MCP server actually runs. They are **not** `McpServerPluginOptions`; the Docusaurus plugin only builds the artifact bundle.
 
 | Option | Type | Required | Description |
 |--------|------|----------|-------------|
-| `docsPath` | `string` | Yes* | Path to `docs.json` |
-| `indexPath` | `string` | Yes* | Path to `search-index.json` |
-| `docs` | `object` | Yes* | Pre-loaded docs (web handler) |
-| `searchIndexData` | `object` | Yes* | Pre-loaded search index (web handler) |
-| `skillsPath` | `string` | No | Path to `skills.json` (file mode). Omit to serve no skills |
-| `skills` | `object` | No | Pre-loaded `skills.json` (data mode). Omit to serve no skills |
-| `name` | `string` | Yes | Server name |
-| `version` | `string` | No | Server version |
-| `baseUrl` | `string` | No | Base URL for full page URLs in responses |
+| `artifacts` | `object` | Yes* | The artifact bundle: the contents of `build/mcp/bundle.json` |
+| `artifactsDir` | `string` | Yes* | Directory holding the bundle, e.g. `./build/mcp` (`createNodeServer`/`createNodeHandler` only) |
+| `name` | `string` | No | Server name. Default: the plugin's `server.name` from the build |
+| `version` | `string` | No | Server version. Default: the plugin's `server.version` from the build |
+| `baseUrl` | `string` | No | Base URL for full page URLs in responses. Default: the site URL from the build |
 | `instructions` | `string` | No | Instructions describing how to use the server, surfaced to MCP clients in the `server/discover` (2026-07-28) or `initialize` (2025-era) result. When skills are served, their URIs are appended |
 | `tools` | `object` | No | Per-tool overrides. Supports `docs_search.description` and `docs_fetch.description` to customize tool descriptions |
 | `search` | `string \| SearchProvider` | No | Search provider. Default: the built-in `'local'` search |
 | `localSearch` | `{ fieldBoosts?: {...} }` | No | Field boosts for the built-in search. See [Search](#search) |
 
-*Use file paths (`createNodeServer`, local dev) or pre-loaded data (`createWebRequestHandler`, serverless/edge).
+\*Pass `artifacts` (edge and serverless, or `McpDocsServer` directly) or `artifactsDir` (Node). In Node, `readArtifactBundle(dir)` from `docusaurus-plugin-mcp-server/adapters/node` gives you the `artifacts` value.
+
+The 2.0/2.1 configs (`docsPath`/`indexPath`/`skillsPath`, or `docs`/`searchIndexData`/`skills` with a required `name`) still work through 2.x, but are deprecated and will be removed in 3.0.
 
 Example with extended configuration:
 
 ```javascript
 export default {
   fetch: createWebRequestHandler({
-    docs,
-    searchIndexData: searchIndex,
-    name: 'my-docs',
-    baseUrl: 'https://docs.example.com',
+    artifacts: bundle,
     instructions: 'Search the Acme product docs. Use docs_search to find pages, then docs_fetch for full content.',
     tools: {
       docs_search: { description: 'Search the Acme product documentation.' },
@@ -455,8 +447,8 @@ npx docusaurus-mcp-verify
 
 This checks that:
 
-- All required files exist (`docs.json`, `search-index.json`, `manifest.json`)
-- Document structure is valid
+- The artifact bundle reads and validates (`bundle.json`, or the per-file layout from 2.0/2.1 builds, with a warning)
+- It has a search index for the built-in local search
 - The MCP server can initialize and load the content
 
 You can specify a custom build directory, and pass `--output-dir` if you changed the plugin's `outputDir` option:
@@ -476,8 +468,7 @@ MCP directory:   /path/to/your/project/build/mcp
 
 📁 Checking build output...
    ✓ Found 42 documents
-   ✓ All required files present
-   ✓ File structure valid
+   ✓ Artifact bundle is valid
 
 🚀 Testing MCP server...
    ✓ Server "my-docs" initialized with 42 documents
@@ -554,10 +545,7 @@ Run a local MCP server for testing using the built-in Node adapter:
 import { createNodeServer } from 'docusaurus-plugin-mcp-server/adapters/node';
 
 createNodeServer({
-  docsPath: './build/mcp/docs.json',
-  indexPath: './build/mcp/search-index.json',
-  skillsPath: './build/mcp/skills.json',
-  name: 'my-docs',
+  artifactsDir: './build/mcp',
   baseUrl: 'http://localhost:3000',
 }).listen(3456, () => {
   console.log('MCP server at http://localhost:3456');
@@ -642,11 +630,18 @@ const serverUrl = resolveServerUrl({
 
 ```javascript snippet=readme/snippet-18.js
 import { createWebRequestHandler } from 'docusaurus-plugin-mcp-server/adapters';
-import { createNodeServer, createNodeHandler } from 'docusaurus-plugin-mcp-server/adapters/node';
+import {
+  createNodeServer,
+  createNodeHandler,
+  readArtifactBundle,
+} from 'docusaurus-plugin-mcp-server/adapters/node';
 ```
 
 - `createNodeServer(options)` — Creates a complete Node.js HTTP server for local development. Returns an `http.Server` ready to `.listen()`.
 - `createNodeHandler(options)` — Creates a request handler function compatible with `http.createServer()`. Use this when you need to integrate with an existing server.
+- `readArtifactBundle(dir)` — Reads and validates the artifact bundle in a build directory (`bundle.json`, or the 2.0/2.1 per-file layout). Pass the result as `artifacts` to `McpDocsServer`, or as `initData.bundle` to a search provider you drive yourself.
+
+The `ArtifactBundle` type is exported from all three entry points.
 
 ### Theme Exports
 
@@ -666,6 +661,10 @@ import {
 - `createDocsRegistry(config)` — Creates a pre-configured `MCPConfigRegistry` for documentation servers.
 - `createDocsRegistryOptions(config)` — Returns registry options without creating the registry.
 - `McpConfig` — Type for `{ serverUrl: string; serverName: string }`.
+
+## Moving off the deprecated server configs (2.2)
+
+2.2 changes nothing you have to act on. It adds `build/mcp/bundle.json` and the `artifacts` / `artifactsDir` server options, and deprecates the file (`docsPath`, `indexPath`, `skillsPath`) and pre-loaded data (`docs`, `searchIndexData`, `skills`) configs. Those still work through 2.x and are removed in 3.0. [migrations/2.x-3.0.0.md](migrations/2.x-3.0.0.md) has the before/after code and a checklist for an agent to run.
 
 ## Upgrading to 2.0
 

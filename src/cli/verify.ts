@@ -67,8 +67,7 @@ async function main(): Promise<void> {
   }
 
   console.log(`   ✓ Found ${verifyResult.docsFound} documents`);
-  console.log('   ✓ All required files present');
-  console.log('   ✓ File structure valid');
+  console.log('   ✓ Artifact bundle is valid');
 
   // Test server
   console.log('');

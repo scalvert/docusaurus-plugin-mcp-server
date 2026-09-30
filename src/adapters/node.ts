@@ -7,11 +7,7 @@
  * ```typescript
  * import { createNodeServer } from 'docusaurus-plugin-mcp-server/adapters/node';
  *
- * const server = createNodeServer({
- *   docsPath: './build/mcp/docs.json',
- *   indexPath: './build/mcp/search-index.json',
- *   name: 'my-docs',
- * });
+ * const server = createNodeServer({ artifactsDir: './build/mcp' });
  *
  * server.listen(3456, () => {
  *   console.log('MCP server running at http://localhost:3456');
@@ -21,18 +17,27 @@
 
 import { createServer, type Server, type IncomingMessage, type ServerResponse } from 'node:http';
 import { McpDocsServer } from '../mcp/server.js';
-import type { McpServerConfig } from '../types/index.js';
+import type { McpServerBundleConfig, McpServerConfig } from '../types/index.js';
+import { readArtifactBundle } from '../artifacts/node.js';
 import { getCorsHeaders } from './cors.js';
 import { ConfigurationError, internalErrorBody } from '../errors.js';
 
 /**
+ * Server config that reads the artifact bundle from a directory, such as
+ * `build/mcp`. Relative paths resolve against the working directory.
+ */
+export interface McpServerBundleDirConfig extends Omit<McpServerBundleConfig, 'artifacts'> {
+  /** Directory holding the built artifact bundle (`bundle.json`, or the 2.0/2.1 per-file layout) */
+  artifactsDir: string;
+}
+
+/**
  * Options for the Node.js MCP server.
  *
- * Accepts the same config as {@link McpDocsServer} — either file paths
- * (`docsPath`/`indexPath`, the usual local-dev case) or pre-loaded
- * `docs`/`searchIndexData` — plus a CORS override.
+ * Accepts `{ artifactsDir }` (the usual local-dev case), or any
+ * {@link McpDocsServer} config, plus a CORS override.
  */
-export type NodeServerOptions = McpServerConfig & {
+export type NodeServerOptions = (McpServerBundleDirConfig | McpServerConfig) & {
   /**
    * CORS origin to allow. Defaults to '*' (all origins).
    * Set to a specific origin or false to disable CORS headers.
@@ -48,11 +53,20 @@ export type NodeServerOptions = McpServerConfig & {
  */
 export function createNodeHandler(options: NodeServerOptions) {
   const { corsOrigin = '*', ...config } = options;
-  let server: McpDocsServer | null = null;
+  let server: Promise<McpDocsServer> | null = null;
 
-  function getServer(): McpDocsServer {
+  // Created once. A bundle that fails to read stays failed, like a server
+  // whose initialize() failed: restart after rebuilding.
+  function getServer(): Promise<McpDocsServer> {
     if (!server) {
-      server = new McpDocsServer(config);
+      if ('artifactsDir' in config) {
+        const { artifactsDir, ...rest } = config;
+        server = readArtifactBundle(artifactsDir).then(
+          (artifacts) => new McpDocsServer({ ...rest, artifacts })
+        );
+      } else {
+        server = Promise.resolve(new McpDocsServer(config));
+      }
     }
     return server;
   }
@@ -78,7 +92,7 @@ export function createNodeHandler(options: NodeServerOptions) {
     // Handle GET requests for health check
     if (req.method === 'GET') {
       try {
-        const mcpServer = getServer();
+        const mcpServer = await getServer();
         // Initialize so a broken deployment shows up in the health check.
         await mcpServer.initialize();
         const status = await mcpServer.getStatus();
@@ -113,7 +127,7 @@ export function createNodeHandler(options: NodeServerOptions) {
     // Parse request body
     try {
       const body = await parseRequestBody(req);
-      const mcpServer = getServer();
+      const mcpServer = await getServer();
       await mcpServer.handleHttpRequest(req, res, body);
     } catch (error) {
       console.error('[MCP] Request error:', error);
