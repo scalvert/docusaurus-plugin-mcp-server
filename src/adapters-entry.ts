@@ -9,4 +9,9 @@
  * `docusaurus-plugin-mcp-server/adapters/node`.
  */
 
-export { createWebRequestHandler, type WebRequestAdapterConfig } from './adapters/web-request.js';
+export {
+  createWebRequestHandler,
+  type WebRequestHandlerConfig,
+  type WebRequestAdapterConfig,
+} from './adapters/web-request.js';
+export type { ArtifactBundle } from './artifacts/bundle.js';

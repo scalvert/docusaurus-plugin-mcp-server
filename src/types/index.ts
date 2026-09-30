@@ -1,3 +1,4 @@
+import type { ArtifactBundle } from '../artifacts/bundle.js';
 import type { SearchProvider } from '../providers/types.js';
 
 /** Page fields the built-in local search indexes. `slug` is the route path as words. */
@@ -272,11 +273,14 @@ export interface McpServerToolsConfig {
  * Common MCP server configuration shared by all loading modes
  */
 export interface McpServerBaseConfig {
-  /** Server name */
+  /** Server name. With `artifacts`, defaults to the name the site was built with. */
   name: string;
-  /** Server version */
+  /** Server version. With `artifacts`, defaults to the version the site was built with. */
   version?: string;
-  /** Base URL for constructing full page URLs (e.g., https://docs.example.com) */
+  /**
+   * Base URL for constructing full page URLs (e.g., https://docs.example.com).
+   * With `artifacts`, defaults to the site URL the site was built with.
+   */
   baseUrl?: string;
   /**
    * Search provider. Default: 'local'.
@@ -304,7 +308,31 @@ export interface McpServerBaseConfig {
 }
 
 /**
+ * MCP Server configuration for a built artifact bundle: the contents of
+ * `build/mcp/bundle.json`. The recommended config for every runtime.
+ *
+ * @example
+ * import bundle from '../build/mcp/bundle.json';
+ * new McpDocsServer({ artifacts: bundle });
+ */
+export interface McpServerBundleConfig extends Omit<McpServerBaseConfig, 'name'> {
+  /**
+   * The artifact bundle: the parsed contents of `bundle.json`, or the result
+   * of `readArtifactBundle()` from `docusaurus-plugin-mcp-server/adapters/node`.
+   * Validated on `initialize()`; a stale or malformed bundle fails with a
+   * `ConfigurationError` that says how to fix it.
+   */
+  artifacts: ArtifactBundle | object;
+  /** Server name. Defaults to the name the site was built with. */
+  name?: string;
+}
+
+/**
  * MCP Server configuration for file-based loading
+ *
+ * @deprecated Since 2.2. Use `{ artifactsDir: 'build/mcp' }` with the Node
+ * adapter, or `{ artifacts: await readArtifactBundle('build/mcp') }`.
+ * Removed in 3.0.
  */
 export interface McpServerFileConfig extends McpServerBaseConfig {
   /** Path to docs.json file */
@@ -317,6 +345,9 @@ export interface McpServerFileConfig extends McpServerBaseConfig {
 
 /**
  * MCP Server configuration for pre-loaded data (e.g., Cloudflare Workers)
+ *
+ * @deprecated Since 2.2. Import `build/mcp/bundle.json` and pass
+ * `{ artifacts: bundle }`. Removed in 3.0.
  */
 export interface McpServerDataConfig extends McpServerBaseConfig {
   /** Pre-loaded docs data */
@@ -328,9 +359,19 @@ export interface McpServerDataConfig extends McpServerBaseConfig {
 }
 
 /**
- * MCP Server configuration - supports both file-based and pre-loaded data modes
+ * The 2.0/2.1 server configuration: file-based or pre-loaded data.
+ *
+ * @deprecated Since 2.2. Use {@link McpServerBundleConfig}, or
+ * {@link McpDocsServerConfig} for "any config McpDocsServer accepts".
+ * Removed in 3.0.
  */
 export type McpServerConfig = McpServerFileConfig | McpServerDataConfig;
+
+/**
+ * Any configuration `McpDocsServer` accepts: {@link McpServerBundleConfig}
+ * (recommended) or the deprecated 2.0/2.1 configs.
+ */
+export type McpDocsServerConfig = McpServerBundleConfig | McpServerConfig;
 
 /**
  * Internal representation of the docs index

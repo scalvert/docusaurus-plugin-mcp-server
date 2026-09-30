@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, vi } 
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import type { LoadContext, Plugin } from '@docusaurus/types';
 import mcpServerPlugin from '../src/plugin/docusaurus-plugin.js';
 import type { McpServerPluginOptions } from '../src/types/index.js';
@@ -74,6 +75,38 @@ describe('docusaurus-mcp-verify against real plugin output', () => {
 
     const server = await testServer({ buildDir, outputDir: 'agents/mcp' });
     expect(server.success).toBe(true);
+  });
+
+  it('accepts a 2.0/2.1 per-file build, with a warning to rebuild', async () => {
+    await runBuild({ skills: false });
+    await fs.rm(path.join(buildDir, 'mcp', 'bundle.json'));
+
+    const result = await verifyBuild({ buildDir });
+    expect(result.success).toBe(true);
+    expect(result.warnings).toEqual([expect.stringMatching(/bundle.json not found.*predates/)]);
+    expect((await testServer({ buildDir })).success).toBe(true);
+  });
+
+  it('fails a build without a search index', async () => {
+    const custom = path.join(siteDir, 'algolia.mjs');
+    await fs.writeFile(
+      custom,
+      'export default class { name = "algolia"; async initialize() {} async indexDocuments() {} async finalize() { return new Map(); } }'
+    );
+    await runBuild({ indexers: [pathToFileURL(custom).href], skills: false });
+
+    const result = await verifyBuild({ buildDir });
+    expect(result.success).toBe(false);
+    expect(result.errors.join('\n')).toMatch(/no search index/);
+  });
+
+  it('reports a corrupt bundle with the reason', async () => {
+    await runBuild({ skills: false });
+    await fs.writeFile(path.join(buildDir, 'mcp', 'bundle.json'), '{"formatVersion": 99}');
+
+    const result = await verifyBuild({ buildDir });
+    expect(result.success).toBe(false);
+    expect(result.errors.join('\n')).toMatch(/formatVersion 99.*Upgrade/);
   });
 
   it('points at --output-dir when the default directory is missing', async () => {

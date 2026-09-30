@@ -16,7 +16,21 @@ import mcpServerPluginDefault, {
   loadSearchProvider,
 } from 'docusaurus-plugin-mcp-server';
 import { z } from 'zod';
-import { createNodeHandler } from 'docusaurus-plugin-mcp-server/adapters/node';
+import {
+  createNodeHandler,
+  readArtifactBundle,
+  type ArtifactBundle,
+  type NodeAdapterOptions,
+} from 'docusaurus-plugin-mcp-server/adapters/node';
+import type {
+  ArtifactBundle as EdgeArtifactBundle,
+  WebRequestHandlerConfig,
+} from 'docusaurus-plugin-mcp-server/adapters';
+import type {
+  ArtifactBundle as MainArtifactBundle,
+  McpDocsServerConfig,
+  McpServerBundleConfig,
+} from 'docusaurus-plugin-mcp-server';
 import type { LoadContext } from '@docusaurus/types';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import fs from 'node:fs/promises';
@@ -55,14 +69,41 @@ describe('public API surface', () => {
       /'flexsearch' search provider was replaced.*migrations\/1\.x-2\.0\.0\.md/
     );
 
-    const server = new McpDocsServer({
-      name: 'x',
-      docs: {},
-      searchIndexData: {},
-      flexsearch: {},
-    } as never);
+    const server = new McpDocsServer({ artifacts: {}, flexsearch: {} } as never);
     await expect(server.initialize()).rejects.toThrow(/'flexsearch' server option was removed/);
     await expect(server.initialize()).rejects.toBeInstanceOf(ConfigurationError);
+  });
+
+  it('exports the artifact bundle type from every entry, and readArtifactBundle from Node', async () => {
+    expect(typeof readArtifactBundle).toBe('function');
+    // The three type exports are the same type.
+    const check = (bundle: ArtifactBundle): [EdgeArtifactBundle, MainArtifactBundle] => [
+      bundle,
+      bundle,
+    ];
+    expect(typeof check).toBe('function');
+
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'mcp-exports-'));
+    try {
+      await expect(readArtifactBundle(dir)).rejects.toBeInstanceOf(ConfigurationError);
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('McpServerBundleConfig needs only artifacts', () => {
+    const config: McpServerBundleConfig = { artifacts: {} };
+    expect(new McpDocsServer(config)).toBeInstanceOf(McpDocsServer);
+  });
+
+  it('exports config unions that take the bundle or the deprecated shapes', () => {
+    const server: McpDocsServerConfig[] = [
+      { artifacts: {} },
+      { name: 'x', docs: {}, searchIndexData: {} },
+    ];
+    const web: WebRequestHandlerConfig[] = [{ artifacts: {}, corsOrigin: '*' }];
+    const node: NodeAdapterOptions[] = [{ artifactsDir: 'build/mcp', corsOrigin: false }];
+    expect([server.length, web.length, node.length]).toEqual([2, 1, 1]);
   });
 
   it('evaluateSearch is exported', () => {
@@ -119,7 +160,7 @@ describe('public API surface', () => {
   });
 
   it('createNodeHandler returns a handler that answers CORS preflight with 204', async () => {
-    const handler = createNodeHandler({ name: 'test', docs: {}, searchIndexData: {} });
+    const handler = createNodeHandler({ artifactsDir: 'build/mcp' });
     expect(typeof handler).toBe('function');
 
     const headers: Record<string, string> = {};

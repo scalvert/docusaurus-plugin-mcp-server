@@ -37,14 +37,28 @@ export class LocalSearchProvider implements SearchProvider {
       );
     }
 
-    // Pre-loaded data mode (serverless and edge runtimes)
+    // Artifact bundle (every McpDocsServer config since 2.2)
+    if (initData.bundle) {
+      if (!initData.bundle.searchIndex) {
+        throw new ConfigurationError(
+          "[MCP] The artifact bundle has no search index. The built-in local search needs the 'local' " +
+            "indexer at build time (the default). Add it back to the plugin's indexers, or pass a custom " +
+            "search provider with the server's 'search' option."
+        );
+      }
+      this.docs = initData.bundle.docs;
+      this.searchIndex = loadLocalSearchIndex(initData.bundle.searchIndex);
+      return;
+    }
+
+    // Pre-loaded data mode, for direct callers (deprecated)
     if (initData.docs && initData.indexData) {
       this.docs = initData.docs;
       this.searchIndex = loadLocalSearchIndex(initData.indexData);
       return;
     }
 
-    // File-based mode (Node.js). `fs` is imported dynamically so this module
+    // File-based mode, for direct callers (deprecated). `fs` is imported dynamically so this module
     // pulls in no Node built-ins on the web-standard/edge (data-mode) path.
     if (initData.docsPath && initData.indexPath) {
       const { readFile } = await import('node:fs/promises');

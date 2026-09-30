@@ -85,29 +85,34 @@ const CORE_OWNED = new Set<string>([
 const MEMBER_FILES = new Set<string>(Object.values(ARTIFACT_FILES).map((f) => f.toLowerCase()));
 
 /**
- * Where an extra lands on disk, as a comparison key: `/` separators and
- * lowercase, so names that collide on Windows or macOS compare equal.
+ * Where an extra lands on disk, as a comparison key: lowercase, so names that
+ * collide on case-insensitive filesystems (Windows, macOS) compare equal.
+ * Extras filenames are ASCII-only, so this matches filesystem case folding.
  */
 function extraKey(filename: string): string {
-  return filename.replace(/\\/g, '/').toLowerCase();
+  return filename.toLowerCase();
 }
 
 /**
- * Throws on an extras filename that could escape the output directory or
- * overwrite a bundle member (`./manifest.json`, `Manifest.json`, ...).
+ * One path segment of an extras filename: ASCII letters, digits, `.`, `_`,
+ * `-`; not starting or ending with `.`. This leaves out everything that
+ * resolves differently across filesystems: `..`, `.`, `\`, `:` (drive letters,
+ * NTFS streams), trailing dots or spaces (dropped by Windows), and non-ASCII
+ * (case-folded differently by APFS and NTFS).
+ */
+const EXTRA_SEGMENT = /^[A-Za-z0-9_-](?:[A-Za-z0-9._-]*[A-Za-z0-9_-])?$/;
+
+/**
+ * Throws on an extras filename that could escape the output directory,
+ * resolve differently per OS, or overwrite a bundle member
+ * (`./manifest.json`, `Manifest.json`, ...).
  */
 function assertExtraFilename(indexer: string, filename: string): void {
-  const segments = filename.split(/[/\\]/);
-  if (
-    filename.length === 0 ||
-    filename.startsWith('/') ||
-    filename.startsWith('\\') ||
-    /^[A-Za-z]:/.test(filename) ||
-    segments.some((segment) => segment === '..' || segment === '.' || segment === '')
-  ) {
+  if (!filename.split('/').every((segment) => EXTRA_SEGMENT.test(segment))) {
     throw new ConfigurationError(
       `[MCP] Indexer "${indexer}" returned an invalid artifact filename "${filename}". ` +
-        'Use a relative path inside the MCP output directory, such as "my-index.json".'
+        'Use a relative path of ASCII letters, digits, ".", "_", and "-", with "/" between ' +
+        'directories, such as "my-index.json" or "algolia/records.json".'
     );
   }
   if (MEMBER_FILES.has(extraKey(filename))) {

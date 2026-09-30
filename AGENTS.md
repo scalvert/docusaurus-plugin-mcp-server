@@ -35,8 +35,9 @@ This is a Docusaurus plugin that exposes documentation as an MCP (Model Context 
 
 **Runtime** (`src/mcp/`, `src/adapters/`): Serverless functions serve MCP requests:
 - `McpDocsServer` class wraps the MCP TypeScript SDK v2 (`@modelcontextprotocol/server`). It serves protocol 2026-07-28 statelessly and routes 2025-era (`initialize`) requests to a stateless JSON-response transport on the same endpoint
-- `createWebRequestHandler` — one generic web-standard `(Request) => Response` handler for any serverless/edge runtime (pre-loaded data)
-- `createNodeServer`/`createNodeHandler` — local-dev server over Node `http` (file-based)
+- Every config resolves to one artifact bundle: `artifacts` (the contents of `bundle.json`), or `artifactsDir` in the Node adapter. The file (`docsPath`/`indexPath`) and pre-loaded data (`docs`/`searchIndexData`) configs are deprecated since 2.2, removed in 3.0 (`migrations/2.x-3.0.0.md`), and covered only by `tests/legacy-config-test.ts`
+- `createWebRequestHandler` — one generic web-standard `(Request) => Response` handler for any serverless/edge runtime
+- `createNodeServer`/`createNodeHandler` — local-dev server over Node `http`; takes `artifactsDir`
 
 ### Entry Points
 
@@ -74,7 +75,7 @@ Ranking changes must keep `tests/search-ranking-test.ts` passing; its thresholds
 
 ## Testing
 
-- Unit tests: `tests/*.ts` using Vitest. `tests/protocol-eras-test.ts` drives the v2 client (`@modelcontextprotocol/client`) in both 2026-07-28 and 2025-era modes
+- Unit tests: `tests/*.ts` using Vitest. Build servers in tests with `buildTestBundle` from `tests/helpers/bundle.ts`, not by reading artifact filenames. `tests/protocol-eras-test.ts` drives the v2 client (`@modelcontextprotocol/client`) in both 2026-07-28 and 2025-era modes
 - Integration tests: `tests/playwright/` using `@gleanwork/mcp-server-tester` (a 2025-era client, so it also guards backward compatibility)
   - `mcp.spec.ts` - conformance checks and protocol behavior
   - `evals.spec.ts` + `evals/*.json` - direct-mode eval datasets for tool output; update snapshots with `npm run test:mcp -- --update-snapshots`

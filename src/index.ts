@@ -9,6 +9,8 @@ export type {
   SearchResult,
   McpManifest,
   McpServerConfig,
+  McpDocsServerConfig,
+  McpServerBundleConfig,
   McpServerFileConfig,
   McpServerDataConfig,
   DocsSearchParams,
@@ -22,6 +24,8 @@ export type {
 } from './types/index.js';
 
 export { DEFAULT_PLUGIN_OPTIONS } from './types/index.js';
+
+export type { ArtifactBundle } from './artifacts/bundle.js';
 
 export { resolveServerUrl } from './plugin/resolve-server-url.js';
 export type { ResolveServerUrlInput, ServerUrlBase } from './plugin/resolve-server-url.js';

@@ -102,20 +102,33 @@ async function main() {
     outputDir: '',
   });
   await indexer.indexDocuments(sampleDocsArray);
-  const artifacts = await indexer.finalize();
+  const indexerFiles = await indexer.finalize();
+  const skills = await buildSkillsArtifact({ builtin: true, siteTitle: 'Test Docs' });
+
+  // The artifact bundle `docusaurus build` would write for these documents,
+  // assembled in memory so the documents' markdown is exactly what the eval
+  // snapshots expect. The server validates it on startup.
+  const artifacts = {
+    formatVersion: 1,
+    manifest: {
+      serverName: 'test-docs',
+      version: '1.0.0',
+      buildTime: new Date().toISOString(),
+      docCount: sampleDocsArray.length,
+      baseUrl: BASE_URL,
+      indexers: ['local'],
+      skillCount: skills.skills.length,
+    },
+    docs: indexerFiles.get('docs.json'),
+    searchIndex: indexerFiles.get('search-index.json'),
+    skills,
+  };
 
   // Use the SHIPPED node adapter so integration tests exercise the real
   // routing/CORS/body handling consumers get, not a reimplementation. Pass the
-  // built artifacts as pre-loaded data — same as a serverless deploy — so no
-  // temp files are involved.
-  const server = createNodeServer({
-    name: 'test-docs',
-    version: '1.0.0',
-    baseUrl: BASE_URL,
-    docs: artifacts.get('docs.json'),
-    searchIndexData: artifacts.get('search-index.json'),
-    skills: await buildSkillsArtifact({ builtin: true, siteTitle: 'Test Docs' }),
-  });
+  // bundle in memory, as a serverless deploy imports bundle.json, so no temp
+  // files are involved.
+  const server = createNodeServer({ artifacts });
 
   server.listen(PORT, () => {
     console.log(`Test MCP server running on http://localhost:${PORT}`);

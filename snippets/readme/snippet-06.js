@@ -1,14 +1,7 @@
 import { createWebRequestHandler } from 'docusaurus-plugin-mcp-server/adapters';
-import docs from '../build/mcp/docs.json';
-import searchIndex from '../build/mcp/search-index.json';
-import skills from '../build/mcp/skills.json';
+import bundle from '../build/mcp/bundle.json';
 
 export default {
-  fetch: createWebRequestHandler({
-    docs,
-    searchIndexData: searchIndex,
-    skills,
-    name: 'my-docs',
-    baseUrl: 'https://docs.example.com',
-  }),
+  // Name, version, and site URL come from the build; pass them here to override.
+  fetch: createWebRequestHandler({ artifacts: bundle }),
 };

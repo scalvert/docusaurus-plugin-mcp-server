@@ -17,9 +17,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3456;
 
 const server = createNodeServer({
-  docsPath: path.join(__dirname, 'build/mcp/docs.json'),
-  indexPath: path.join(__dirname, 'build/mcp/search-index.json'),
-  name: 'example-docs',
+  artifactsDir: path.join(__dirname, 'build/mcp'),
   baseUrl: `http://localhost:${PORT}`,
 });
 

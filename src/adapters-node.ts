@@ -6,4 +6,12 @@
  * in Node built-ins (`http`, `fs`).
  */
 
-export { createNodeServer, createNodeHandler, type NodeServerOptions } from './adapters/node.js';
+export {
+  createNodeServer,
+  createNodeHandler,
+  type NodeAdapterOptions,
+  type NodeServerOptions,
+  type McpServerBundleDirConfig,
+} from './adapters/node.js';
+export { readArtifactBundle } from './artifacts/node.js';
+export type { ArtifactBundle } from './artifacts/bundle.js';

@@ -9,6 +9,8 @@ import fs from 'fs-extra';
 import path from 'path';
 import { parseArgs } from 'util';
 import { McpDocsServer } from '../mcp/server.js';
+import { ARTIFACT_FILES, type ArtifactBundle } from '../artifacts/bundle.js';
+import { readArtifactBundle } from '../artifacts/node.js';
 import { DEFAULT_PLUGIN_OPTIONS } from '../types/index.js';
 
 export interface VerifyOptions {
@@ -72,7 +74,8 @@ function mcpDirFor({ buildDir, outputDir = DEFAULT_PLUGIN_OPTIONS.outputDir }: V
 }
 
 /**
- * Verify the MCP build output
+ * Verify the MCP build output: the artifact bundle reads and validates, and
+ * has what the built-in local search needs.
  */
 export async function verifyBuild(options: VerifyOptions): Promise<VerifyResult> {
   const result: VerifyResult = {
@@ -81,88 +84,47 @@ export async function verifyBuild(options: VerifyOptions): Promise<VerifyResult>
     errors: [],
     warnings: [],
   };
+  const fail = (message: string) => {
+    result.errors.push(message);
+    result.success = false;
+    return result;
+  };
 
   const mcpDir = mcpDirFor(options);
 
   if (!(await fs.pathExists(mcpDir))) {
-    result.errors.push(`MCP directory not found: ${mcpDir}`);
+    fail(`MCP directory not found: ${mcpDir}`);
     result.errors.push('Did you run "npm run build" with the MCP plugin configured?');
     result.errors.push(
       'If you set the plugin\'s "outputDir" option, pass the same value with --output-dir.'
     );
-    result.success = false;
     return result;
   }
 
-  const requiredFiles = ['docs.json', 'search-index.json', 'manifest.json'];
-
-  for (const file of requiredFiles) {
-    const filePath = path.join(mcpDir, file);
-    if (!(await fs.pathExists(filePath))) {
-      result.errors.push(`Required file missing: ${filePath}`);
-      result.success = false;
-    }
-  }
-
-  if (!result.success) {
-    return result;
-  }
-
-  // Validate docs.json
+  let bundle: ArtifactBundle;
   try {
-    const docs = await fs.readJson(path.join(mcpDir, 'docs.json'));
-
-    if (typeof docs !== 'object' || docs === null) {
-      result.errors.push('docs.json is not a valid object');
-      result.success = false;
-    } else {
-      result.docsFound = Object.keys(docs).length;
-
-      if (result.docsFound === 0) {
-        result.warnings.push('docs.json contains no documents');
-      }
-
-      for (const [route, doc] of Object.entries(docs)) {
-        const d = doc as Record<string, unknown>;
-        if (!d.title || typeof d.title !== 'string') {
-          result.warnings.push(`Document ${route} is missing a title`);
-        }
-        if (!d.markdown || typeof d.markdown !== 'string') {
-          result.warnings.push(`Document ${route} is missing markdown content`);
-        }
-      }
-    }
+    bundle = await readArtifactBundle(mcpDir);
   } catch (error) {
-    result.errors.push(`Failed to parse docs.json: ${(error as Error).message}`);
-    result.success = false;
+    return fail((error as Error).message);
   }
 
-  // Validate search-index.json
-  try {
-    const indexData = await fs.readJson(path.join(mcpDir, 'search-index.json'));
-
-    if (typeof indexData !== 'object' || indexData === null) {
-      result.errors.push('search-index.json is not a valid object');
-      result.success = false;
-    }
-  } catch (error) {
-    result.errors.push(`Failed to parse search-index.json: ${(error as Error).message}`);
-    result.success = false;
+  if (!(await fs.pathExists(path.join(mcpDir, ARTIFACT_FILES.bundle)))) {
+    result.warnings.push(
+      `${ARTIFACT_FILES.bundle} not found: this build predates docusaurus-plugin-mcp-server 2.2. ` +
+        'Rebuild to get it; the per-file layout stops working in 3.0.'
+    );
   }
 
-  // Validate manifest.json (field names match McpManifest)
-  try {
-    const manifest = await fs.readJson(path.join(mcpDir, 'manifest.json'));
+  result.docsFound = Object.keys(bundle.docs).length;
+  if (result.docsFound === 0) {
+    result.warnings.push('The artifact bundle contains no documents');
+  }
 
-    if (!manifest.serverName || typeof manifest.serverName !== 'string') {
-      result.warnings.push('manifest.json is missing server name');
-    }
-    if (!manifest.version || typeof manifest.version !== 'string') {
-      result.warnings.push('manifest.json is missing server version');
-    }
-  } catch (error) {
-    result.errors.push(`Failed to parse manifest.json: ${(error as Error).message}`);
-    result.success = false;
+  if (!bundle.searchIndex) {
+    fail(
+      "The artifact bundle has no search index, which the built-in local search needs. Keep the 'local' " +
+        "indexer in the plugin's indexers (the default)."
+    );
   }
 
   return result;
@@ -172,23 +134,8 @@ export async function verifyBuild(options: VerifyOptions): Promise<VerifyResult>
  * Start an MCP server over the build output and check that it loads content.
  */
 export async function testServer(options: VerifyOptions): Promise<ServerTestResult> {
-  const mcpDir = mcpDirFor(options);
-
   try {
-    const manifest = await fs.readJson(path.join(mcpDir, 'manifest.json'));
-    const docs = await fs.readJson(path.join(mcpDir, 'docs.json'));
-    const searchIndexData = await fs.readJson(path.join(mcpDir, 'search-index.json'));
-    const skillsPath = path.join(mcpDir, 'skills.json');
-    const skills = (await fs.pathExists(skillsPath)) ? await fs.readJson(skillsPath) : undefined;
-
-    const server = new McpDocsServer({
-      name: manifest.serverName || 'test-docs',
-      version: manifest.version || '1.0.0',
-      ...(manifest.baseUrl ? { baseUrl: manifest.baseUrl } : {}),
-      docs,
-      searchIndexData,
-      skills,
-    });
+    const server = new McpDocsServer({ artifacts: await readArtifactBundle(mcpDirFor(options)) });
 
     await server.initialize();
     const status = await server.getStatus();
@@ -201,7 +148,7 @@ export async function testServer(options: VerifyOptions): Promise<ServerTestResu
       return { success: false, message: 'Server has no documents loaded' };
     }
 
-    const skillsNote = skills ? ` and ${status.skillCount} skill(s)` : '';
+    const skillsNote = status.skillCount > 0 ? ` and ${status.skillCount} skill(s)` : '';
     return {
       success: true,
       message: `Server "${status.name}" initialized with ${status.docCount} documents${skillsNote}`,

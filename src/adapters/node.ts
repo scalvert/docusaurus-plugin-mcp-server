@@ -7,11 +7,7 @@
  * ```typescript
  * import { createNodeServer } from 'docusaurus-plugin-mcp-server/adapters/node';
  *
- * const server = createNodeServer({
- *   docsPath: './build/mcp/docs.json',
- *   indexPath: './build/mcp/search-index.json',
- *   name: 'my-docs',
- * });
+ * const server = createNodeServer({ artifactsDir: './build/mcp' });
  *
  * server.listen(3456, () => {
  *   console.log('MCP server running at http://localhost:3456');
@@ -21,24 +17,44 @@
 
 import { createServer, type Server, type IncomingMessage, type ServerResponse } from 'node:http';
 import { McpDocsServer } from '../mcp/server.js';
-import type { McpServerConfig } from '../types/index.js';
+import type { McpServerBundleConfig, McpServerConfig } from '../types/index.js';
+import { readArtifactBundle } from '../artifacts/node.js';
 import { getCorsHeaders } from './cors.js';
 import { ConfigurationError, internalErrorBody } from '../errors.js';
 
 /**
- * Options for the Node.js MCP server.
- *
- * Accepts the same config as {@link McpDocsServer} — either file paths
- * (`docsPath`/`indexPath`, the usual local-dev case) or pre-loaded
- * `docs`/`searchIndexData` — plus a CORS override.
+ * Server config that reads the artifact bundle from a directory, such as
+ * `build/mcp`. Relative paths resolve against the working directory.
  */
-export type NodeServerOptions = McpServerConfig & {
+export interface McpServerBundleDirConfig extends Omit<McpServerBundleConfig, 'artifacts'> {
+  /** Directory holding the built artifact bundle (`bundle.json`, or the 2.0/2.1 per-file layout) */
+  artifactsDir: string;
+}
+
+interface NodeCorsOption {
   /**
    * CORS origin to allow. Defaults to '*' (all origins).
    * Set to a specific origin or false to disable CORS headers.
    */
   corsOrigin?: string | false;
-};
+}
+
+/**
+ * The 2.0/2.1 options for the Node.js MCP server: file paths or pre-loaded
+ * data, plus a CORS override.
+ *
+ * @deprecated Since 2.2. Pass `{ artifactsDir }` or `{ artifacts }` (see
+ * {@link NodeAdapterOptions}). Removed in 3.0.
+ */
+export type NodeServerOptions = McpServerConfig & NodeCorsOption;
+
+/**
+ * Options for the Node.js MCP server: `{ artifactsDir }` (the usual local-dev
+ * case) or `{ artifacts }`, plus a CORS override, or the deprecated
+ * {@link NodeServerOptions}.
+ */
+export type NodeAdapterOptions =
+  ((McpServerBundleDirConfig | McpServerBundleConfig) & NodeCorsOption) | NodeServerOptions;
 
 /**
  * Create a Node.js request handler for the MCP server.
@@ -46,13 +62,22 @@ export type NodeServerOptions = McpServerConfig & {
  * This returns a handler function compatible with `http.createServer()`.
  * For a complete server, use `createNodeServer()` instead.
  */
-export function createNodeHandler(options: NodeServerOptions) {
+export function createNodeHandler(options: NodeAdapterOptions) {
   const { corsOrigin = '*', ...config } = options;
-  let server: McpDocsServer | null = null;
+  let server: Promise<McpDocsServer> | null = null;
 
-  function getServer(): McpDocsServer {
+  // Created once. A bundle that fails to read stays failed, like a server
+  // whose initialize() failed: restart after rebuilding.
+  function getServer(): Promise<McpDocsServer> {
     if (!server) {
-      server = new McpDocsServer(config);
+      if ('artifactsDir' in config) {
+        const { artifactsDir, ...rest } = config;
+        server = readArtifactBundle(artifactsDir).then(
+          (artifacts) => new McpDocsServer({ ...rest, artifacts })
+        );
+      } else {
+        server = Promise.resolve(new McpDocsServer(config));
+      }
     }
     return server;
   }
@@ -78,7 +103,7 @@ export function createNodeHandler(options: NodeServerOptions) {
     // Handle GET requests for health check
     if (req.method === 'GET') {
       try {
-        const mcpServer = getServer();
+        const mcpServer = await getServer();
         // Initialize so a broken deployment shows up in the health check.
         await mcpServer.initialize();
         const status = await mcpServer.getStatus();
@@ -113,7 +138,7 @@ export function createNodeHandler(options: NodeServerOptions) {
     // Parse request body
     try {
       const body = await parseRequestBody(req);
-      const mcpServer = getServer();
+      const mcpServer = await getServer();
       await mcpServer.handleHttpRequest(req, res, body);
     } catch (error) {
       console.error('[MCP] Request error:', error);
@@ -159,7 +184,7 @@ export function createNodeHandler(options: NodeServerOptions) {
  *
  * This is the simplest way to run an MCP server locally for development.
  */
-export function createNodeServer(options: NodeServerOptions): Server {
+export function createNodeServer(options: NodeAdapterOptions): Server {
   const handler = createNodeHandler(options);
   return createServer(handler);
 }
