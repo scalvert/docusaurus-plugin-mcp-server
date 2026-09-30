@@ -452,10 +452,11 @@ This checks that:
 - Document structure is valid
 - The MCP server can initialize and load the content
 
-You can specify a custom build directory:
+You can specify a custom build directory, and pass `--output-dir` if you changed the plugin's `outputDir` option:
 
 ```bash
 npx docusaurus-mcp-verify ./custom-build
+npx docusaurus-mcp-verify ./custom-build --output-dir agents/mcp
 ```
 
 Example output:
@@ -464,6 +465,7 @@ Example output:
 🔍 MCP Build Verification
 ==================================================
 Build directory: /path/to/your/project/build
+MCP directory:   /path/to/your/project/build/mcp
 
 📁 Checking build output...
    ✓ Found 42 documents
@@ -471,7 +473,7 @@ Build directory: /path/to/your/project/build
    ✓ File structure valid
 
 🚀 Testing MCP server...
-   ✓ Server initialized with 42 documents
+   ✓ Server "my-docs" initialized with 42 documents
 
 ✅ All checks passed!
 ```
