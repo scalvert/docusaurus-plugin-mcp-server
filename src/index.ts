@@ -9,6 +9,7 @@ export type {
   SearchResult,
   McpManifest,
   McpServerConfig,
+  McpDocsServerConfig,
   McpServerBundleConfig,
   McpServerFileConfig,
   McpServerDataConfig,

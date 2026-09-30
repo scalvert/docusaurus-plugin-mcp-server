@@ -20,10 +20,15 @@ import {
   createNodeHandler,
   readArtifactBundle,
   type ArtifactBundle,
+  type NodeAdapterOptions,
 } from 'docusaurus-plugin-mcp-server/adapters/node';
-import type { ArtifactBundle as EdgeArtifactBundle } from 'docusaurus-plugin-mcp-server/adapters';
+import type {
+  ArtifactBundle as EdgeArtifactBundle,
+  WebRequestHandlerConfig,
+} from 'docusaurus-plugin-mcp-server/adapters';
 import type {
   ArtifactBundle as MainArtifactBundle,
+  McpDocsServerConfig,
   McpServerBundleConfig,
 } from 'docusaurus-plugin-mcp-server';
 import type { LoadContext } from '@docusaurus/types';
@@ -89,6 +94,16 @@ describe('public API surface', () => {
   it('McpServerBundleConfig needs only artifacts', () => {
     const config: McpServerBundleConfig = { artifacts: {} };
     expect(new McpDocsServer(config)).toBeInstanceOf(McpDocsServer);
+  });
+
+  it('exports config unions that take the bundle or the deprecated shapes', () => {
+    const server: McpDocsServerConfig[] = [
+      { artifacts: {} },
+      { name: 'x', docs: {}, searchIndexData: {} },
+    ];
+    const web: WebRequestHandlerConfig[] = [{ artifacts: {}, corsOrigin: '*' }];
+    const node: NodeAdapterOptions[] = [{ artifactsDir: 'build/mcp', corsOrigin: false }];
+    expect([server.length, web.length, node.length]).toEqual([2, 1, 1]);
   });
 
   it('evaluateSearch is exported', () => {

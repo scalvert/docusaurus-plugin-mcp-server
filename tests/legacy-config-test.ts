@@ -172,6 +172,77 @@ describe('deprecated file config specifics', () => {
   });
 });
 
+describe('deprecated configs with a custom search provider (2.1 parity)', () => {
+  // A site with only custom indexers has no docs.json or search-index.json
+  // from 2.1, and its provider ignores the paths. That must keep working.
+  it('initializes a file config whose files do not exist, passing the paths', async () => {
+    const { provider, seen } = recordingProvider();
+    const server = new McpDocsServer({
+      name: 'custom',
+      docsPath: path.join(dir, 'missing-docs.json'),
+      indexPath: path.join(dir, 'missing-index.json'),
+      search: provider,
+    });
+
+    await expect(server.initialize()).resolves.toBeUndefined();
+    expect(seen.initData?.docsPath).toBe(path.join(dir, 'missing-docs.json'));
+    expect(seen.initData?.indexPath).toBe(path.join(dir, 'missing-index.json'));
+    expect(seen.initData?.bundle?.docs).toEqual({});
+    expect(seen.initData?.bundle).not.toHaveProperty('searchIndex');
+    expect((await server.getStatus()).docCount).toBe(0);
+  });
+
+  it('initializes a data config without usable docs or index', async () => {
+    const { provider } = recordingProvider();
+    const server = new McpDocsServer({
+      name: 'custom',
+      docs: null as never,
+      searchIndexData: undefined as never,
+      search: provider,
+    });
+    await expect(server.initialize()).resolves.toBeUndefined();
+  });
+});
+
+describe('deprecated configs: 2.1 errors and their order', () => {
+  it('reports a bad search module before missing files', async () => {
+    const server = new McpDocsServer({
+      name: 'x',
+      docsPath: path.join(dir, 'nope.json'),
+      indexPath: path.join(dir, 'nope.json'),
+      search: './no-such-provider.js',
+    });
+    await expect(server.initialize()).rejects.toThrow(/Search provider module not found/);
+  });
+
+  it('reports missing skills before missing docs', async () => {
+    const server = new McpDocsServer({
+      name: 'x',
+      docsPath: path.join(dir, 'nope-docs.json'),
+      indexPath: path.join(dir, 'nope-index.json'),
+      skillsPath: path.join(dir, 'nope-skills.json'),
+    });
+    await expect(server.initialize()).rejects.toThrow(/skills\.json not found/);
+  });
+
+  it.each([
+    ['docs is null', { docs: null, searchIndexData: {} }],
+    ['searchIndexData is undefined', { docs: {}, searchIndexData: undefined }],
+  ])('local search with a data config where %s throws the 2.1 error', async (_label, data) => {
+    const server = new McpDocsServer({ name: 'x', ...data } as never);
+    await expect(server.initialize()).rejects.toThrow(
+      '[LocalSearch] Invalid init data: must provide either file paths'
+    );
+  });
+
+  it('local search still reports a stale 1.x index file with the rebuild instruction', async () => {
+    const stale = path.join(dir, 'stale-index.json');
+    await fs.writeFile(stale, JSON.stringify({ reg: '{}', 'content.map': '[]' }));
+    const server = new McpDocsServer({ ...fileConfig, indexPath: stale });
+    await expect(server.initialize()).rejects.toThrow(/Rebuild the site/);
+  });
+});
+
 describe('deprecated configs through the adapters', () => {
   it('createWebRequestHandler accepts pre-loaded data', async () => {
     const handler = createWebRequestHandler(dataConfig);

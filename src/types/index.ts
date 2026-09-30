@@ -359,10 +359,19 @@ export interface McpServerDataConfig extends McpServerBaseConfig {
 }
 
 /**
- * MCP Server configuration. Prefer {@link McpServerBundleConfig}; the file and
- * pre-loaded data configs are deprecated.
+ * The 2.0/2.1 server configuration: file-based or pre-loaded data.
+ *
+ * @deprecated Since 2.2. Use {@link McpServerBundleConfig}, or
+ * {@link McpDocsServerConfig} for "any config McpDocsServer accepts".
+ * Removed in 3.0.
  */
-export type McpServerConfig = McpServerBundleConfig | McpServerFileConfig | McpServerDataConfig;
+export type McpServerConfig = McpServerFileConfig | McpServerDataConfig;
+
+/**
+ * Any configuration `McpDocsServer` accepts: {@link McpServerBundleConfig}
+ * (recommended) or the deprecated 2.0/2.1 configs.
+ */
+export type McpDocsServerConfig = McpServerBundleConfig | McpServerConfig;
 
 /**
  * Internal representation of the docs index

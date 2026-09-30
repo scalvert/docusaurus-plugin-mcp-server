@@ -31,19 +31,30 @@ export interface McpServerBundleDirConfig extends Omit<McpServerBundleConfig, 'a
   artifactsDir: string;
 }
 
-/**
- * Options for the Node.js MCP server.
- *
- * Accepts `{ artifactsDir }` (the usual local-dev case), or any
- * {@link McpDocsServer} config, plus a CORS override.
- */
-export type NodeServerOptions = (McpServerBundleDirConfig | McpServerConfig) & {
+interface NodeCorsOption {
   /**
    * CORS origin to allow. Defaults to '*' (all origins).
    * Set to a specific origin or false to disable CORS headers.
    */
   corsOrigin?: string | false;
-};
+}
+
+/**
+ * The 2.0/2.1 options for the Node.js MCP server: file paths or pre-loaded
+ * data, plus a CORS override.
+ *
+ * @deprecated Since 2.2. Pass `{ artifactsDir }` or `{ artifacts }` (see
+ * {@link NodeAdapterOptions}). Removed in 3.0.
+ */
+export type NodeServerOptions = McpServerConfig & NodeCorsOption;
+
+/**
+ * Options for the Node.js MCP server: `{ artifactsDir }` (the usual local-dev
+ * case) or `{ artifacts }`, plus a CORS override, or the deprecated
+ * {@link NodeServerOptions}.
+ */
+export type NodeAdapterOptions =
+  ((McpServerBundleDirConfig | McpServerBundleConfig) & NodeCorsOption) | NodeServerOptions;
 
 /**
  * Create a Node.js request handler for the MCP server.
@@ -51,7 +62,7 @@ export type NodeServerOptions = (McpServerBundleDirConfig | McpServerConfig) & {
  * This returns a handler function compatible with `http.createServer()`.
  * For a complete server, use `createNodeServer()` instead.
  */
-export function createNodeHandler(options: NodeServerOptions) {
+export function createNodeHandler(options: NodeAdapterOptions) {
   const { corsOrigin = '*', ...config } = options;
   let server: Promise<McpDocsServer> | null = null;
 
@@ -173,7 +184,7 @@ export function createNodeHandler(options: NodeServerOptions) {
  *
  * This is the simplest way to run an MCP server locally for development.
  */
-export function createNodeServer(options: NodeServerOptions): Server {
+export function createNodeServer(options: NodeAdapterOptions): Server {
   const handler = createNodeHandler(options);
   return createServer(handler);
 }

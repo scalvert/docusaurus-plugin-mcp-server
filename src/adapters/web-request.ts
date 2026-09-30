@@ -26,14 +26,28 @@ import { getCorsHeaders } from './cors.js';
 import { ConfigurationError, internalErrorBody } from '../errors.js';
 
 /**
- * Config for the web-standard request handler: `{ artifacts }` (the contents
- * of `bundle.json`), or the deprecated pre-loaded `{ docs, searchIndexData }`,
+ * The 2.0/2.1 config for the web-standard request handler: pre-loaded data
  * plus a CORS override.
+ *
+ * @deprecated Since 2.2. Pass `{ artifacts }` (see {@link WebRequestHandlerConfig}).
+ * Removed in 3.0.
  */
-export type WebRequestAdapterConfig = (McpServerBundleConfig | McpServerDataConfig) & {
+export interface WebRequestAdapterConfig extends McpServerDataConfig {
   /** CORS origin to allow. Defaults to '*' (all origins). */
   corsOrigin?: string;
-};
+}
+
+/**
+ * Config for the web-standard request handler: `{ artifacts }` (the contents
+ * of `bundle.json`) plus a CORS override, or the deprecated
+ * {@link WebRequestAdapterConfig}.
+ */
+export type WebRequestHandlerConfig =
+  | (McpServerBundleConfig & {
+      /** CORS origin to allow. Defaults to '*' (all origins). */
+      corsOrigin?: string;
+    })
+  | WebRequestAdapterConfig;
 
 /**
  * Create a web-standard `(request: Request) => Promise<Response>` handler for
@@ -43,7 +57,7 @@ export type WebRequestAdapterConfig = (McpServerBundleConfig | McpServerDataConf
  * Uses the MCP SDK's WebStandardStreamableHTTPServerTransport for
  * proper protocol handling.
  */
-export function createWebRequestHandler(config: WebRequestAdapterConfig) {
+export function createWebRequestHandler(config: WebRequestHandlerConfig) {
   let server: McpDocsServer | null = null;
   const { corsOrigin, ...serverConfig } = config;
 

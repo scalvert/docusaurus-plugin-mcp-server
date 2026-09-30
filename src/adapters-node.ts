@@ -9,6 +9,7 @@
 export {
   createNodeServer,
   createNodeHandler,
+  type NodeAdapterOptions,
   type NodeServerOptions,
   type McpServerBundleDirConfig,
 } from './adapters/node.js';

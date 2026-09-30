@@ -12,7 +12,7 @@ import type {
   ProcessedDoc,
   McpServerBaseConfig,
   McpServerBundleConfig,
-  McpServerConfig,
+  McpDocsServerConfig,
   McpServerFileConfig,
   McpServerDataConfig,
   SkillsArtifact,
@@ -23,6 +23,7 @@ import {
   type ArtifactBundle,
 } from '../artifacts/bundle.js';
 import { loadSearchProvider } from '../providers/loader.js';
+import { LocalSearchProvider } from '../providers/search/local-search-provider.js';
 import { ConfigurationError, MIGRATION_GUIDE } from '../errors.js';
 import type {
   SearchProvider,
@@ -56,21 +57,21 @@ function toolError(text: string) {
 /**
  * Type guard to check if config passes an artifact bundle
  */
-function isBundleConfig(config: McpServerConfig): config is McpServerBundleConfig {
+function isBundleConfig(config: McpDocsServerConfig): config is McpServerBundleConfig {
   return 'artifacts' in config;
 }
 
 /**
  * Type guard to check if config uses file-based loading
  */
-function isFileConfig(config: McpServerConfig): config is McpServerFileConfig {
+function isFileConfig(config: McpDocsServerConfig): config is McpServerFileConfig {
   return 'docsPath' in config && 'indexPath' in config;
 }
 
 /**
  * Type guard to check if config uses pre-loaded data
  */
-function isDataConfig(config: McpServerConfig): config is McpServerDataConfig {
+function isDataConfig(config: McpDocsServerConfig): config is McpServerDataConfig {
   return 'docs' in config && 'searchIndexData' in config;
 }
 
@@ -99,18 +100,36 @@ function legacyBundle(
   };
 }
 
-/** Read a JSON file named by a deprecated file config. Node only. */
-async function readConfiguredJson(file: string, what: string, hint: string): Promise<unknown> {
+/**
+ * Read a JSON file named by a deprecated file config. Node only.
+ * With `hint`, a missing or unreadable file throws; without, it returns undefined.
+ */
+async function readConfiguredJson(
+  file: string,
+  what: string,
+  hint?: string
+): Promise<unknown | undefined> {
   // Imported dynamically so the edge (artifacts) path pulls in no Node built-ins.
   const { readFile } = await import('node:fs/promises');
   try {
     return JSON.parse(await readFile(file, 'utf8'));
   } catch (cause) {
+    if (hint === undefined) {
+      return undefined;
+    }
     // Paths name only files the site owner configured; safe to return.
     throw new ConfigurationError(`[MCP] ${what} not found or unreadable: ${file}. ${hint}`, {
       cause,
     });
   }
+}
+
+/** What the 2.1 local search provider threw for a data config it couldn't use. */
+const LEGACY_INVALID_INIT_DATA =
+  '[LocalSearch] Invalid init data: must provide either file paths (docsPath, indexPath) or pre-loaded data (docs, indexData)';
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 /** Name, version, and base URL the server reports: config first, then the bundle's manifest. */
@@ -137,7 +156,7 @@ interface ServerIdentity {
  * JSON-response transport, so their responses match 1.x (see dispatch).
  */
 export class McpDocsServer {
-  private config: McpServerConfig;
+  private config: McpDocsServerConfig;
   private bundle: ArtifactBundle | null = null;
   private identity: ServerIdentity | null = null;
   private searchProvider: SearchProvider | null = null;
@@ -147,7 +166,7 @@ export class McpDocsServer {
   private initPromise: Promise<void> | null = null;
   private initError: Error | null = null;
 
-  constructor(config: McpServerConfig) {
+  constructor(config: McpDocsServerConfig) {
     this.config = config;
   }
 
@@ -251,22 +270,36 @@ export class McpDocsServer {
     return this.bundle?.docs[url] ?? null;
   }
 
-  /** The identity to report, falling back to config before initialization. */
+  /**
+   * The identity to report. Before initialization: config, then the
+   * (not yet validated) bundle manifest, then defaults.
+   */
   private getIdentity(): ServerIdentity {
-    return (
-      this.identity ?? {
-        name: this.config.name ?? 'docs',
-        version: this.config.version ?? '1.0.0',
-        baseUrl: this.config.baseUrl,
-      }
-    );
+    if (this.identity) {
+      return this.identity;
+    }
+    const artifacts = isBundleConfig(this.config) ? this.config.artifacts : undefined;
+    const manifest =
+      isRecord(artifacts) && isRecord(artifacts.manifest) ? artifacts.manifest : undefined;
+    const fromManifest = (key: string) =>
+      typeof manifest?.[key] === 'string' ? (manifest[key] as string) : undefined;
+
+    return {
+      name: this.config.name ?? fromManifest('serverName') ?? 'docs',
+      version: this.config.version ?? fromManifest('version') ?? '1.0.0',
+      baseUrl: this.config.baseUrl ?? fromManifest('baseUrl'),
+    };
   }
 
   /**
    * Resolve any config to an artifact bundle. The deprecated file config
    * also returns its paths, which custom search providers may still read.
+   *
+   * @param forLocalSearch Whether the built-in local search will serve the
+   *   bundle. With the deprecated configs, only it needs the documents and
+   *   search index to exist; a custom provider may bring its own, as in 2.1.
    */
-  private async loadBundle(): Promise<{
+  private async loadBundle(forLocalSearch: boolean): Promise<{
     bundle: ArtifactBundle;
     paths?: { docsPath: string; indexPath: string };
   }> {
@@ -282,13 +315,23 @@ export class McpDocsServer {
     }
 
     if (isDataConfig(config)) {
-      return { bundle: legacyBundle(config, config.docs, config.searchIndexData, config.skills) };
+      const { docs, searchIndexData } = config;
+      if (forLocalSearch && (!isRecord(docs) || !isRecord(searchIndexData))) {
+        throw new Error(LEGACY_INVALID_INIT_DATA);
+      }
+      return {
+        bundle: legacyBundle(
+          config,
+          isRecord(docs) ? docs : {},
+          isRecord(searchIndexData) ? searchIndexData : undefined,
+          config.skills
+        ),
+      };
     }
 
     if (isFileConfig(config)) {
-      const hint = 'Build the site first.';
-      const docs = await readConfiguredJson(config.docsPath, 'docs.json', hint);
-      const searchIndex = await readConfiguredJson(config.indexPath, 'search-index.json', hint);
+      // Same order and messages as 2.1: skills (read by the server), then the
+      // documents and index (read by the local provider).
       const skills = config.skillsPath
         ? await readConfiguredJson(
             config.skillsPath,
@@ -296,11 +339,17 @@ export class McpDocsServer {
             'Build the site first, or remove skillsPath.'
           )
         : undefined;
+      const hint = forLocalSearch ? 'Build the site first.' : undefined;
+      const docs = await readConfiguredJson(config.docsPath, 'docs.json', hint);
+      const searchIndex = await readConfiguredJson(config.indexPath, 'search-index.json', hint);
       return {
         bundle: legacyBundle(
           config,
-          docs as Record<string, ProcessedDoc>,
-          searchIndex as Record<string, unknown>,
+          isRecord(docs) ? (docs as Record<string, ProcessedDoc>) : {},
+          // The local provider validates the index itself (e.g. a stale 1.x one).
+          forLocalSearch || isRecord(searchIndex)
+            ? (searchIndex as Record<string, unknown>)
+            : undefined,
           skills as SkillsArtifact | undefined
         ),
         paths: { docsPath: config.docsPath, indexPath: config.indexPath },
@@ -349,18 +398,20 @@ export class McpDocsServer {
           `Remove it; use 'localSearch' to set field boosts. See ${MIGRATION_GUIDE}.`
       );
     }
-    const { bundle, paths } = await this.loadBundle();
+    // Load the provider first, as 2.1 did, so a bad `search` module is
+    // reported before any artifact problem.
+    const searchSpecifier = this.config.search ?? 'local';
+    const searchProvider = await loadSearchProvider(searchSpecifier, {
+      localSearch: this.config.localSearch,
+    });
+
+    const { bundle, paths } = await this.loadBundle(searchProvider instanceof LocalSearchProvider);
     const { manifest } = bundle;
     const identity: ServerIdentity = {
       name: this.config.name ?? manifest.serverName,
       version: this.config.version ?? manifest.version,
       baseUrl: this.config.baseUrl ?? manifest.baseUrl,
     };
-
-    const searchSpecifier = this.config.search ?? 'local';
-    const searchProvider = await loadSearchProvider(searchSpecifier, {
-      localSearch: this.config.localSearch,
-    });
 
     const providerContext: ProviderContext = {
       baseUrl: identity.baseUrl ?? '',

@@ -39,11 +39,11 @@ Peers: `zod` (>= 4.2) is required. `@docusaurus/core` (and `react`/`react-dom` f
 The authoritative API is the published TypeScript types. Read the `.d.ts` files referenced by `exports` in `package.json` before writing calls — do not guess signatures. `dist/` is a build artifact (git-ignored), so in a fresh clone run `npm run build` first, or read the corresponding `src/*.ts`:
 
 - `.` → `dist/index.d.ts` (plugin options, `McpDocsServer`, provider/`ProcessedDoc` types)
-- `./adapters` → `dist/adapters-entry.d.ts` (`WebRequestAdapterConfig`, `ArtifactBundle`)
-- `./adapters/node` → `dist/adapters-node.d.ts` (`createNodeServer`/`createNodeHandler`, `NodeServerOptions`, `McpServerBundleDirConfig`, `readArtifactBundle`)
+- `./adapters` → `dist/adapters-entry.d.ts` (`WebRequestHandlerConfig`, `ArtifactBundle`)
+- `./adapters/node` → `dist/adapters-node.d.ts` (`createNodeServer`/`createNodeHandler`, `NodeAdapterOptions`, `McpServerBundleDirConfig`, `readArtifactBundle`)
 - `./theme` → `dist/theme/index.d.ts` (`McpInstallButton` props)
 
-Config shape in particular (`artifacts`/`artifactsDir`, overrides such as `instructions`/`tools`) lives in those types — read them rather than copying field lists. `McpServerFileConfig` (`docsPath`/`indexPath`) and `McpServerDataConfig` (`docs`/`searchIndexData`) are deprecated since 2.2; don't write new code against them.
+Config shape in particular (`artifacts`/`artifactsDir`, overrides such as `instructions`/`tools`) lives in those types — read them rather than copying field lists. `McpServerFileConfig` (`docsPath`/`indexPath`) and `McpServerDataConfig` (`docs`/`searchIndexData`) are deprecated since 2.2, as are the 2.1 unions `McpServerConfig`, `WebRequestAdapterConfig`, and `NodeServerOptions` (use `McpDocsServerConfig`, `WebRequestHandlerConfig`, `NodeAdapterOptions`); don't write new code against them.
 
 ## Usage patterns
 
