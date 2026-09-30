@@ -299,6 +299,23 @@ describe('deprecated configs: 2.1 errors and their order', () => {
     );
   });
 
+  it('getStatus() after a failed initialize() reports the provider and what loaded', async () => {
+    // The local provider loads the documents before rejecting the index.
+    const server = new McpDocsServer({
+      ...dataConfig,
+      searchIndexData: { reg: '{}', 'content.map': '[]' },
+    });
+    await expect(server.initialize()).rejects.toThrow(/Rebuild the site/);
+
+    expect(await server.getStatus()).toMatchObject({
+      name: 'legacy-docs',
+      initialized: false,
+      searchProvider: 'local',
+      docCount: 1,
+      skillCount: 1,
+    });
+  });
+
   it('local search still reports a stale 1.x index file with the rebuild instruction', async () => {
     const stale = path.join(dir, 'stale-index.json');
     await fs.writeFile(stale, JSON.stringify({ reg: '{}', 'content.map': '[]' }));

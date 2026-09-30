@@ -24,7 +24,11 @@ export class ConfigurationError extends Error {
    * thrown by a provider imported from `.` would reach an adapter as a
    * generic "Internal server error".
    */
-  static [Symbol.hasInstance](value: unknown): boolean {
+  static [Symbol.hasInstance](this: unknown, value: unknown): boolean {
+    // Subclasses inherit this method; they keep ordinary prototype checks.
+    if (this !== ConfigurationError) {
+      return Function.prototype[Symbol.hasInstance].call(this, value);
+    }
     return (
       typeof value === 'object' &&
       value !== null &&
