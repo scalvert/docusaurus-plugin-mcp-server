@@ -171,7 +171,9 @@ async function readJsonBody(req: IncomingMessage): Promise<unknown> {
   if (req.readableEnded) {
     const { body } = req as IncomingMessage & { body?: unknown };
     if (typeof body === 'string') return parseJson(body);
-    if (body instanceof Uint8Array) return parseJson(Buffer.from(body).toString());
+    if (body instanceof Uint8Array || body instanceof ArrayBuffer) {
+      return parseJson(Buffer.from(body as Uint8Array).toString());
+    }
     return body;
   }
 

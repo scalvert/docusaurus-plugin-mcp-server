@@ -385,6 +385,7 @@ describe('Node server only', () => {
       ['a parsed object (express.json)', (text: string) => JSON.parse(text)],
       ['a string (express.text)', (text: string) => text],
       ['a Buffer (express.raw)', (text: string) => Buffer.from(text)],
+      ['an ArrayBuffer', (text: string) => new TextEncoder().encode(text).buffer],
     ])('uses %s', async (_label, parse) => {
       const url = await listen(withParsedBody(parse));
       const res = await fetch(url, { method: 'POST', headers: MCP_HEADERS, body: INIT_BODY });
@@ -405,6 +406,35 @@ describe('Node server only', () => {
       expect(res.status).toBeGreaterThanOrEqual(400);
       expect(res.status).toBeLessThan(500);
     });
+
+    it('reads the stream itself when a parser skipped the request', async () => {
+      // express.json() on a non-JSON content type: Express 4 sets req.body = {}
+      // and leaves the stream unread.
+      const handler = createNodeHandler({ artifactsDir: dir });
+      const url = await listen(
+        createServer((req, res) => {
+          (req as typeof req & { body?: unknown }).body = {};
+          void handler(req, res);
+        })
+      );
+      const res = await fetch(url, { method: 'POST', headers: MCP_HEADERS, body: INIT_BODY });
+      expect(res.status).toBe(200);
+      expect((await res.json()).result.serverInfo.name).toBe('t');
+    });
+  });
+
+  it('sends JSON responses with a Content-Length', async () => {
+    const url = await listen(createNodeServer({ artifactsDir: dir }));
+    for (const init of [
+      { method: 'GET' },
+      { method: 'PUT' },
+      { method: 'POST', headers: MCP_HEADERS, body: INIT_BODY },
+    ]) {
+      const res = await fetch(url, init);
+      const text = await res.text();
+      expect(res.headers.get('content-length'), init.method).toBe(String(Buffer.byteLength(text)));
+      expect(res.headers.get('transfer-encoding'), init.method).toBeNull();
+    }
   });
 
   it('corsOrigin: false sends no CORS headers on any response', async () => {

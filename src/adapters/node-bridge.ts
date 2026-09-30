@@ -83,16 +83,31 @@ function canonicalHeaderName(name: string): string {
   return name.replace(/(^|-)([a-z])/g, (match) => match.toUpperCase());
 }
 
+/** The media type without parameters: `application/json; charset=utf-8` → `application/json`. */
+function mediaType(response: Response): string | undefined {
+  return response.headers.get('content-type')?.split(';')[0]?.trim().toLowerCase();
+}
+
 /**
  * Write a web-standard Response to a Node ServerResponse, preserving any
- * headers already set on `res` (e.g. CORS). A JSON body is complete before
- * it is sent, so it is written in one `end()` (with a Content-Length); any
- * other body, such as an SSE stream, is streamed.
+ * headers already set on `res` (e.g. CORS).
+ *
+ * A JSON body is complete before it is sent, so it is read first and written
+ * with a Content-Length in one `end()`; if reading it fails, nothing has been
+ * sent and the caller can still answer with an error. Any other body, such
+ * as an SSE stream, is streamed; if it fails midway the socket is destroyed,
+ * so the client sees a broken response rather than a complete one.
  */
 export async function writeWebResponse(response: Response, res: ServerResponse): Promise<void> {
+  const json = response.body && mediaType(response) === 'application/json';
+  const text = json ? await response.text() : undefined;
+
   response.headers.forEach((value, key) => {
     res.setHeader(canonicalHeaderName(key), value);
   });
+  if (text !== undefined) {
+    res.setHeader('Content-Length', new TextEncoder().encode(text).byteLength);
+  }
   // An empty statusText would send an empty reason phrase; let Node fill it in.
   if (response.statusText) {
     res.writeHead(response.status, response.statusText);
@@ -100,13 +115,8 @@ export async function writeWebResponse(response: Response, res: ServerResponse):
     res.writeHead(response.status);
   }
 
-  if (!response.body) {
-    res.end();
-    return;
-  }
-
-  if (response.headers.get('content-type')?.includes('application/json')) {
-    res.end(await response.text());
+  if (text !== undefined || !response.body) {
+    res.end(text);
     return;
   }
 
@@ -117,7 +127,9 @@ export async function writeWebResponse(response: Response, res: ServerResponse):
       if (done) break;
       res.write(value);
     }
-  } finally {
-    res.end();
+  } catch (error) {
+    res.destroy(error instanceof Error ? error : undefined);
+    throw error;
   }
+  res.end();
 }

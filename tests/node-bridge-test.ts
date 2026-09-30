@@ -53,7 +53,12 @@ function fakeResponse() {
   const names: string[] = [];
   const written: Buffer[] = [];
   const state = { status: 0, statusText: '', ended: false, writes: 0 };
+  const destroyed: { error?: Error; called: boolean } = { called: false };
   const res = {
+    destroy: (error?: Error) => {
+      destroyed.called = true;
+      destroyed.error = error;
+    },
     setHeader: (k: string, v: string | number | readonly string[]) => {
       names.push(k);
       headers[k.toLowerCase()] = v;
@@ -72,7 +77,14 @@ function fakeResponse() {
       state.ended = true;
     },
   } as unknown as ServerResponse;
-  return { res, headers, names, state, body: () => Buffer.concat(written).toString('utf8') };
+  return {
+    res,
+    headers,
+    names,
+    state,
+    destroyed,
+    body: () => Buffer.concat(written).toString('utf8'),
+  };
 }
 
 // Indexer and server progress logs are expected here; keep test output readable.
@@ -184,8 +196,42 @@ describe('writeWebResponse', () => {
     );
 
     expect(state).toEqual({ status: 200, statusText: '', ended: true, writes: 0 });
-    expect(names).toEqual(['Content-Type', 'Mcp-Protocol-Version']);
+    expect(names).toEqual(['Content-Type', 'Mcp-Protocol-Version', 'Content-Length']);
     expect(body()).toBe('{"a":1}');
+  });
+
+  it('sets Content-Length in bytes, and matches the JSON media type exactly', async () => {
+    const json = fakeResponse();
+    await writeWebResponse(
+      new Response('{"s":"é"}', { headers: { 'content-type': 'Application/JSON; charset=utf-8' } }),
+      json.res
+    );
+    expect(json.headers['content-length']).toBe(10);
+    expect(json.state.writes).toBe(0);
+
+    const seq = fakeResponse();
+    await writeWebResponse(
+      new Response('{"a":1}\n', { headers: { 'content-type': 'application/json-seq' } }),
+      seq.res
+    );
+    expect(seq.headers).not.toHaveProperty('content-length');
+    expect(seq.state.writes).toBe(1);
+  });
+
+  it('sends nothing when a JSON body fails to read, so the caller can answer', async () => {
+    const { res, state } = fakeResponse();
+    const stream = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        controller.error(new Error('upstream failed'));
+      },
+    });
+    await expect(
+      writeWebResponse(
+        new Response(stream, { headers: { 'content-type': 'application/json' } }),
+        res
+      )
+    ).rejects.toThrow('upstream failed');
+    expect(state).toEqual({ status: 0, statusText: '', ended: false, writes: 0 });
   });
 
   it('ends the response for bodiless statuses', async () => {
@@ -196,16 +242,28 @@ describe('writeWebResponse', () => {
     expect(body()).toBe('');
   });
 
-  it('still ends the response when the body stream errors', async () => {
-    const { res, state } = fakeResponse();
+  it('destroys the response, rather than ending it cleanly, when a stream errors midway', async () => {
+    const { res, state, destroyed } = fakeResponse();
+    let sent = false;
     const stream = new ReadableStream<Uint8Array>({
       pull(controller) {
-        controller.error(new Error('upstream failed'));
+        if (!sent) {
+          sent = true;
+          controller.enqueue(new TextEncoder().encode('data: 1\n\n'));
+        } else {
+          controller.error(new Error('upstream failed'));
+        }
       },
     });
 
-    await expect(writeWebResponse(new Response(stream), res)).rejects.toThrow('upstream failed');
-    expect(state.ended).toBe(true);
+    await expect(
+      writeWebResponse(
+        new Response(stream, { headers: { 'content-type': 'text/event-stream' } }),
+        res
+      )
+    ).rejects.toThrow('upstream failed');
+    expect(state).toMatchObject({ status: 200, writes: 1, ended: false });
+    expect(destroyed).toEqual({ called: true, error: new Error('upstream failed') });
   });
 });
 
