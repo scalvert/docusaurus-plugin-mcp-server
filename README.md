@@ -378,7 +378,7 @@ export default class GleanSearchProvider implements SearchProvider {
 }
 ```
 
-`initialize` receives the artifact bundle as `initData.bundle`: the documents, the search index (if an indexer produced one), and any indexer extras. So a provider can read what its indexer wrote without touching the filesystem. `getDocument` and `getDocCount` are optional: without them, `docs_fetch` and the status endpoint use the bundle's documents.
+With an `artifacts` or `artifactsDir` server config, `initialize` receives the artifact bundle as `initData.bundle`: the documents, the search index (if an indexer produced one), and any indexer extras. So a provider can read what its indexer wrote without touching the filesystem. (With the deprecated configs it gets the same `initData` as in 2.1.) `getDocument` and `getDocCount` are optional: without them, `docs_fetch` and the status endpoint use the bundle's documents.
 
 ### Configuring Custom Providers
 

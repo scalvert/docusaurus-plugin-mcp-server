@@ -4,7 +4,7 @@
  * must behave exactly as in 2.1. This is the only file that uses them.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -138,14 +138,25 @@ describe.each([
 });
 
 describe('deprecated file config specifics', () => {
-  it('still gives custom providers the file paths, alongside the bundle', async () => {
+  it('gives custom providers exactly the 2.1 init data: the paths', async () => {
     const { provider, seen } = recordingProvider();
     await new McpDocsServer({ ...fileConfig, search: provider }).initialize();
 
-    expect(seen.initData?.docsPath).toBe(fileConfig.docsPath);
-    expect(seen.initData?.indexPath).toBe(fileConfig.indexPath);
-    expect(seen.initData?.bundle?.docs).toEqual(bundle.docs);
-    expect(seen.initData?.docs).toEqual(bundle.docs);
+    expect(seen.initData).toEqual({
+      docsPath: fileConfig.docsPath,
+      indexPath: fileConfig.indexPath,
+    });
+  });
+
+  it('answers docs_fetch from the files for a custom provider without getDocument', async () => {
+    const { provider } = recordingProvider();
+    const server = new McpDocsServer({ ...fileConfig, search: provider });
+    const result = await call(server, 'tools/call', {
+      name: 'docs_fetch',
+      arguments: { url: 'https://example.com/docs/install' },
+    });
+    expect((result.content as Array<{ text: string }>)[0]?.text).toContain('Run npm install');
+    expect((await server.getStatus()).docCount).toBe(1);
   });
 
   it.each([
@@ -185,15 +196,15 @@ describe('deprecated configs with a custom search provider (2.1 parity)', () => 
     });
 
     await expect(server.initialize()).resolves.toBeUndefined();
-    expect(seen.initData?.docsPath).toBe(path.join(dir, 'missing-docs.json'));
-    expect(seen.initData?.indexPath).toBe(path.join(dir, 'missing-index.json'));
-    expect(seen.initData?.bundle?.docs).toEqual({});
-    expect(seen.initData?.bundle).not.toHaveProperty('searchIndex');
+    expect(seen.initData).toEqual({
+      docsPath: path.join(dir, 'missing-docs.json'),
+      indexPath: path.join(dir, 'missing-index.json'),
+    });
     expect((await server.getStatus()).docCount).toBe(0);
   });
 
-  it('initializes a data config without usable docs or index', async () => {
-    const { provider } = recordingProvider();
+  it('passes a data config through as-is, even without usable docs or index', async () => {
+    const { provider, seen } = recordingProvider();
     const server = new McpDocsServer({
       name: 'custom',
       docs: null as never,
@@ -201,6 +212,59 @@ describe('deprecated configs with a custom search provider (2.1 parity)', () => 
       search: provider,
     });
     await expect(server.initialize()).resolves.toBeUndefined();
+    expect(seen.initData).toEqual({ docs: null, indexData: undefined });
+  });
+});
+
+describe('a LocalSearchProvider instance from another copy of the module', () => {
+  // tsup bundles each entry separately, so the instance a user imports from
+  // `.` is not the class the adapters load. It must still fail like 2.1.
+  async function foreignLocalProvider(): Promise<SearchProvider> {
+    vi.resetModules();
+    const copy = await import('../src/providers/search/local-search-provider.js');
+    vi.resetModules();
+    return new copy.LocalSearchProvider();
+  }
+
+  it('fails a file config with a missing docs.json, through the Node adapter', async () => {
+    const handler = createNodeHandler({
+      ...fileConfig,
+      docsPath: path.join(dir, 'nope.json'),
+      search: await foreignLocalProvider(),
+    });
+    let status = 0;
+    let body = '';
+    await handler(
+      { method: 'GET' } as never,
+      {
+        setHeader: () => {},
+        writeHead: (code: number) => {
+          status = code;
+        },
+        end: (chunk: string) => {
+          body = chunk;
+        },
+      } as never
+    );
+    expect(status).toBe(500);
+    expect(JSON.parse(body).error).toMatch(/docs\.json not found or unreadable/);
+  });
+
+  it('fails a data config with docs: null, through the web adapter', async () => {
+    const handler = createWebRequestHandler({
+      ...dataConfig,
+      docs: null as never,
+      search: await foreignLocalProvider(),
+    });
+    const res = await handler(new Request('https://x/mcp', { method: 'GET' }));
+    expect(res.status).toBe(500);
+  });
+
+  it('serves a valid file config', async () => {
+    const server = new McpDocsServer({ ...fileConfig, search: await foreignLocalProvider() });
+    expect(await searchText(server)).toBe(
+      await searchText(new McpDocsServer({ artifacts: bundle }))
+    );
   });
 });
 

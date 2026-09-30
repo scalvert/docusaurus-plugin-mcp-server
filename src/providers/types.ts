@@ -100,8 +100,9 @@ export interface ContentIndexer {
 export interface SearchProviderInitData {
   /**
    * The artifact bundle the server is serving: documents, the search index
-   * (if an indexer produced one), and indexer extras. Always set by
-   * `McpDocsServer` since 2.2.
+   * (if an indexer produced one), and indexer extras. Set by `McpDocsServer`
+   * for `artifacts` / `artifactsDir` configs. With the deprecated configs the
+   * provider gets exactly what it got in 2.1 (the fields below) instead.
    */
   bundle?: ArtifactBundle;
   /**
@@ -115,12 +116,14 @@ export interface SearchProviderInitData {
    */
   indexPath?: string;
   /**
-   * Documents keyed by document ID; the same object as `bundle.docs`.
+   * Documents keyed by document ID: `bundle.docs`, or the deprecated data
+   * config's `docs` as passed.
    * @deprecated Since 2.2. Read `bundle.docs`. Removed in 3.0.
    */
   docs?: Record<string, ProcessedDoc>;
   /**
-   * The search index; the same object as `bundle.searchIndex`.
+   * The search index: `bundle.searchIndex`, or the deprecated data config's
+   * `searchIndexData` as passed.
    * @deprecated Since 2.2. Read `bundle.searchIndex`. Removed in 3.0.
    */
   indexData?: Record<string, unknown>;
