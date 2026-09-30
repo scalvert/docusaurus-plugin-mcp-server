@@ -7,7 +7,7 @@
 
 import fs from 'fs-extra';
 import path from 'path';
-import { parseArgs } from 'node:util';
+import { parseArgs } from 'util';
 import { McpDocsServer } from '../mcp/server.js';
 import { DEFAULT_PLUGIN_OPTIONS } from '../types/index.js';
 

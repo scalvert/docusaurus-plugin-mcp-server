@@ -344,6 +344,13 @@ export default class AlgoliaIndexer implements ContentIndexer {
 }
 ```
 
+The plugin always writes the documents (`docs.json`) itself, whichever indexers run. What `finalize()` returns is added to the artifact bundle:
+
+- `search-index.json` becomes the bundle's search index. Only one indexer may return it.
+- `bundle.json`, `manifest.json`, and `skills.json` are written by the plugin; returning one fails the build.
+- Any other filename (a relative path inside the output directory) is kept as an indexer extra and written to `build/mcp/`.
+- `getManifestData()`, if implemented, is recorded in `manifest.json` under `indexerData.<name>`.
+
 ### SearchProvider
 
 Implement `SearchProvider` to delegate runtime search to an external service:
@@ -523,7 +530,7 @@ curl -X POST https://docs.example.com/mcp \
 
 The plugin operates in two phases:
 
-**Build Time:** During `docusaurus build`, the plugin's `postBuild` hook processes all rendered HTML pages, extracts content, converts to markdown, builds a search index, and outputs artifacts to `build/mcp/`.
+**Build Time:** During `docusaurus build`, the plugin's `postBuild` hook processes all rendered HTML pages, extracts content, converts to markdown, builds a search index, and writes the artifact bundle to `build/mcp/bundle.json`. Through 2.x it also writes each part as its own file (`docs.json`, `search-index.json`, `skills.json`, `manifest.json`) for existing deployments.
 
 **Runtime:** A serverless function loads the pre-built artifacts and handles MCP JSON-RPC requests from AI agents. The server is stateless (MCP 2026-07-28 has no sessions), so any instance can answer any request, and list/read results carry cache hints (`ttlMs` 5 minutes, `cacheScope: public`) because content only changes on redeploy. All indexing happens at build time.
 

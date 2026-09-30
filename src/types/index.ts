@@ -246,6 +246,8 @@ export interface McpManifest {
   indexers?: string[];
   /** Number of skills written to skills.json */
   skillCount?: number;
+  /** What each indexer's `getManifestData()` returned, keyed by indexer name */
+  indexerData?: Record<string, Record<string, unknown>>;
 }
 
 /**

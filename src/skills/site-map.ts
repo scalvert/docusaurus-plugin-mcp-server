@@ -4,7 +4,7 @@
  * what was indexed.
  */
 
-import { documentId } from '../search/local-search.js';
+import { documentId } from '../artifacts/bundle.js';
 import type { ProcessedDoc } from '../types/index.js';
 
 /**

@@ -1,8 +1,8 @@
 import type { ProcessedDoc } from '../../types/index.js';
 import type { ContentIndexer, ProviderContext } from '../types.js';
+import { documentId } from '../../artifacts/bundle.js';
 import {
   buildLocalSearchIndex,
-  documentId,
   serializeLocalSearchIndex,
   type SerializedLocalSearchIndex,
 } from '../../search/local-search.js';
@@ -11,8 +11,10 @@ import {
  * Built-in local search indexer.
  *
  * Produces:
- * - docs.json: all processed documents keyed by full URL
  * - search-index.json: the serialized local search index for runtime queries
+ * - docs.json: all processed documents keyed by full URL. The plugin now
+ *   writes documents itself and ignores this entry; it stays through 2.x for
+ *   code that calls `finalize()` directly, and is removed in 3.0.
  */
 export class LocalSearchIndexer implements ContentIndexer {
   readonly name = 'local';

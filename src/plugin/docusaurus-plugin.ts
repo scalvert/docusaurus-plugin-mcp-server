@@ -1,12 +1,11 @@
 import path from 'path';
-import fs from 'fs-extra';
 import pMap from 'p-map';
 import type { LoadContext, Plugin } from '@docusaurus/types';
 import type {
   McpServerPluginOptions,
   ResolvedPluginOptions,
   ProcessedDoc,
-  McpManifest,
+  SkillsArtifact,
 } from '../types/index.js';
 import { DEFAULT_PLUGIN_OPTIONS } from '../types/index.js';
 import { collectRoutes } from './route-collector.js';
@@ -18,6 +17,8 @@ import { MIGRATION_GUIDE } from '../errors.js';
 import type { ProviderContext } from '../providers/types.js';
 import { resolveServerUrl } from './resolve-server-url.js';
 import { buildSkillsArtifact } from '../skills/packager.js';
+import { buildArtifactBundle, type IndexerOutput } from '../artifacts/bundle.js';
+import { writeArtifactBundle } from '../artifacts/node.js';
 
 /**
  * Resolve plugin options with defaults.
@@ -181,10 +182,7 @@ export default function mcpServerPlugin(
       };
 
       const indexerSpecs = resolvedOptions.indexers ?? ['local'];
-
-      await fs.ensureDir(mcpOutputDir);
-
-      const indexerNames: string[] = [];
+      const indexerOutputs: IndexerOutput[] = [];
 
       for (const indexerSpec of indexerSpecs) {
         try {
@@ -200,12 +198,12 @@ export default function mcpServerPlugin(
           await indexer.initialize(providerContext);
           await indexer.indexDocuments(validDocs);
 
-          const artifacts = await indexer.finalize();
-          for (const [filename, content] of artifacts) {
-            await fs.writeJson(path.join(mcpOutputDir, filename), content, { spaces: 0 });
-          }
+          const files = await indexer.finalize();
+          const manifestData = indexer.getManifestData
+            ? await indexer.getManifestData()
+            : undefined;
 
-          indexerNames.push(indexer.name);
+          indexerOutputs.push({ name: indexer.name, files, manifestData });
         } catch (error) {
           console.error(`[MCP] Error running indexer "${indexerSpec}":`, error);
           throw error;
@@ -213,10 +211,10 @@ export default function mcpServerPlugin(
       }
 
       // Package skills served via the MCP skills extension
-      let skillCount: number | undefined;
+      let skills: SkillsArtifact | undefined;
       if (resolvedOptions.skills !== false) {
         const skillsOptions = resolvedOptions.skills ?? {};
-        const skills = await buildSkillsArtifact({
+        skills = await buildSkillsArtifact({
           builtin: skillsOptions.builtin ?? true,
           dir: skillsOptions.dir ? path.resolve(context.siteDir, skillsOptions.dir) : undefined,
           siteTitle: context.siteConfig.title,
@@ -224,25 +222,17 @@ export default function mcpServerPlugin(
           siteTagline: context.siteConfig.tagline,
           docs: validDocs,
         });
-        await fs.writeJson(path.join(mcpOutputDir, 'skills.json'), skills, { spaces: 0 });
-        skillCount = skills.skills.length;
-        console.log(`[MCP] Packaged ${skillCount} skill(s)`);
+        console.log(`[MCP] Packaged ${skills.skills.length} skill(s)`);
       }
 
-      // Write manifest (only if at least one indexer ran)
-      if (indexerNames.length > 0) {
-        const manifest: McpManifest = {
-          version: resolvedOptions.server.version,
-          buildTime: new Date().toISOString(),
-          docCount: validDocs.length,
-          serverName: resolvedOptions.server.name,
-          baseUrl,
-          indexers: indexerNames,
-          ...(skillCount !== undefined ? { skillCount } : {}),
-        };
-
-        await fs.writeJson(path.join(mcpOutputDir, 'manifest.json'), manifest, { spaces: 2 });
-      }
+      const bundle = buildArtifactBundle({
+        docs: validDocs,
+        baseUrl,
+        server: { name: resolvedOptions.server.name, version: resolvedOptions.server.version },
+        indexers: indexerOutputs,
+        skills,
+      });
+      await writeArtifactBundle(mcpOutputDir, bundle);
 
       const elapsed = Date.now() - startTime;
       console.log(`[MCP] Artifacts written to ${mcpOutputDir}`);

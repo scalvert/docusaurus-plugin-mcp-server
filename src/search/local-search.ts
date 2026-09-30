@@ -1,5 +1,6 @@
 import MiniSearch from 'minisearch';
 import { stemmer } from 'stemmer';
+import { documentId } from '../artifacts/bundle.js';
 import { ConfigurationError, MIGRATION_GUIDE } from '../errors.js';
 import type {
   LocalSearchConfig,
@@ -131,11 +132,6 @@ function routeWords(route: string): string {
     .split(/[/\-_.]+/)
     .filter(Boolean)
     .join(' ');
-}
-
-/** Document id: the full URL when a base URL is known, otherwise the route. */
-export function documentId(doc: Pick<ProcessedDoc, 'route'>, baseUrl?: string): string {
-  return baseUrl ? `${baseUrl.replace(/\/$/, '')}${doc.route}` : doc.route;
 }
 
 /** A built local search index, ready to query. */

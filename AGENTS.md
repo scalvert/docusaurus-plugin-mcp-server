@@ -31,7 +31,7 @@ This is a Docusaurus plugin that exposes documentation as an MCP (Model Context 
 - `docusaurus-plugin.ts` - Main plugin with `postBuild` hook
 - Processes HTML files → extracts content → converts to markdown → builds search index
 - Packages Agent Skills (built-in `docs-research` + optional site skills) with digests
-- Outputs artifacts to `build/mcp/` (docs.json, search-index.json, skills.json, manifest.json)
+- Assembles the artifact bundle and writes it to `build/mcp/bundle.json`, plus 2.x per-file copies (docs.json, search-index.json, skills.json, manifest.json, indexer extras). See `CONTEXT.md` for the terms and `docs/adr/0001-single-artifact-bundle.md` for why
 
 **Runtime** (`src/mcp/`, `src/adapters/`): Serverless functions serve MCP requests:
 - `McpDocsServer` class wraps the MCP TypeScript SDK v2 (`@modelcontextprotocol/server`). It serves protocol 2026-07-28 statelessly and routes 2025-era (`initialize`) requests to a stateless JSON-response transport on the same endpoint
@@ -57,7 +57,12 @@ The package has four export paths configured in `package.json`:
 - `src/processing/` - HTML parsing, markdown conversion, heading extraction
 - `src/search/` - Built-in BM25 local search (`local-search.ts`, MiniSearch) and the `evaluateSearch` ranking harness (`evaluate.ts`)
 - `src/providers/` - Pluggable indexer/search provider system
-- `src/cli/verify.ts` - CLI for verifying build output
+- `src/artifacts/` - The artifact bundle: shape, member filenames, format version, and validation (`bundle.ts`, edge-safe); file IO (`node.ts`, Node only). Add new filenames under `build/mcp/` here, not in callers
+- `src/cli/verify.ts` - CLI entry for verifying build output; the checks live in `src/cli/verify-build.ts`
+
+### Domain language and decisions
+
+`CONTEXT.md` is the glossary (artifact bundle, document, document ID, indexer extras, and so on); use its terms in code and docs. `docs/adr/` records decisions not to re-litigate without new information.
 
 ### Provider System
 
