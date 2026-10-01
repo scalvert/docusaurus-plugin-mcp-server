@@ -29,8 +29,9 @@ import type {
   ProviderContext,
   SearchProviderInitData,
 } from '../providers/types.js';
-import { docsSearchTool, formatSearchResults } from './tools/docs-search.js';
-import { docsFetchTool, formatPageContent } from './tools/docs-fetch.js';
+import { docsSearch } from './tools/docs-search.js';
+import { docsFetch } from './tools/docs-fetch.js';
+import type { DocsToolDeps, DocsToolModule } from './tools/tool.js';
 import { registerSkills, skillsCapabilities, skillsInstructions } from './skills.js';
 // The bridge lives with the adapters but is a dependency of handleHttpRequest,
 // which predates the web handler and stays part of this class's public API.
@@ -43,15 +44,8 @@ import { toWebRequest, writeWebResponse } from '../adapters/node-bridge.js';
  */
 const CACHE_HINT: Required<CacheHint> = { ttlMs: 5 * 60 * 1000, cacheScope: 'public' };
 
-/** A successful single-text-block tool result */
-function toolText(text: string) {
-  return { content: [{ type: 'text' as const, text }] };
-}
-
-/** A tool-level error result (the call reached the tool but failed) */
-function toolError(text: string) {
-  return { ...toolText(text), isError: true };
-}
+/** The tools every server registers, in tools/list order. */
+const DOCS_TOOLS: readonly DocsToolModule[] = [docsSearch, docsFetch];
 
 /**
  * Type guard to check if config passes an artifact bundle
@@ -203,54 +197,24 @@ export class McpDocsServer {
   }
 
   /**
-   * Register all MCP tools using definitions from tool files
+   * Register the docs tools. Each tool module owns its description, schema,
+   * and handler; the server supplies search, document lookup, and readiness.
    */
   private registerTools(server: McpServer): void {
-    const toolOverrides = this.config.tools;
+    const provider = this.searchProvider;
+    if (!provider) {
+      // Unreachable: servers are created only after initialize() sets the provider.
+      throw new Error('MCP search provider not initialized');
+    }
 
-    server.registerTool(
-      docsSearchTool.name,
-      {
-        description: toolOverrides?.docs_search?.description ?? docsSearchTool.description,
-        inputSchema: docsSearchTool.inputSchema,
-        annotations: { readOnlyHint: true, openWorldHint: false },
-      },
-      async ({ query, limit }) => {
-        if (!this.searchProvider || !this.searchProvider.isReady()) {
-          return toolError('Server not initialized. Please try again.');
-        }
-
-        try {
-          const results = await this.searchProvider.search(query, { limit });
-          return toolText(formatSearchResults(results));
-        } catch (error) {
-          console.error('[MCP] Search error:', error);
-          return toolError('An error occurred while searching. Please try again.');
-        }
-      }
-    );
-
-    server.registerTool(
-      docsFetchTool.name,
-      {
-        description: toolOverrides?.docs_fetch?.description ?? docsFetchTool.description,
-        inputSchema: docsFetchTool.inputSchema,
-        annotations: { readOnlyHint: true, openWorldHint: false },
-      },
-      async ({ url }) => {
-        if (!this.searchProvider || !this.searchProvider.isReady()) {
-          return toolError('Server not initialized. Please try again.');
-        }
-
-        try {
-          const doc = await this.getDocument(url);
-          return toolText(formatPageContent(doc));
-        } catch (error) {
-          console.error('[MCP] Fetch error:', error);
-          return toolError('An error occurred while fetching the page. Please try again.');
-        }
-      }
-    );
+    const deps: DocsToolDeps = {
+      search: (query, options) => provider.search(query, options),
+      getDocument: (url) => this.getDocument(url),
+      isReady: () => provider.isReady(),
+    };
+    for (const tool of DOCS_TOOLS) {
+      tool.register(server, deps, this.config.tools);
+    }
   }
 
   /**

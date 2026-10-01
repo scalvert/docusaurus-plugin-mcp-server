@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { ProcessedDoc } from '../../types/index.js';
+import { READ_ONLY_ANNOTATIONS, runTool, type DocsToolModule } from './tool.js';
 
 /**
  * Zod field shape for docs_fetch input parameters. A raw shape (not a
@@ -23,6 +24,30 @@ export const docsFetchTool = {
   description:
     'Fetch the complete content of a documentation page. Use this after searching to get the full markdown content of a specific page.',
   inputSchema: z.object(docsFetchInputSchema),
+};
+
+/**
+ * The docs_fetch tool: fetches one page and formats it as Markdown.
+ */
+export const docsFetch: DocsToolModule = {
+  name: 'docs_fetch',
+  register(server, deps, overrides) {
+    server.registerTool(
+      docsFetchTool.name,
+      {
+        description: overrides?.docs_fetch?.description ?? docsFetchTool.description,
+        inputSchema: docsFetchTool.inputSchema,
+        annotations: READ_ONLY_ANNOTATIONS,
+      },
+      ({ url }) =>
+        runTool(
+          deps,
+          '[MCP] Fetch error:',
+          'An error occurred while fetching the page. Please try again.',
+          async () => formatPageContent(await deps.getDocument(url))
+        )
+    );
+  },
 };
 
 /**
