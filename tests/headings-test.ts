@@ -56,6 +56,20 @@ describe('extractHeadings', () => {
     ]);
   });
 
+  it('matches HTML headings ignoring zero-width characters, and keeps them in the text', () => {
+    const headings = extractHeadings('## a\u200db\n', [{ level: 2, text: 'ab', id: 'x' }]);
+    expect(headings[0]).toMatchObject({ text: 'a\u200db', id: 'x' });
+  });
+
+  it('names a heading that is only an image by its alt text, and still matches its id', () => {
+    const markdown = '## ![Logo](/logo.png)\n\n## ![Mark](/mark.png)\n';
+    const headings = extractHeadings(markdown, [{ level: 2, text: '', id: 'brand' }]);
+    expect(headings.map(({ text, id }) => ({ text, id }))).toEqual([
+      { text: 'Logo', id: 'brand' },
+      { text: 'Mark', id: 'mark' },
+    ]);
+  });
+
   it('generates an id when no HTML heading matches', () => {
     const headings = extractHeadings('## Getting Started!\n', [
       { level: 3, text: 'Getting Started!', id: 'x' },
