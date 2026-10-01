@@ -27,18 +27,20 @@ This is a Docusaurus build output (HTML only) for the page-extraction golden tes
 
 ## How it was built
 
-Run from fish shell. The helper scripts are in `tools/` next to this file.
+The helper scripts are in [`tools/`](tools/). From the repository root, in a scratch copy of the example (`$REPO` is this repository's root):
 
 ```sh
-git clone /Users/stevecalvert/workspace/personal/docusaurus-plugin-mcp-server /tmp/fixture-src
-cd /tmp/fixture-src/examples/basic-docs
-python3 /tmp/fixture-setup.py   # tools/fixture-setup.py: edits config/sidebar and writes the new docs
+cp -R examples/basic-docs /tmp/fixture-site && cd /tmp/fixture-site
+python3 $REPO/tests/fixtures/extract/tools/fixture-setup.py .   # edits config/sidebar, writes the new docs
 printf '%s\n' '---' 'title: Home' '---' '' '# Example Docs' '' 'Welcome to the Example Docs home page. Head over to the [documentation](/docs/intro) to get started.' > src/pages/index.md
 npm install --no-audit --no-fund          # npm ci not possible: package.json changed
 npm install --no-audit --no-fund @docusaurus/theme-mermaid@3.9.2
 npx docusaurus build
-python3 /tmp/fixture-copy.py build /tmp/extract-fixture/site handmade   # tools/fixture-copy.py
+rm -rf $REPO/tests/fixtures/extract/site
+python3 $REPO/tests/fixtures/extract/tools/fixture-copy.py build $REPO/tests/fixtures/extract/site handmade
 ```
+
+Then regenerate the expected output with `npx vitest run tests/extract-golden-test.ts -u` and review the diff.
 
 Changes to the example clone (made by `fixture-setup.py`):
 

@@ -220,7 +220,7 @@ Keep skills to markdown. MCP hosts treat served skills as untrusted input and wo
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `outputDir` | `string` | `'mcp'` | Output directory for MCP artifacts (relative to build dir) |
-| `contentSelectors` | `string[]` | `['article', 'main', ...]` | CSS selectors for finding content |
+| `contentSelectors` | `string[]` | `['article', 'main', ...]` | CSS selectors for finding content, in priority order. Invalid selectors are skipped with a build warning (before 2.2, one failed every page) |
 | `excludeSelectors` | `string[]` | `['nav', 'header', ...]` | CSS selectors for elements to remove. Full CSS since 2.2 (`div.sidebar`, `main .toc`, `[data-noindex]`); before, only tag, `.class`, and `[attr="v"]` matched. Invalid selectors are skipped with a build warning |
 | `minContentLength` | `number` | `50` | Minimum content length to consider a page valid |
 | `server.name` | `string` | `'docs-mcp-server'` | Name of the MCP server |
@@ -677,7 +677,10 @@ import {
 
 2.2 changes nothing you have to act on. It adds `build/mcp/bundle.json` and the `artifacts` / `artifactsDir` server options, and deprecates the file (`docsPath`, `indexPath`, `skillsPath`) and pre-loaded data (`docs`, `searchIndexData`, `skills`) configs, and `McpDocsServer.handleHttpRequest()` (use `createNodeHandler`). Those still work through 2.x and are removed in 3.0. [migrations/2.x-3.0.0.md](migrations/2.x-3.0.0.md) has the before/after code and a checklist for an agent to run.
 
-One fix to check: `excludeSelectors` are now full CSS. Before 2.2, only tag names, `.class`, and `[attr="v"]` on plain attributes matched, and anything else (`div.sidebar`, `.a .b`, `[data-x="y"]`) was silently ignored. If you listed such selectors, they now remove what they say, so check the generated docs. The defaults behave as before.
+Two extraction fixes change the generated docs:
+
+- **`excludeSelectors` are full CSS.** Before 2.2, only tag names, `.class`, and `[attr="v"]` on plain attributes matched. Anything else (`div.sidebar`, `.a .b`, `[data-x="y"]`) was silently ignored, and a selector starting with an attribute (`[role="tab"] span`) removed the `[role="tab"]` element itself. If you listed such selectors, they now remove what they say, so check the generated docs. The defaults behave as before.
+- **Headings are read correctly.** Every Docusaurus heading used to carry its permalink into the text and id (`Setup[​](#setup "Direct link to Setup")`, id `setupsetup-direct-link-to-setup`), and `#` lines inside code blocks counted as headings. Now heading text is plain, ids are the page's real anchors (including `-1` duplicates and custom ids), code blocks are skipped, and the permalinks are gone from the Markdown. This changes `docs_fetch` output and search scores (not result order on our test site); custom indexers that read `DocHeading` see the corrected values.
 
 ## Upgrading to 2.0
 

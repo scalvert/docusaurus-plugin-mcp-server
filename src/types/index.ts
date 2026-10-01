@@ -24,14 +24,18 @@ export interface LocalSearchConfig {
 export interface McpServerPluginOptions {
   /** Output directory for MCP artifacts (relative to build dir). Default: 'mcp' */
   outputDir?: string;
-  /** CSS selectors for content extraction, in order of priority */
+  /**
+   * CSS selectors for the content element, in order of priority. An invalid
+   * selector is skipped with a build warning.
+   */
   contentSelectors?: string[];
   /**
    * CSS selectors for elements to remove from content before processing.
    * Full CSS, matched against the whole page (e.g. `div.sidebar`,
    * `main .toc`, `[data-noindex]`). An invalid selector is skipped with a
-   * build warning. (Before 2.2, only tag names, `.class`, and `[attr="v"]`
-   * on plain attributes matched; anything else was silently ignored.)
+   * build warning. Before 2.2, only tag names, `.class`, and `[attr="v"]`
+   * on plain attributes matched; anything else was silently ignored. Docusaurus
+   * heading permalinks (`a.hash-link`) are always removed.
    */
   excludeSelectors?: string[];
   /** Minimum content length (in characters) to consider a page valid. Default: 50 */
@@ -197,9 +201,12 @@ export interface ProcessedDoc {
 export interface DocHeading {
   /** Heading level (1-6) */
   level: number;
-  /** Heading text content */
+  /** Heading text as a reader sees it (no Markdown formatting) */
   text: string;
-  /** Anchor ID for linking */
+  /**
+   * Anchor ID for linking: the page's `id` for this heading (`#id` in the
+   * URL), or one generated from the text if the HTML had none
+   */
   id: string;
   /**
    * Character offset in `markdown` where this heading's section starts (the

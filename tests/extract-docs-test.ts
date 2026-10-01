@@ -80,6 +80,29 @@ describe('extractPage', () => {
     ).toEqual({ skipped: 'too-short' });
   });
 
+  it("drops Docusaurus heading permalinks and keeps the headings' anchors", async () => {
+    const result = await extractPage(
+      page(
+        `<article><p>${FILLER}</p>` +
+          '<h2 class="anchor anchorWithStickyNavbar_x" id="setup">Setup<a href="#setup" class="hash-link" ' +
+          'aria-label="Direct link to Setup" title="Direct link to Setup">\u200b</a></h2><p>One.</p>' +
+          '<h2 class="anchor" id="setup-1">Setup<a href="#setup-1" class="hash-link">\u200b</a></h2><p>Two.</p>' +
+          '<pre><code># Install it\n</code></pre></article>'
+      ),
+      '/p',
+      options()
+    );
+    if (!('doc' in result)) throw new Error('skipped');
+    const { markdown, headings } = result.doc;
+
+    expect(markdown).not.toContain('Direct link');
+    expect(markdown).toContain('\n## Setup\n');
+    expect(headings.map(({ level, text, id }) => ({ level, text, id }))).toEqual([
+      { level: 2, text: 'Setup', id: 'setup' },
+      { level: 2, text: 'Setup', id: 'setup-1' },
+    ]);
+  });
+
   it('always drops script, style, and noscript', async () => {
     const md = await markdownOf(
       page(
