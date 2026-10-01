@@ -1,4 +1,4 @@
-import type { SearchProvider } from '../providers/types.js';
+import type { SearchRanker } from '../providers/types.js';
 
 /**
  * One labeled query: the pages that fully answer it.
@@ -61,12 +61,13 @@ export interface EvaluateSearchOptions {
  * labeled queries.
  *
  * Use it to compare providers, or to guard ranking in CI: build the site, load
- * the provider, and assert on `hitsAt` and `mrr`.
+ * the provider, and assert on `hitsAt` and `mrr`. It only calls `search`, so
+ * initialize the provider first if it needs it.
  *
  * @example
  * ```typescript
  * const provider = await loadSearchProvider('local');
- * await provider.initialize(context, { docsPath, indexPath });
+ * await provider.initialize(context, { bundle: await readArtifactBundle('build/mcp') });
  * const report = await evaluateSearch(provider, [
  *   { query: 'install the CLI', expected: ['/docs/installation'] },
  * ]);
@@ -76,7 +77,7 @@ export interface EvaluateSearchOptions {
  * @experimental May change in a 2.x minor release; pin a version if you depend on it.
  */
 export async function evaluateSearch(
-  provider: SearchProvider,
+  provider: SearchRanker,
   cases: SearchEvalCase[],
   options: EvaluateSearchOptions = {}
 ): Promise<SearchEvalReport> {

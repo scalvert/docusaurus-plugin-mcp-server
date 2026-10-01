@@ -1,5 +1,5 @@
 import type { ArtifactBundle } from '../artifacts/bundle.js';
-import type { SearchProvider } from '../providers/types.js';
+import type { SearchProvider, SearchRanker } from '../providers/types.js';
 
 /** Page fields the built-in local search indexes. `slug` is the route path as words. */
 export type LocalSearchField = 'title' | 'slug' | 'headings' | 'description' | 'content';
@@ -77,12 +77,13 @@ export interface McpServerPluginOptions {
   indexers?: string[] | false;
 
   /**
-   * Search provider module. Default: 'local'
+   * Has no effect. The search provider is chosen where the server runs, with
+   * the server config's `search` option (`McpDocsServer`,
+   * `createWebRequestHandler`, `createNodeServer`, `createNodeHandler`).
+   * The removed 1.x value `'flexsearch'` is rejected.
    *
-   * Can be:
-   * - 'local' (built-in, requires the 'local' indexer to have run)
-   * - './path/to/search.js' (relative path)
-   * - '@myorg/glean-search' (npm package)
+   * @deprecated Since 2.2 (it has done nothing since 2.0; choose the provider
+   * in the server config). Removed in 3.0.
    */
   search?: string;
 
@@ -294,11 +295,13 @@ export interface McpServerBaseConfig {
    * Search provider. Default: 'local'.
    *
    * Accepts either a module specifier (string) loaded via dynamic `import()`,
-   * or a {@link SearchProvider} instance. Pass an instance when running in a
-   * bundled environment (Cloudflare Workers, etc.) where dynamic import of
-   * arbitrary specifiers is not available.
+   * whose default export is a provider class or object, or an instance. Pass
+   * an instance when running in a bundled environment (Cloudflare Workers,
+   * etc.) where dynamic import of arbitrary specifiers is not available.
+   * Since 2.2 either only needs to be a {@link SearchRanker}: a
+   * `{ name, search }` object works.
    */
-  search?: string | SearchProvider;
+  search?: string | SearchProvider | SearchRanker;
   /**
    * Ranking options for the built-in local search. See {@link LocalSearchConfig}.
    * Ignored when `search` is a custom provider.

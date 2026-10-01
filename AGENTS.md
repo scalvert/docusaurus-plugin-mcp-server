@@ -50,7 +50,7 @@ The package has four export paths configured in `package.json`:
 ### Key Modules
 
 - `src/mcp/server.ts` - Core MCP server using `@modelcontextprotocol/server` (era dispatch, cache hints)
-- `src/mcp/tools/` - The MCP tools (`docs_search`, `docs_fetch`). Each tool module owns its schema, description, handler, and error messages, and registers itself; the server only supplies search, document lookup, and readiness. `tool.ts` (internal, not exported) holds the shared readiness guard (`runTool`) and result helpers. Wire output changes must show up as a reviewed diff in `tests/tool-wire-golden-test.ts` (regenerate with `-u`)
+- `src/mcp/tools/` - The MCP tools (`docs_search`, `docs_fetch`). Each tool module owns its schema, description, handler, and error messages, and registers itself; the server supplies search, document lookup, readiness, and the configured description overrides. `tool.ts` (internal, not exported) holds the shared readiness guard (`runTool`) and result helpers. Wire output changes must show up as a reviewed diff in `tests/__golden__/tool-wire/` (regenerate with `npx vitest run tests/tool-wire-golden-test.ts -u`)
 - `src/mcp/skills.ts` - Skills extension runtime (`io.modelcontextprotocol/skills`: `skills/list`, `skills/get`, `skill://` resources); edge-safe
 - `src/skills/` - Build-time skill packaging (`packager.ts`) and built-in skill loading/templating (`builtin.ts`)
 - `skills-builtin/` - Built-in skills shipped in the package (`docs-research/SKILL.md`, with `{{siteDocs}}`/`{{siteSummary}}`/`{{siteMap}}` placeholders filled by `src/skills/builtin.ts`; the site map is generated in `src/skills/site-map.ts`). Published via package.json `files`; distinct from `skills/`, which is this repo's own developer skill
@@ -70,7 +70,7 @@ The package has four export paths configured in `package.json`:
 
 Indexers and search providers are pluggable via the `src/providers/` system:
 - `ContentIndexer` - Processes docs at build time (e.g., LocalSearchIndexer)
-- `SearchProvider` - Handles queries at runtime (e.g., LocalSearchProvider)
+- `SearchProvider` - Handles queries at runtime (e.g., LocalSearchProvider). The server holds it as a `SearchRanker` (only `name` and `search` required; `initialize`, `isReady`, `getDocument`, `getDocCount` optional), so call the optional members with `?.`. `isReady` and `healthCheck` are deprecated since 2.2
 
 Ranking changes must keep `tests/search-ranking-test.ts` passing; its thresholds are floors.
 

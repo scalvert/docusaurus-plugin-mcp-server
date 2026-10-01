@@ -1,4 +1,7 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, beforeAll, afterAll } from 'vitest';
+import fs from 'node:fs/promises';
+import os from 'node:os';
+import path from 'node:path';
 import { LocalSearchIndexer } from '../src/providers/indexers/local-search-indexer.js';
 import { LocalSearchProvider } from '../src/providers/search/local-search-provider.js';
 import { loadIndexer, loadSearchProvider } from '../src/providers/loader.js';
@@ -250,6 +253,68 @@ describe('Provider Loader', () => {
       await expect(
         loadSearchProvider({ name: 'broken' } as unknown as LocalSearchProvider)
       ).rejects.toThrow(/does not implement SearchProvider/);
+    });
+
+    it('accepts an instance with only name and search (a SearchRanker), as passed', async () => {
+      const ranker = { name: 'ranker', search: async () => [] };
+      await expect(loadSearchProvider(ranker)).resolves.toBe(ranker);
+    });
+
+    it.each([
+      ['null', null],
+      ['a number', 42],
+      ['a function', () => []],
+      ['an object without search', { name: 'no-search', initialize: async () => {} }],
+      ['a non-string name', { name: 1, search: async () => [] }],
+      ['a non-function search', { name: 'x', search: 'nope' }],
+    ])('rejects %s as an instance, with the 2.1 message', async (_label, value) => {
+      await expect(loadSearchProvider(value as never)).rejects.toThrow(
+        'Invalid search provider instance: does not implement SearchProvider interface'
+      );
+    });
+
+    describe('module specifiers keep the full SearchProvider check', () => {
+      let dir: string;
+
+      beforeAll(async () => {
+        dir = await fs.mkdtemp(path.join(os.tmpdir(), 'mcp-provider-module-'));
+        await fs.writeFile(
+          path.join(dir, 'ranker-object.mjs'),
+          "export default { name: 'ranker', search: async () => [] };\n"
+        );
+        await fs.writeFile(
+          path.join(dir, 'ranker-class.mjs'),
+          "export default class { name = 'ranker'; async search() { return []; } }\n"
+        );
+        await fs.writeFile(
+          path.join(dir, 'provider-class.mjs'),
+          "export default class { name = 'full'; async initialize() {} isReady() { return true; } async search() { return []; } }\n"
+        );
+      });
+
+      afterAll(async () => {
+        await fs.rm(dir, { recursive: true, force: true });
+      });
+
+      it('rejects a default-export object without initialize/isReady', async () => {
+        const specifier = path.join(dir, 'ranker-object.mjs');
+        await expect(loadSearchProvider(specifier)).rejects.toThrow(
+          `Invalid search provider module "${specifier}": must export a default class or SearchProvider instance`
+        );
+      });
+
+      it('rejects a default-export class without initialize/isReady', async () => {
+        const specifier = path.join(dir, 'ranker-class.mjs');
+        await expect(loadSearchProvider(specifier)).rejects.toThrow(
+          `Invalid search provider module "${specifier}": does not implement SearchProvider interface`
+        );
+      });
+
+      it('still loads a default-export class that implements SearchProvider', async () => {
+        const provider = await loadSearchProvider(path.join(dir, 'provider-class.mjs'));
+        expect(provider.name).toBe('full');
+        expect(provider.isReady()).toBe(true);
+      });
     });
   });
 });
