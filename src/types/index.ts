@@ -205,7 +205,8 @@ export interface DocHeading {
   text: string;
   /**
    * Anchor ID for linking: the page's `id` for this heading (`#id` in the
-   * URL), or one generated from the text if the HTML had none
+   * URL), or one generated from the text when the HTML heading has no `id`
+   * or no HTML heading matches
    */
   id: string;
   /**

@@ -680,7 +680,7 @@ import {
 Two extraction fixes change the generated docs:
 
 - **`excludeSelectors` are full CSS.** Before 2.2, only tag names, `.class`, and `[attr="v"]` on plain attributes matched. Anything else (`div.sidebar`, `.a .b`, `[data-x="y"]`) was silently ignored, and a selector starting with an attribute (`[role="tab"] span`) removed the `[role="tab"]` element itself. If you listed such selectors, they now remove what they say, so check the generated docs. The defaults behave as before.
-- **Headings are read correctly.** Every Docusaurus heading used to carry its permalink into the text and id (`Setup[​](#setup "Direct link to Setup")`, id `setupsetup-direct-link-to-setup`), and `#` lines inside code blocks counted as headings. Now heading text is plain, ids are the page's real anchors (including `-1` duplicates and custom ids), code blocks are skipped, and the permalinks are gone from the Markdown. This changes `docs_fetch` output and search scores (not result order on our test site); custom indexers that read `DocHeading` see the corrected values.
+- **Headings are read correctly.** Every Docusaurus heading used to carry its permalink into the text and id (`Setup[​](#setup "Direct link to Setup")`, id `setupsetup-direct-link-to-setup`), and `#` lines inside code blocks counted as headings. Now heading text is plain, ids are the page's real anchors (including `-1` duplicates and custom ids), code blocks are skipped, and the permalinks are gone from the Markdown. This changes `docs_fetch` output and search scores, and result order can shift where permalink text inflated a page's score (a query containing "link", for example). Custom indexers that read `DocHeading` see the corrected values.
 
 ## Upgrading to 2.0
 
