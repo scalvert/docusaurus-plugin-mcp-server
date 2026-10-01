@@ -1,81 +1,100 @@
+import { unified } from 'unified';
+import remarkParse from 'remark-parse';
+import remarkGfm from 'remark-gfm';
+import { toString as mdastToString } from 'mdast-util-to-string';
+import { toString as hastToString } from 'hast-util-to-string';
+import type { Element, ElementContent } from 'hast';
+import type { Nodes as MdastNodes } from 'mdast';
 import type { DocHeading } from '../types/index.js';
 
-/**
- * Extract headings from markdown content with their positions
- */
-export function extractHeadingsFromMarkdown(markdown: string): DocHeading[] {
-  const headings: DocHeading[] = [];
-  const lines = markdown.split('\n');
-  let currentOffset = 0;
+/** A heading in the page's content HTML. */
+export interface HtmlHeading {
+  level: number;
+  text: string;
+  /** The element's `id`, the anchor the page links to */
+  id?: string;
+}
 
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i] ?? '';
-    const headingMatch = line.match(/^(#{1,6})\s+(.+?)(?:\s+\{#([^}]+)\})?$/);
+const markdownParser = unified().use(remarkParse).use(remarkGfm);
 
-    if (headingMatch) {
-      const hashes = headingMatch[1] ?? '';
-      const level = hashes.length;
-      let text = headingMatch[2] ?? '';
-      let id = headingMatch[3] ?? '';
+/** Heading text as a reader sees it: zero-width characters dropped, whitespace collapsed. */
+function normalize(text: string): string {
+  return text
+    .replace(/[\u200b-\u200d\ufeff]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
-      // If no explicit ID, generate one from text (Docusaurus style)
-      if (!id) {
-        id = generateHeadingId(text);
-      }
-
-      // Clean up text (remove any remaining markdown formatting)
-      text = text.replace(/\*\*([^*]+)\*\*/g, '$1'); // Remove bold
-      text = text.replace(/_([^_]+)_/g, '$1'); // Remove italic
-      text = text.replace(/`([^`]+)`/g, '$1'); // Remove code
-
+/** The h1–h6 elements in `content`, in document order. */
+export function htmlHeadings(content: Element): HtmlHeading[] {
+  const headings: HtmlHeading[] = [];
+  const walk = (node: ElementContent): void => {
+    if (node.type !== 'element') return;
+    const match = /^h([1-6])$/.exec(node.tagName);
+    if (match) {
+      const id = node.properties?.id;
       headings.push({
-        level,
-        text: text.trim(),
-        id,
-        startOffset: currentOffset,
-        endOffset: -1, // Will be calculated below
+        level: Number(match[1]),
+        text: normalize(hastToString(node)),
+        ...(typeof id === 'string' && id ? { id } : {}),
       });
+      return;
     }
-
-    currentOffset += line.length + 1; // +1 for newline
-  }
-
-  // Calculate end offsets (each heading ends where the next same-or-higher level heading starts)
-  for (let i = 0; i < headings.length; i++) {
-    const current = headings[i];
-    if (!current) continue;
-
-    let endOffset = markdown.length;
-
-    // Find the next heading at the same or higher level
-    for (let j = i + 1; j < headings.length; j++) {
-      const next = headings[j];
-      if (next && next.level <= current.level) {
-        endOffset = next.startOffset;
-        break;
-      }
-    }
-
-    current.endOffset = endOffset;
-  }
-
+    node.children.forEach(walk);
+  };
+  walk(content);
   return headings;
 }
 
 /**
- * Generate a URL-safe heading ID (Docusaurus style)
+ * The headings of a document's Markdown, with offsets into it.
+ *
+ * Headings, their levels, text, and offsets come from the Markdown itself
+ * (parsed, so `#` lines inside code blocks are not headings). Each heading's
+ * `id` is the anchor of the matching HTML heading (same level and text, in
+ * order), so it links to the page; a heading with no match gets an id
+ * generated from its text.
  */
+export function extractHeadings(markdown: string, html: HtmlHeading[] = []): DocHeading[] {
+  const found: Array<{ level: number; text: string; start: number }> = [];
+  const walk = (node: MdastNodes): void => {
+    if (node.type === 'heading') {
+      found.push({
+        level: node.depth,
+        text: normalize(mdastToString(node)),
+        start: node.position?.start.offset ?? 0,
+      });
+      return;
+    }
+    if ('children' in node) node.children.forEach(walk);
+  };
+  walk(markdownParser.parse(markdown));
+
+  let next = 0;
+  const headings: DocHeading[] = found.map(({ level, text, start }) => {
+    const index = html.findIndex((h, i) => i >= next && h.level === level && h.text === text);
+    let id: string | undefined;
+    if (index !== -1) {
+      next = index + 1;
+      id = html[index]?.id;
+    }
+    return { level, text, id: id ?? generateHeadingId(text), startOffset: start, endOffset: -1 };
+  });
+
+  // Each section ends where the next heading at the same or a higher level starts.
+  headings.forEach((current, i) => {
+    const following = headings.slice(i + 1).find((h) => h.level <= current.level);
+    current.endOffset = following ? following.startOffset : markdown.length;
+  });
+  return headings;
+}
+
+/** A URL-safe id from heading text (Docusaurus style), for headings without one. */
 function generateHeadingId(text: string): string {
-  return (
-    text
-      .toLowerCase()
-      // Remove any non-alphanumeric characters except spaces and hyphens
-      .replace(/[^\w\s-]/g, '')
-      // Replace spaces with hyphens
-      .replace(/\s+/g, '-')
-      // Remove consecutive hyphens
-      .replace(/-+/g, '-')
-      // Remove leading/trailing hyphens
-      .replace(/^-|-$/g, '')
-  );
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
 }

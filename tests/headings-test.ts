@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { extractHeadingsFromMarkdown } from '../src/processing/headings.js';
+import { unified } from 'unified';
+import rehypeParse from 'rehype-parse';
+import type { Element } from 'hast';
+import { extractHeadings, htmlHeadings } from '../src/processing/headings.js';
 import type { DocHeading } from '../src/types/index.js';
 
 /** A section by heading ID, sliced by the heading offsets (what custom indexers may do). */
@@ -8,160 +11,123 @@ function extractSection(markdown: string, id: string, headings: DocHeading[]): s
   return heading ? markdown.slice(heading.startOffset, heading.endOffset).trim() : null;
 }
 
-describe('extractHeadingsFromMarkdown', () => {
-  it('extracts headings with IDs', () => {
-    const markdown = `# Title {#title}
+function element(html: string): Element {
+  const root = unified().use(rehypeParse, { fragment: true }).parse(`<article>${html}</article>`);
+  return root.children[0] as Element;
+}
 
-Some content here.
+describe('extractHeadings', () => {
+  it('reads levels, plain text, and offsets from the Markdown', () => {
+    const markdown =
+      '# Title\n\nIntro.\n\n## **Bold** and `code` and [link](/x)\n\nBody.\n\n### Sub\n';
+    const headings = extractHeadings(markdown);
 
-## Section One {#section-one}
-
-Content for section one.
-
-### Subsection {#subsection}
-
-More content.
-
-## Section Two {#section-two}
-
-Final content.`;
-
-    const headings = extractHeadingsFromMarkdown(markdown);
-
-    expect(headings).toHaveLength(4);
-    expect(headings[0]).toMatchObject({
-      level: 1,
-      text: 'Title',
-      id: 'title',
-    });
-    expect(headings[1]).toMatchObject({
-      level: 2,
-      text: 'Section One',
-      id: 'section-one',
-    });
-    expect(headings[2]).toMatchObject({
-      level: 3,
-      text: 'Subsection',
-      id: 'subsection',
-    });
-    expect(headings[3]).toMatchObject({
-      level: 2,
-      text: 'Section Two',
-      id: 'section-two',
-    });
+    expect(headings.map(({ level, text }) => ({ level, text }))).toEqual([
+      { level: 1, text: 'Title' },
+      { level: 2, text: 'Bold and code and link' },
+      { level: 3, text: 'Sub' },
+    ]);
+    for (const h of headings) {
+      expect(markdown.slice(h.startOffset)).toMatch(/^#{1,6} /);
+    }
   });
 
-  it('generates IDs for headings without explicit IDs', () => {
-    const markdown = `# Hello World
-
-## Getting Started
-
-### Installation`;
-
-    const headings = extractHeadingsFromMarkdown(markdown);
-
-    expect(headings).toHaveLength(3);
-    expect(headings[0]?.id).toBe('hello-world');
-    expect(headings[1]?.id).toBe('getting-started');
-    expect(headings[2]?.id).toBe('installation');
+  it('does not treat # lines inside code blocks as headings', () => {
+    const markdown =
+      '## Install\n\n```bash\n# Install it\n## not a heading\n```\n\n~~~\n# nor this\n~~~\n';
+    expect(extractHeadings(markdown).map((h) => h.text)).toEqual(['Install']);
   });
 
-  it('handles empty markdown', () => {
-    const headings = extractHeadingsFromMarkdown('');
-    expect(headings).toHaveLength(0);
+  it('takes ids from the HTML headings, matched by level and text in order', () => {
+    const html = htmlHeadings(
+      element(
+        '<h2 id="setup">Setup</h2><h3 id="prerequisites">Prerequisites</h3>' +
+          '<h2 id="setup-1">Setup</h2><h2 id="my-custom-id">Custom</h2>'
+      )
+    );
+    const markdown =
+      '## Setup\n\nA.\n\n### Prerequisites\n\nB.\n\n## Setup\n\nC.\n\n## Custom\n\nD.\n';
+
+    expect(extractHeadings(markdown, html).map((h) => h.id)).toEqual([
+      'setup',
+      'prerequisites',
+      'setup-1',
+      'my-custom-id',
+    ]);
   });
 
-  it('handles markdown with no headings', () => {
-    const markdown = 'Just some text without any headings.';
-    const headings = extractHeadingsFromMarkdown(markdown);
-    expect(headings).toHaveLength(0);
+  it('generates an id when no HTML heading matches', () => {
+    const headings = extractHeadings('## Getting Started!\n', [
+      { level: 3, text: 'Getting Started!', id: 'x' },
+    ]);
+    expect(headings[0]?.id).toBe('getting-started');
   });
 
-  it('calculates correct offsets', () => {
-    const markdown = `# Title
+  it('handles Markdown without headings', () => {
+    expect(extractHeadings('')).toEqual([]);
+    expect(extractHeadings('Just a paragraph.\n')).toEqual([]);
+  });
+});
 
-Content.
-
-## Next Section
-
-More content.`;
-
-    const headings = extractHeadingsFromMarkdown(markdown);
-
-    expect(headings).toHaveLength(2);
-    // First heading should start at 0
-    expect(headings[0]?.startOffset).toBe(0);
-    // Second heading should start where its line begins
-    expect(headings[1]?.startOffset).toBeGreaterThan(0);
-    // Both headings should have defined offsets
-    expect(headings[0]?.endOffset).toBeDefined();
-    expect(headings[1]?.endOffset).toBeDefined();
+describe('htmlHeadings', () => {
+  it('lists h1-h6 in document order with ids and reader-visible text', () => {
+    expect(
+      htmlHeadings(
+        element(
+          '<h1>Doc</h1><section><h2 id="a">Alpha\u200b</h2><div><h4>Deep   one</h4></div></section>'
+        )
+      )
+    ).toEqual([
+      { level: 1, text: 'Doc' },
+      { level: 2, text: 'Alpha', id: 'a' },
+      { level: 4, text: 'Deep one' },
+    ]);
   });
 });
 
 describe('heading offsets delimit sections', () => {
-  const markdown = `# Main Title {#main-title}
+  const markdown = `# Main Title
 
 Introduction paragraph.
 
-## First Section {#first-section}
+## First Section
 
-Content of the first section.
+First section content.
 
-More content in first section.
-
-## Second Section {#second-section}
-
-Content of the second section.
-
-### Subsection {#subsection}
+### Subsection
 
 Subsection content.
 
-## Third Section {#third-section}
+## Second Section
 
-Final content.`;
+Second section content.
 
-  const headings = extractHeadingsFromMarkdown(markdown);
+## Third Section
 
-  it('extracts a section by heading ID', () => {
-    const section = extractSection(markdown, 'first-section', headings);
+Third section content.
+`;
+  const headings = extractHeadings(markdown);
 
-    expect(section).not.toBeNull();
-    expect(section).toContain('## First Section');
-    expect(section).toContain('Content of the first section.');
-    expect(section).not.toContain('## Second Section');
+  it('a section runs to the next heading at the same or a higher level', () => {
+    expect(extractSection(markdown, 'first-section', headings)).toBe(
+      '## First Section\n\nFirst section content.\n\n### Subsection\n\nSubsection content.'
+    );
+    expect(extractSection(markdown, 'subsection', headings)).toBe(
+      '### Subsection\n\nSubsection content.'
+    );
+    expect(extractSection(markdown, 'second-section', headings)).toBe(
+      '## Second Section\n\nSecond section content.'
+    );
   });
 
-  it('includes subsections in parent section', () => {
-    const section = extractSection(markdown, 'second-section', headings);
-
-    expect(section).not.toBeNull();
-    expect(section).toContain('## Second Section');
-    expect(section).toContain('### Subsection');
-    expect(section).toContain('Subsection content.');
-    expect(section).not.toContain('## Third Section');
+  it('the last section runs to the end', () => {
+    expect(extractSection(markdown, 'third-section', headings)).toBe(
+      '## Third Section\n\nThird section content.'
+    );
+    expect(headings.at(-1)?.endOffset).toBe(markdown.length);
   });
 
-  it('extracts subsection only', () => {
-    const section = extractSection(markdown, 'subsection', headings);
-
-    expect(section).not.toBeNull();
-    expect(section).toContain('### Subsection');
-    expect(section).toContain('Subsection content.');
-    expect(section).not.toContain('## Second Section');
-  });
-
-  it('returns null for non-existent heading', () => {
-    const section = extractSection(markdown, 'non-existent', headings);
-    expect(section).toBeNull();
-  });
-
-  it('handles the last section correctly', () => {
-    const section = extractSection(markdown, 'third-section', headings);
-
-    expect(section).not.toBeNull();
-    expect(section).toContain('## Third Section');
-    expect(section).toContain('Final content.');
+  it('returns null for a missing id', () => {
+    expect(extractSection(markdown, 'nope', headings)).toBeNull();
   });
 });

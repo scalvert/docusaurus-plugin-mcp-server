@@ -17,7 +17,7 @@ import type { Element, ElementContent, Root } from 'hast';
 import type { ProcessedDoc } from '../types/index.js';
 import { discoverPages } from './pages.js';
 import { hastToMarkdown } from './markdown.js';
-import { extractHeadingsFromMarkdown } from './headings.js';
+import { extractHeadings, htmlHeadings } from './headings.js';
 
 export interface PageOptions {
   /** CSS selectors for the content container, in priority order */
@@ -149,11 +149,22 @@ export async function extractPage(
     return { skipped: 'no-content' };
   }
 
-  const excluded = [
-    ...ALWAYS_EXCLUDED.flatMap((selector) => selectAll(selector, tree)),
-    ...options.excludeSelectors.flatMap((selector) => safeSelectAll('excludeSelectors', selector)),
-  ];
-  const markdown = await hastToMarkdown(removeExcluded(content, excluded));
+  // One pass over the page for the whole list; one per selector only if the
+  // list fails, to find (and skip) the selector at fault.
+  const selectors = [...ALWAYS_EXCLUDED, ...options.excludeSelectors];
+  let excluded: Element[];
+  try {
+    excluded = selectAll(selectors.join(', '), tree);
+  } catch {
+    excluded = [
+      ...ALWAYS_EXCLUDED.flatMap((selector) => selectAll(selector, tree)),
+      ...options.excludeSelectors.flatMap((selector) =>
+        safeSelectAll('excludeSelectors', selector)
+      ),
+    ];
+  }
+  const cleaned = removeExcluded(content, excluded);
+  const markdown = await hastToMarkdown(cleaned);
   if (!markdown || markdown.trim().length < options.minContentLength) {
     return { skipped: 'too-short' };
   }
@@ -164,7 +175,7 @@ export async function extractPage(
       title: extractTitle(tree),
       description: extractDescription(tree),
       markdown,
-      headings: extractHeadingsFromMarkdown(markdown),
+      headings: extractHeadings(markdown, htmlHeadings(cleaned)),
     },
   };
 }
@@ -204,7 +215,13 @@ function findContentElement(
 }
 
 /** Never content, whatever the options say. */
-const ALWAYS_EXCLUDED = ['script', 'style', 'noscript'];
+const ALWAYS_EXCLUDED = [
+  'script',
+  'style',
+  'noscript',
+  // Docusaurus's heading permalink: a zero-width "Direct link to …" anchor.
+  'a.hash-link',
+];
 
 /**
  * A copy of the page's content element without the `excluded` elements and
