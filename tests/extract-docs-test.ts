@@ -103,6 +103,24 @@ describe('extractPage', () => {
     ]);
   });
 
+  it('matches headings with images and joiners to their HTML ids, keeping the joiners', async () => {
+    const family = '\u{1F468}\u200d\u{1F469}\u200d\u{1F467}';
+    const result = await extractPage(
+      page(
+        `<article><p>${FILLER}</p>` +
+          '<h2 id="logo"><img src="/i.png" alt="icon"> Logo</h2><p>One.</p>' +
+          `<h2 id="family">Family ${family}</h2><p>Two.</p></article>`
+      ),
+      '/p',
+      options()
+    );
+    if (!('doc' in result)) throw new Error('skipped');
+    expect(result.doc.headings.map(({ text, id }) => ({ text, id }))).toEqual([
+      { text: 'Logo', id: 'logo' },
+      { text: `Family ${family}`, id: 'family' },
+    ]);
+  });
+
   it('always drops script, style, and noscript', async () => {
     const md = await markdownOf(
       page(
@@ -144,6 +162,18 @@ describe('excludeSelectors are full CSS', () => {
     expect(md).not.toContain(dropped);
     expect(md).toContain('KEEP-PLAIN-DIV');
     expect(md).toContain('KEEP-SIBLING');
+  });
+
+  it('does not let two broken selectors join into a valid one', async () => {
+    const reported: string[] = [];
+    const result = await extractPage(
+      page(`<article><p>${FILLER}</p><p title="a, b">KEEP</p></article>`),
+      '/p',
+      options({ excludeSelectors: ['[title="a', 'b"]'] }),
+      (_option, selector) => reported.push(selector)
+    );
+    expect(result).toMatchObject({ doc: { markdown: expect.stringContaining('KEEP') } });
+    expect(reported).toEqual(['[title="a', 'b"]']);
   });
 
   it('keeps matching the 2.1 forms: tag, .class, [attr="v"]', async () => {

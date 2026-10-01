@@ -45,6 +45,9 @@ export interface ExtractDocsResult {
 
 const htmlParser = unified().use(rehypeParse);
 
+/** For checking that a selector parses (pseudo-class errors only show on matching pages). */
+const EMPTY_ROOT: Root = { type: 'root', children: [] };
+
 /**
  * Extract a document from every page in a build directory. Pages that fail
  * or are skipped are logged and left out; they never fail the build.
@@ -150,17 +153,25 @@ export async function extractPage(
   }
 
   // One pass over the page for the whole list; one per selector only if the
-  // list fails, to find (and skip) the selector at fault.
-  const selectors = [...ALWAYS_EXCLUDED, ...options.excludeSelectors];
+  // list fails, to find (and skip) the selector at fault. Only selectors that
+  // parse on their own are joined, so two broken ones (`[title="a`, `b"]`)
+  // can't join into a valid one.
+  const parseable = options.excludeSelectors.filter((selector) => {
+    try {
+      selectAll(selector, EMPTY_ROOT);
+      return true;
+    } catch (error) {
+      onInvalidSelector('excludeSelectors', selector, error);
+      return false;
+    }
+  });
   let excluded: Element[];
   try {
-    excluded = selectAll(selectors.join(', '), tree);
+    excluded = selectAll([...ALWAYS_EXCLUDED, ...parseable].join(', '), tree);
   } catch {
     excluded = [
       ...ALWAYS_EXCLUDED.flatMap((selector) => selectAll(selector, tree)),
-      ...options.excludeSelectors.flatMap((selector) =>
-        safeSelectAll('excludeSelectors', selector)
-      ),
+      ...parseable.flatMap((selector) => safeSelectAll('excludeSelectors', selector)),
     ];
   }
   const cleaned = removeExcluded(content, excluded);

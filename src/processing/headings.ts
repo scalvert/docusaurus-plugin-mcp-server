@@ -17,12 +17,21 @@ export interface HtmlHeading {
 
 const markdownParser = unified().use(remarkParse).use(remarkGfm);
 
-/** Heading text as a reader sees it: zero-width characters dropped, whitespace collapsed. */
+/**
+ * Heading text as a reader sees it: zero-width spaces (Docusaurus's permalink
+ * filler) and BOMs dropped, whitespace collapsed. Joiners (U+200C/U+200D) are
+ * kept: they're part of emoji sequences and some scripts.
+ */
 function normalize(text: string): string {
   return text
-    .replace(/[\u200b-\u200d\ufeff]/g, '')
+    .replace(/[\u200b\ufeff]/g, '')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+/** What two headings must share to match: their text, ignoring all zero-width characters. */
+function matchKey(text: string): string {
+  return text.replace(/[\u200b-\u200d\u2060\ufeff]/g, '');
 }
 
 /** The h1–h6 elements in `content`, in document order. */
@@ -61,7 +70,8 @@ export function extractHeadings(markdown: string, html: HtmlHeading[] = []): Doc
     if (node.type === 'heading') {
       found.push({
         level: node.depth,
-        text: normalize(mdastToString(node)),
+        // Image alt text isn't heading text (and isn't in the HTML heading's text).
+        text: normalize(mdastToString(node, { includeImageAlt: false })),
         start: node.position?.start.offset ?? 0,
       });
       return;
@@ -70,9 +80,16 @@ export function extractHeadings(markdown: string, html: HtmlHeading[] = []): Doc
   };
   walk(markdownParser.parse(markdown));
 
+  // Greedy, in order: each Markdown heading takes the next unused HTML heading
+  // with the same level and text. An HTML heading that isn't a Markdown
+  // heading (e.g. one inside a table cell) is never matched, but it can't take
+  // an id from a later heading unless that one has the same level and text.
   let next = 0;
   const headings: DocHeading[] = found.map(({ level, text, start }) => {
-    const index = html.findIndex((h, i) => i >= next && h.level === level && h.text === text);
+    const key = matchKey(text);
+    const index = html.findIndex(
+      (h, i) => i >= next && h.level === level && matchKey(h.text) === key
+    );
     let id: string | undefined;
     if (index !== -1) {
       next = index + 1;
