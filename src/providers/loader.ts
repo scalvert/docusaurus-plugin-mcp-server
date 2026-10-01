@@ -1,6 +1,6 @@
 import { MIGRATION_GUIDE } from '../errors.js';
 import type { LocalSearchConfig } from '../types/index.js';
-import type { ContentIndexer, SearchProvider } from './types.js';
+import type { ContentIndexer, SearchProvider, SearchRanker } from './types.js';
 
 /**
  * Options forwarded to the built-in 'local' search provider.
@@ -86,12 +86,15 @@ export async function loadIndexer(specifier: string): Promise<ContentIndexer> {
  * Load a search provider by name, module path, or instance.
  *
  * @param specifier - 'local' for the built-in provider, a module path to
- *                    dynamically import, or a {@link SearchProvider} instance.
- *                    Pass an instance when running in a bundled environment
- *                    where dynamic `import()` of arbitrary specifiers is not
- *                    available (e.g. Cloudflare Workers).
+ *                    dynamically import, or an instance. Pass an instance when
+ *                    running in a bundled environment where dynamic `import()`
+ *                    of arbitrary specifiers is not available (e.g. Cloudflare
+ *                    Workers). Since 2.2 an instance only needs to be a
+ *                    {@link SearchRanker} (`name` and `search`), and is
+ *                    returned as its own type. A module's default export must
+ *                    still implement {@link SearchProvider}.
  * @param builtinOptions - Options passed to the built-in provider constructor (ignored otherwise)
- * @returns Instantiated SearchProvider
+ * @returns Instantiated SearchProvider, or the instance passed
  *
  * @example
  * ```typescript
@@ -102,12 +105,45 @@ export async function loadIndexer(specifier: string): Promise<ContentIndexer> {
  * const provider = await loadSearchProvider(new MyProvider());
  * ```
  */
-export async function loadSearchProvider(
+// The generic overload comes first: `ReturnType`/`Parameters` read the last
+// overload, which keeps the 2.1 signature. A SearchProvider instance resolves
+// to `SearchProvider`, exactly as in 2.1; any other ranker keeps its own type.
+export function loadSearchProvider<P extends SearchRanker>(
+  specifier: P,
+  builtinOptions?: BuiltinSearchOptions
+): Promise<P extends SearchProvider ? SearchProvider : P>;
+export function loadSearchProvider(
   specifier: string | SearchProvider,
   builtinOptions?: BuiltinSearchOptions
-): Promise<SearchProvider> {
+): Promise<SearchProvider>;
+export async function loadSearchProvider(
+  specifier: string | SearchRanker,
+  builtinOptions?: BuiltinSearchOptions
+): Promise<SearchRanker> {
+  // A name or module path gets the full 2.1 SearchProvider check, so the
+  // `SearchProvider` this promises for them is real.
+  return loadSearch(specifier, builtinOptions, isSearchProvider);
+}
+
+/**
+ * What McpDocsServer uses: like `loadSearchProvider`, but a module path's
+ * default export only needs to be a SearchRanker (`name` and `search`), as an
+ * instance does. Internal: not exported from the package.
+ */
+export async function loadSearchRanker(
+  specifier: string | SearchRanker,
+  builtinOptions?: BuiltinSearchOptions
+): Promise<SearchRanker> {
+  return loadSearch(specifier, builtinOptions, isSearchRanker);
+}
+
+async function loadSearch(
+  specifier: string | SearchRanker,
+  builtinOptions: BuiltinSearchOptions | undefined,
+  isValidModuleExport: (obj: unknown) => obj is SearchRanker
+): Promise<SearchRanker> {
   if (typeof specifier !== 'string') {
-    if (!isSearchProvider(specifier)) {
+    if (!isSearchRanker(specifier)) {
       throw new Error(
         'Invalid search provider instance: does not implement SearchProvider interface'
       );
@@ -130,7 +166,7 @@ export async function loadSearchProvider(
     if (typeof ProviderClass === 'function') {
       const instance = new ProviderClass();
 
-      if (!isSearchProvider(instance)) {
+      if (!isValidModuleExport(instance)) {
         throw new Error(
           `Invalid search provider module "${specifier}": does not implement SearchProvider interface`
         );
@@ -139,7 +175,7 @@ export async function loadSearchProvider(
       return instance;
     }
 
-    if (isSearchProvider(ProviderClass)) {
+    if (isValidModuleExport(ProviderClass)) {
       return ProviderClass;
     }
 
@@ -175,7 +211,21 @@ function isContentIndexer(obj: unknown): obj is ContentIndexer {
 }
 
 /**
- * Type guard to check if an object implements SearchProvider
+ * Type guard for the instance path: what McpDocsServer needs, a string
+ * `name` and a `search` function.
+ */
+function isSearchRanker(obj: unknown): obj is SearchRanker {
+  if (!obj || typeof obj !== 'object') {
+    return false;
+  }
+
+  const ranker = obj as SearchRanker;
+  return typeof ranker.name === 'string' && typeof ranker.search === 'function';
+}
+
+/**
+ * Type guard to check if an object implements SearchProvider. Module
+ * specifiers keep the 2.1 check.
  */
 function isSearchProvider(obj: unknown): obj is SearchProvider {
   if (!obj || typeof obj !== 'object') {

@@ -22,13 +22,9 @@ import {
   parseArtifactBundle,
   type ArtifactBundle,
 } from '../artifacts/bundle.js';
-import { loadSearchProvider } from '../providers/loader.js';
+import { loadSearchRanker } from '../providers/loader.js';
 import { ConfigurationError, MIGRATION_GUIDE } from '../errors.js';
-import type {
-  SearchProvider,
-  ProviderContext,
-  SearchProviderInitData,
-} from '../providers/types.js';
+import type { SearchRanker, ProviderContext, SearchProviderInitData } from '../providers/types.js';
 import { docsSearch } from './tools/docs-search.js';
 import { docsFetch } from './tools/docs-fetch.js';
 import type { DocsToolDeps, DocsToolModule } from './tools/tool.js';
@@ -148,7 +144,7 @@ export class McpDocsServer {
   private config: McpDocsServerConfig;
   private bundle: ArtifactBundle | null = null;
   private identity: ServerIdentity | null = null;
-  private searchProvider: SearchProvider | null = null;
+  private searchProvider: SearchRanker | null = null;
   private skillsArtifact: SkillsArtifact | null = null;
   private handler: McpHttpHandler | null = null;
   private initialized = false;
@@ -210,7 +206,8 @@ export class McpDocsServer {
     const deps: DocsToolDeps = {
       search: (query, options) => provider.search(query, options),
       getDocument: (url) => this.getDocument(url),
-      isReady: () => provider.isReady(),
+      // Deprecated since 2.2; a provider without it is always ready.
+      isReady: () => provider.isReady?.() ?? true,
     };
     for (const tool of DOCS_TOOLS) {
       tool.register(server, deps, this.config.tools);
@@ -267,7 +264,7 @@ export class McpDocsServer {
    * fails exactly as in 2.1. The server's own copy of the documents is read
    * best-effort and only backs the `docs_fetch` and doc-count fallbacks.
    */
-  private async loadBundle(searchProvider: SearchProvider): Promise<{
+  private async loadBundle(searchProvider: SearchRanker): Promise<{
     bundle: ArtifactBundle;
     initData: SearchProviderInitData;
   }> {
@@ -371,8 +368,9 @@ export class McpDocsServer {
     }
     // Load the provider first, as 2.1 did, so a bad `search` module is
     // reported before any artifact problem.
-    const searchSpecifier = this.config.search ?? 'local';
-    const searchProvider = await loadSearchProvider(searchSpecifier, {
+    // Since 2.2 a provider only needs `name` and `search`, whether it's given
+    // as an instance or as a module path.
+    const searchProvider = await loadSearchRanker(this.config.search ?? 'local', {
       localSearch: this.config.localSearch,
     });
 
@@ -398,7 +396,7 @@ export class McpDocsServer {
       outputDir: '', // Not relevant for runtime
     };
 
-    await searchProvider.initialize(providerContext, initData);
+    await searchProvider.initialize?.(providerContext, initData);
 
     this.handler = createMcpHandler(() => this.createMcpServer(), {
       // Legacy traffic is routed separately (see dispatch) to keep v1's JSON responses.

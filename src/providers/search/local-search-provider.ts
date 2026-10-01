@@ -15,9 +15,12 @@ import {
 /**
  * Built-in local search provider.
  *
- * Answers queries from the `search-index.json` written by the local search
- * indexer, with no external service. Supports file-based loading (Node.js)
- * and pre-loaded data (serverless and edge runtimes).
+ * Answers queries from the search index the local search indexer adds to the
+ * artifact bundle, with no external service. `McpDocsServer` passes the bundle
+ * as `initData.bundle`; to drive it yourself, pass
+ * `{ bundle: await readArtifactBundle(dir) }`. The deprecated `initData` forms
+ * (file paths `docsPath`/`indexPath`, or pre-loaded `docs`/`indexData`) still
+ * work through 2.x.
  */
 export class LocalSearchProvider implements SearchProvider {
   readonly name = 'local';

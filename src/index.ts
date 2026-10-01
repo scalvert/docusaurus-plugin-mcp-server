@@ -34,6 +34,7 @@ export type {
   ProviderContext,
   ContentIndexer,
   SearchProvider,
+  SearchRanker,
   SearchProviderInitData,
   SearchOptions,
 } from './providers/types.js';

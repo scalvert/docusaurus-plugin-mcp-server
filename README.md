@@ -229,7 +229,7 @@ Keep skills to markdown. MCP hosts treat served skills as untrusted input and wo
 | `server.urlBase` | `'origin' \| 'site'` | `'origin'` | How to derive the MCP URL when `server.url` is not set. `'origin'` → `{siteUrl}/{outputDir}`; `'site'` → under Docusaurus `baseUrl` |
 | `excludeRoutes` | `string[]` | `['/404*', '/search*']` | Routes to exclude (glob patterns) |
 | `indexers` | `string[] \| false` | `['local']` | Indexers to run during build. Use `false` to disable. Supports built-in (`'local'`), relative paths, or npm packages. |
-| `search` | `string` | `'local'` | Search provider module for runtime queries. Supports built-in (`'local'`), relative paths, or npm packages. |
+| `search` | `string` | `'local'` | **Deprecated since 2.2, removed in 3.0.** Has no effect (since 2.0): the search provider is chosen where the server runs, with the [server config's](#server-configuration) `search` option. `'flexsearch'` is rejected. |
 | `skills` | `{ builtin?: boolean; dir?: string } \| false` | built-in skill only | [Agent Skills](#serving-agent-skills-over-mcp) to package into `skills.json`. `dir` is relative to the site directory. `false` disables skills. |
 
 Build-time options control artifact generation and the install-button URL (`server.url` / `server.urlBase`). Runtime-only options such as `instructions`, `tools`, and `baseUrl` belong on the adapter/handler config — see [Server Configuration](#server-configuration).
@@ -345,30 +345,48 @@ The plugin always writes the documents (`docs.json`) itself, whichever indexers 
 
 ### SearchProvider
 
-Implement `SearchProvider` to delegate runtime search to an external service:
+To delegate runtime search to an external service, pass a search provider as the server's `search` option. Since 2.2 it only needs a `name` and a `search` function (the `SearchRanker` type), so a plain object works:
+
+```typescript snippet=readme/snippet-24.ts
+import type { SearchRanker } from 'docusaurus-plugin-mcp-server';
+import { createWebRequestHandler } from 'docusaurus-plugin-mcp-server/adapters';
+import bundle from '../build/mcp/bundle.json';
+
+const glean: SearchRanker = {
+  name: 'glean',
+  async search(query, options) {
+    // Call the Glean Search API and map each hit to a SearchResult:
+    // { url, route, title, score, snippet }
+    return [];
+  },
+};
+
+export default {
+  fetch: createWebRequestHandler({ artifacts: bundle, search: glean }),
+};
+```
+
+A class works the same way, and can add the optional members:
 
 ```typescript snippet=readme/snippet-14.ts
 import type {
-  SearchProvider,
+  SearchRanker,
   ProviderContext,
   SearchOptions,
   SearchResult,
 } from 'docusaurus-plugin-mcp-server';
 
-export default class GleanSearchProvider implements SearchProvider {
+export default class GleanSearchProvider implements SearchRanker {
   readonly name = 'glean';
 
-  private apiEndpoint = process.env.GLEAN_API_ENDPOINT!;
-  private apiToken = process.env.GLEAN_API_TOKEN!;
+  private apiEndpoint = process.env.GLEAN_API_ENDPOINT;
+  private apiToken = process.env.GLEAN_API_TOKEN;
 
+  // Optional. Rejecting fails the server's initialization.
   async initialize(context: ProviderContext): Promise<void> {
     if (!this.apiEndpoint || !this.apiToken) {
       throw new Error('GLEAN_API_ENDPOINT and GLEAN_API_TOKEN required');
     }
-  }
-
-  isReady(): boolean {
-    return !!this.apiEndpoint && !!this.apiToken;
   }
 
   async search(query: string, options?: SearchOptions): Promise<SearchResult[]> {
@@ -379,6 +397,10 @@ export default class GleanSearchProvider implements SearchProvider {
 ```
 
 With an `artifacts` or `artifactsDir` server config, `initialize` receives the artifact bundle as `initData.bundle`: the documents, the search index (if an indexer produced one), and any indexer extras. So a provider can read what its indexer wrote without touching the filesystem. (With the deprecated configs it gets the same `initData` as in 2.1.) `getDocument` and `getDocCount` are optional: without them, `docs_fetch` and the status endpoint use the bundle's documents.
+
+This holds whether the server config passes an instance or a module path (`search: './my-search.js'`, whose default export is a `SearchRanker` class or object). Existing `SearchProvider` classes keep working unchanged. (`loadSearchProvider()`, called directly with a module path, still requires a full `SearchProvider` in 2.x.)
+
+**Deprecated since 2.2:** `isReady()` and `healthCheck()`. Through 2.x the server still calls `isReady()`, and when it returns false the tools answer "Server not initialized"; 3.0 stops calling it. Reject from `initialize()` or throw from `search()` instead. The server has never called `healthCheck()`; use the `GET` status endpoint (`McpDocsServer.getStatus()`). In 3.0, `SearchProvider` becomes `SearchRanker`'s shape. See [migrations/2.x-3.0.0.md](migrations/2.x-3.0.0.md).
 
 ### Configuring Custom Providers
 
@@ -415,7 +437,7 @@ These options apply to `McpDocsServer`, `createWebRequestHandler`, `createNodeSe
 | `baseUrl` | `string` | No | Base URL for full page URLs in responses. Default: the site URL from the build |
 | `instructions` | `string` | No | Instructions describing how to use the server, surfaced to MCP clients in the `server/discover` (2026-07-28) or `initialize` (2025-era) result. When skills are served, their URIs are appended |
 | `tools` | `object` | No | Per-tool overrides. Supports `docs_search.description` and `docs_fetch.description` to customize tool descriptions |
-| `search` | `string \| SearchProvider` | No | Search provider. Default: the built-in `'local'` search |
+| `search` | `string \| SearchRanker` | No | Search provider: a module name or path, or an instance (since 2.2, `{ name, search }` is enough). Default: the built-in `'local'` search. See [SearchProvider](#searchprovider) |
 | `localSearch` | `{ fieldBoosts?: {...} }` | No | Field boosts for the built-in search. See [Search](#search) |
 
 \*Pass `artifacts` (edge and serverless, or `McpDocsServer` directly) or `artifactsDir` (Node). In Node, `readArtifactBundle(dir)` from `docusaurus-plugin-mcp-server/adapters/node` gives you the `artifacts` value.
@@ -675,7 +697,7 @@ import {
 
 ## Moving off the deprecated server configs (2.2)
 
-2.2 changes nothing you have to act on. It adds `build/mcp/bundle.json` and the `artifacts` / `artifactsDir` server options, and deprecates the file (`docsPath`, `indexPath`, `skillsPath`) and pre-loaded data (`docs`, `searchIndexData`, `skills`) configs, and `McpDocsServer.handleHttpRequest()` (use `createNodeHandler`). Those still work through 2.x and are removed in 3.0. [migrations/2.x-3.0.0.md](migrations/2.x-3.0.0.md) has the before/after code and a checklist for an agent to run.
+2.2 changes nothing you have to act on. It adds `build/mcp/bundle.json` and the `artifacts` / `artifactsDir` server options, and deprecates the file (`docsPath`, `indexPath`, `skillsPath`) and pre-loaded data (`docs`, `searchIndexData`, `skills`) configs, and `McpDocsServer.handleHttpRequest()` (use `createNodeHandler`). It also deprecates the search provider methods `isReady()` and `healthCheck()` (a provider can now be just `{ name, search }`, a `SearchRanker`) and the plugin's `search` option, which has done nothing since 2.0. Those still work through 2.x and are removed in 3.0. [migrations/2.x-3.0.0.md](migrations/2.x-3.0.0.md) has the before/after code and a checklist for an agent to run.
 
 Two extraction fixes change the generated docs:
 

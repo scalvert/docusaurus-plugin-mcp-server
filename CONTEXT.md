@@ -31,3 +31,7 @@ _Avoid_: custom artifacts, indexer files
 **Search provider**:
 A runtime step that ranks documents for a query, reading the search index or indexer extras from the artifact bundle.
 _Avoid_: search engine, search backend
+
+**Search ranker**:
+The least a search provider must be for the documentation server to use it: a name and a search function (`SearchRanker`). Setup, document lookup, and the document count are optional; the server falls back to the artifact bundle for the last two.
+_Avoid_: minimal provider, search function (for the whole object)

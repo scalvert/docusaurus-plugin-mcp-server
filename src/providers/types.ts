@@ -138,9 +138,78 @@ export interface SearchOptions {
 }
 
 /**
- * Runtime provider that handles search queries from MCP tools.
+ * What `McpDocsServer` needs from a search provider: a name and a `search`
+ * function. Everything else is optional. Without `getDocument` and
+ * `getDocCount`, `docs_fetch` and the status document count use the bundle's
+ * documents; without `initialize`, the provider is used as passed.
+ *
+ * Pass one as the server's `search` option. A plain object works:
+ *
+ * @example
+ * ```typescript
+ * import type { SearchRanker } from 'docusaurus-plugin-mcp-server';
+ *
+ * const ranker: SearchRanker = {
+ *   name: 'glean',
+ *   async search(query, options) {
+ *     // Call Glean Search API and transform results
+ *     return [];
+ *   },
+ * };
+ *
+ * createWebRequestHandler({ artifacts: bundle, search: ranker });
+ * ```
+ *
+ * @since 2.2
+ */
+export interface SearchRanker {
+  /** Unique name for this provider */
+  readonly name: string;
+
+  /**
+   * Search for documents matching the query.
+   */
+  search(query: string, options?: SearchOptions): Promise<SearchResult[]>;
+
+  /**
+   * Initialize the provider. Called once, before any search query, with the
+   * artifact bundle as `initData.bundle` (for `artifacts` / `artifactsDir`
+   * configs). Reject to fail the server's initialization.
+   */
+  initialize?(context: ProviderContext, initData?: SearchProviderInitData): Promise<void>;
+
+  /**
+   * Whether the provider can answer queries. When it returns false, the tools
+   * answer "Server not initialized" without calling the provider.
+   *
+   * @deprecated Since 2.2. Reject from `initialize()` or throw from `search()`
+   * instead. The server stops calling it in 3.0.
+   */
+  isReady?(): boolean;
+
+  /**
+   * Get a document by its document ID (full URL). Used by `docs_fetch`.
+   * Optional: without it, `docs_fetch` reads the bundle's documents.
+   */
+  getDocument?(url: string): Promise<ProcessedDoc | null>;
+
+  /**
+   * Get the number of indexed documents, for the status endpoint.
+   * Optional: without it, the status reports the bundle's document count.
+   */
+  getDocCount?(): number;
+}
+
+/**
+ * Runtime provider that handles search queries from MCP tools: a
+ * {@link SearchRanker} that must implement `initialize` and `isReady`.
  *
  * Consumers implement this to delegate search to external systems (Glean, Algolia, etc.).
+ * Since 2.2, a provider only needs to be a {@link SearchRanker}. Code that
+ * holds or calls a `SearchProvider` (`provider.initialize(...)`,
+ * `provider.isReady()`) keeps compiling. In 3.0 this type becomes
+ * `SearchRanker`'s shape: `initialize` optional, `isReady` and `healthCheck`
+ * removed.
  *
  * @example
  * ```typescript
@@ -170,10 +239,7 @@ export interface SearchOptions {
  * }
  * ```
  */
-export interface SearchProvider {
-  /** Unique name for this provider */
-  readonly name: string;
-
+export interface SearchProvider extends SearchRanker {
   /**
    * Initialize the search provider.
    * Called once before any search queries.
@@ -182,29 +248,17 @@ export interface SearchProvider {
 
   /**
    * Check if the provider is ready to handle search queries.
+   *
+   * @deprecated Since 2.2. Reject from `initialize()` or throw from `search()`
+   * instead. The server stops calling it in 3.0.
    */
   isReady(): boolean;
 
   /**
-   * Search for documents matching the query.
-   */
-  search(query: string, options?: SearchOptions): Promise<SearchResult[]>;
-
-  /**
-   * Get a document by its document ID (full URL). Used by `docs_fetch`.
-   * Optional: without it, `docs_fetch` reads the bundle's documents.
-   */
-  getDocument?(url: string): Promise<ProcessedDoc | null>;
-
-  /**
-   * Get the number of indexed documents, for the status endpoint.
-   * Optional: without it, the status reports the bundle's document count.
-   */
-  getDocCount?(): number;
-
-  /**
    * Check if the provider is healthy.
-   * Used for health checks and debugging.
+   *
+   * @deprecated Since 2.2. Never called by the server; use
+   * `McpDocsServer.getStatus()` (the `GET` status endpoint). Removed in 3.0.
    */
   healthCheck?(): Promise<{ healthy: boolean; message?: string }>;
 }

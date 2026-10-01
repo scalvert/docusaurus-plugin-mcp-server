@@ -30,6 +30,7 @@ import type {
   ArtifactBundle as MainArtifactBundle,
   McpDocsServerConfig,
   McpServerBundleConfig,
+  SearchRanker,
 } from 'docusaurus-plugin-mcp-server';
 import type { LoadContext } from '@docusaurus/types';
 import type { IncomingMessage, ServerResponse } from 'node:http';
@@ -108,6 +109,12 @@ describe('public API surface', () => {
 
   it('evaluateSearch is exported', () => {
     expect(typeof evaluateSearch).toBe('function');
+  });
+
+  it('exports the SearchRanker type, which loadSearchProvider and the server accept', async () => {
+    const ranker: SearchRanker = { name: 'ranker', search: async () => [] };
+    await expect(loadSearchProvider(ranker)).resolves.toBe(ranker);
+    expect(new McpDocsServer({ artifacts: {}, search: ranker })).toBeInstanceOf(McpDocsServer);
   });
 
   it('exports the built-in local search classes for passing an instance as `search`', async () => {

@@ -2,6 +2,7 @@ export type {
   ProviderContext,
   ContentIndexer,
   SearchProvider,
+  SearchRanker,
   SearchProviderInitData,
   SearchOptions,
   ContentIndexerModule,
