@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { SearchResult } from '../../types/index.js';
+import { READ_ONLY_ANNOTATIONS, runTool, type DocsToolModule } from './tool.js';
 
 /**
  * Longest accepted query. Search also caps the terms it uses (see
@@ -36,6 +37,30 @@ export const docsSearchTool = {
   description:
     'Search the documentation for relevant pages. Returns matching documents ranked by relevance, with URLs, snippets, and matching sections. Use this to find information across all documentation.',
   inputSchema: z.object(docsSearchInputSchema),
+};
+
+/**
+ * The docs_search tool: searches through the provider and formats the results.
+ */
+export const docsSearch: DocsToolModule = {
+  name: 'docs_search',
+  register(server, deps, overrides) {
+    server.registerTool(
+      docsSearchTool.name,
+      {
+        description: overrides?.docs_search?.description ?? docsSearchTool.description,
+        inputSchema: docsSearchTool.inputSchema,
+        annotations: READ_ONLY_ANNOTATIONS,
+      },
+      ({ query, limit }) =>
+        runTool(
+          deps,
+          '[MCP] Search error:',
+          'An error occurred while searching. Please try again.',
+          async () => formatSearchResults(await deps.search(query, { limit }))
+        )
+    );
+  },
 };
 
 /**

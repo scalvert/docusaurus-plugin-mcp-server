@@ -1,0 +1,428 @@
+[
+  {
+    "label": "tools/list",
+    "status": 200,
+    "contentType": "application/json",
+    "body": {
+      "result": {
+        "tools": [
+          {
+            "name": "docs_search",
+            "description": "Custom search description",
+            "inputSchema": {
+              "type": "object",
+              "$schema": "https://json-schema.org/draft/2020-12/schema",
+              "properties": {
+                "query": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 500,
+                  "description": "A few search keywords (max 500 characters)"
+                },
+                "limit": {
+                  "default": 16,
+                  "description": "Maximum number of results to return (1-20, default: 16)",
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 20
+                }
+              },
+              "required": ["query"]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "openWorldHint": false
+            }
+          },
+          {
+            "name": "docs_fetch",
+            "description": "Custom fetch description",
+            "inputSchema": {
+              "type": "object",
+              "$schema": "https://json-schema.org/draft/2020-12/schema",
+              "properties": {
+                "url": {
+                  "type": "string",
+                  "format": "uri",
+                  "description": "The full URL of the page to fetch (e.g., \"https://docs.example.com/docs/getting-started\")"
+                }
+              },
+              "required": ["url"]
+            },
+            "annotations": {
+              "readOnlyHint": true,
+              "openWorldHint": false
+            }
+          }
+        ],
+        "resultType": "complete",
+        "ttlMs": 300000,
+        "cacheScope": "public",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
+      },
+      "jsonrpc": "2.0",
+      "id": 0
+    }
+  },
+  {
+    "label": "docs_search: hit",
+    "status": 200,
+    "contentType": "application/json",
+    "body": {
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Found 3 result(s):\n\n1. **Installation**\n   URL: https://docs.example.com/docs/install\n   Installation Run npm install to install the widget toolkit. Requirements Node 22 or later. Optional tools A widget linter. Deep detail Not listed in the contents.\n\n2. **Configuration Guide**\n   URL: https://docs.example.com/docs/guides/configuration\n   ...nfiguration Guide Paragraph 1 describes ordinary widget behavior in some detail. Paragraph 2 describes ordinary widget behavior in some detail. Paragraph 3 describes ordinary widget behavior in some deta...\n\n3. **FAQ**\n   URL: https://docs.example.com/docs/faq\n   Common questions about the widget toolkit, answered briefly.\n\nUse docs_fetch with the URL to retrieve the full page content."
+          }
+        ],
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
+      },
+      "jsonrpc": "2.0",
+      "id": 1
+    }
+  },
+  {
+    "label": "docs_search: limit 1",
+    "status": 200,
+    "contentType": "application/json",
+    "body": {
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Found 1 result(s):\n\n1. **Installation**\n   URL: https://docs.example.com/docs/install\n   Installation Run npm install to install the widget toolkit. Requirements Node 22 or later. Optional tools A widget linter. Deep detail Not listed in the contents.\n\nUse docs_fetch with the URL to retrieve the full page content."
+          }
+        ],
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
+      },
+      "jsonrpc": "2.0",
+      "id": 2
+    }
+  },
+  {
+    "label": "docs_search: long page snippet",
+    "status": 200,
+    "contentType": "application/json",
+    "body": {
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Found 1 result(s):\n\n1. **Configuration Guide**\n   URL: https://docs.example.com/docs/guides/configuration\n   ...bes ordinary widget behavior in some detail. The frobnicate option turns on frobnication for every widget. Paragraph 1 describes ordinary widget behavior in some detail. Paragraph 2 describes ordinary widget...\n\nUse docs_fetch with the URL to retrieve the full page content."
+          }
+        ],
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
+      },
+      "jsonrpc": "2.0",
+      "id": 3
+    }
+  },
+  {
+    "label": "docs_search: miss",
+    "status": 200,
+    "contentType": "application/json",
+    "body": {
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "No matching documents found."
+          }
+        ],
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
+      },
+      "jsonrpc": "2.0",
+      "id": 4
+    }
+  },
+  {
+    "label": "docs_search: empty query",
+    "status": 200,
+    "contentType": "application/json",
+    "body": {
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Input validation error: Invalid arguments for tool docs_search: query: Too small: expected string to have >=1 characters"
+          }
+        ],
+        "isError": true,
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
+      },
+      "jsonrpc": "2.0",
+      "id": 5
+    }
+  },
+  {
+    "label": "docs_search: limit 21 (over max)",
+    "status": 200,
+    "contentType": "application/json",
+    "body": {
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Input validation error: Invalid arguments for tool docs_search: limit: Too big: expected number to be <=20"
+          }
+        ],
+        "isError": true,
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
+      },
+      "jsonrpc": "2.0",
+      "id": 6
+    }
+  },
+  {
+    "label": "docs_search: missing query",
+    "status": 200,
+    "contentType": "application/json",
+    "body": {
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Input validation error: Invalid arguments for tool docs_search: query: Invalid input: expected string, received undefined"
+          }
+        ],
+        "isError": true,
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
+      },
+      "jsonrpc": "2.0",
+      "id": 7
+    }
+  },
+  {
+    "label": "docs_search: no arguments",
+    "status": 200,
+    "contentType": "application/json",
+    "body": {
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Input validation error: Invalid arguments for tool docs_search: query: Invalid input: expected string, received undefined"
+          }
+        ],
+        "isError": true,
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
+      },
+      "jsonrpc": "2.0",
+      "id": 8
+    }
+  },
+  {
+    "label": "docs_fetch: hit (headings)",
+    "status": 200,
+    "contentType": "application/json",
+    "body": {
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "# Installation\n\n> Install the widget toolkit\n\n## Contents\n\n- [Installation](#installation)\n  - [Requirements](#requirements)\n    - [Optional tools](#optional-tools)\n\n---\n\n# Installation\n\nRun npm install to install the widget toolkit.\n\n## Requirements\n\nNode 22 or later.\n\n### Optional tools\n\nA widget linter.\n\n#### Deep detail\n\nNot listed in the contents."
+          }
+        ],
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
+      },
+      "jsonrpc": "2.0",
+      "id": 9
+    }
+  },
+  {
+    "label": "docs_fetch: page without headings",
+    "status": 200,
+    "contentType": "application/json",
+    "body": {
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "# FAQ\n\nCommon questions about the widget toolkit, answered briefly."
+          }
+        ],
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
+      },
+      "jsonrpc": "2.0",
+      "id": 10
+    }
+  },
+  {
+    "label": "docs_fetch: not found",
+    "status": 200,
+    "contentType": "application/json",
+    "body": {
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Page not found. Please check the URL and try again."
+          }
+        ],
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
+      },
+      "jsonrpc": "2.0",
+      "id": 11
+    }
+  },
+  {
+    "label": "docs_fetch: invalid url",
+    "status": 200,
+    "contentType": "application/json",
+    "body": {
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Input validation error: Invalid arguments for tool docs_fetch: url: Invalid URL"
+          }
+        ],
+        "isError": true,
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
+      },
+      "jsonrpc": "2.0",
+      "id": 12
+    }
+  },
+  {
+    "label": "docs_fetch: missing url",
+    "status": 200,
+    "contentType": "application/json",
+    "body": {
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Input validation error: Invalid arguments for tool docs_fetch: url: Invalid input: expected string, received undefined"
+          }
+        ],
+        "isError": true,
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
+      },
+      "jsonrpc": "2.0",
+      "id": 13
+    }
+  },
+  {
+    "label": "docs_fetch: no arguments",
+    "status": 200,
+    "contentType": "application/json",
+    "body": {
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Input validation error: Invalid arguments for tool docs_fetch: url: Invalid input: expected string, received undefined"
+          }
+        ],
+        "isError": true,
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
+      },
+      "jsonrpc": "2.0",
+      "id": 14
+    }
+  },
+  {
+    "label": "unknown tool",
+    "status": 200,
+    "contentType": "application/json",
+    "body": {
+      "jsonrpc": "2.0",
+      "id": 15,
+      "error": {
+        "code": -32602,
+        "message": "Tool docs_nope not found"
+      }
+    }
+  }
+]

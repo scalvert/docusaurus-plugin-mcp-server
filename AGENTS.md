@@ -50,7 +50,7 @@ The package has four export paths configured in `package.json`:
 ### Key Modules
 
 - `src/mcp/server.ts` - Core MCP server using `@modelcontextprotocol/server` (era dispatch, cache hints)
-- `src/mcp/tools/` - MCP tool definitions (`docs_search`, `docs_fetch`)
+- `src/mcp/tools/` - The MCP tools (`docs_search`, `docs_fetch`). Each tool module owns its schema, description, handler, and error messages, and registers itself; the server only supplies search, document lookup, and readiness. `tool.ts` (internal, not exported) holds the shared readiness guard (`runTool`) and result helpers. Wire output changes must show up as a reviewed diff in `tests/tool-wire-golden-test.ts` (regenerate with `-u`)
 - `src/mcp/skills.ts` - Skills extension runtime (`io.modelcontextprotocol/skills`: `skills/list`, `skills/get`, `skill://` resources); edge-safe
 - `src/skills/` - Build-time skill packaging (`packager.ts`) and built-in skill loading/templating (`builtin.ts`)
 - `skills-builtin/` - Built-in skills shipped in the package (`docs-research/SKILL.md`, with `{{siteDocs}}`/`{{siteSummary}}`/`{{siteMap}}` placeholders filled by `src/skills/builtin.ts`; the site map is generated in `src/skills/site-map.ts`). Published via package.json `files`; distinct from `skills/`, which is this repo's own developer skill
