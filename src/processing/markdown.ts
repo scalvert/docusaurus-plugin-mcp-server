@@ -1,77 +1,54 @@
 import { unified } from 'unified';
-import rehypeParse from 'rehype-parse';
 import rehypeRemark from 'rehype-remark';
-import remarkStringify from 'remark-stringify';
 import remarkGfm from 'remark-gfm';
+import remarkStringify from 'remark-stringify';
+import { toHtml } from 'hast-util-to-html';
+import type { Element, Root } from 'hast';
+
+const processor = unified()
+  .use(rehypeRemark)
+  .use(remarkGfm)
+  .use(remarkStringify, { bullet: '-', fences: true });
 
 /**
- * Convert HTML string to Markdown
+ * Convert a page's content element to Markdown, straight from the parsed
+ * tree (no second HTML parse). If conversion fails, falls back to plain text.
  */
-export async function htmlToMarkdown(html: string): Promise<string> {
-  if (!html || html.trim().length === 0) {
-    return '';
-  }
-
+export async function hastToMarkdown(element: Element): Promise<string> {
+  const root: Root = { type: 'root', children: [element] };
   try {
-    const processor = unified()
-      .use(rehypeParse, { fragment: true })
-      .use(rehypeRemark)
-      .use(remarkGfm)
-      .use(remarkStringify, {
-        bullet: '-',
-        fences: true,
-      });
-
-    const result = await processor.process(html);
-    let markdown = String(result);
-
-    // Post-process: clean up excessive whitespace
-    markdown = cleanMarkdown(markdown);
-
-    return markdown;
+    const mdast = await processor.run(root);
+    return cleanMarkdown(String(processor.stringify(mdast)));
   } catch (error) {
     console.error('Error converting HTML to Markdown:', error);
-    // Return a basic text extraction as fallback
-    return extractTextFallback(html);
+    return extractTextFallback(toHtml(element));
   }
 }
 
-/**
- * Clean up markdown output
- */
+/** Collapse blank-line runs and trailing whitespace; end with one newline. */
 function cleanMarkdown(markdown: string): string {
   return (
     markdown
-      // Remove excessive blank lines (more than 2 in a row)
       .replace(/\n{3,}/g, '\n\n')
-      // Remove trailing whitespace from lines
       .split('\n')
       .map((line) => line.trimEnd())
       .join('\n')
-      // Ensure single newline at end
       .trim() + '\n'
   );
 }
 
-/**
- * Fallback text extraction when markdown conversion fails
- */
+/** Plain text from HTML, for when Markdown conversion fails. */
 function extractTextFallback(html: string): string {
-  // Remove script and style tags
   let text = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
   text = text.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
 
-  // Convert common HTML elements to text
   text = text.replace(/<br\s*\/?>/gi, '\n');
   text = text.replace(/<\/p>/gi, '\n\n');
   text = text.replace(/<\/h[1-6]>/gi, '\n\n');
   text = text.replace(/<\/li>/gi, '\n');
   text = text.replace(/<\/div>/gi, '\n');
-
-  // Remove remaining HTML tags
   text = text.replace(/<[^>]+>/g, '');
 
-  // Decode common HTML entities
   text = text.replace(/&nbsp;/g, ' ');
   text = text.replace(/&amp;/g, '&');
   text = text.replace(/&lt;/g, '<');
@@ -79,9 +56,7 @@ function extractTextFallback(html: string): string {
   text = text.replace(/&quot;/g, '"');
   text = text.replace(/&#39;/g, "'");
 
-  // Clean up whitespace
   text = text.replace(/[ \t]+/g, ' ');
   text = text.replace(/\n{3,}/g, '\n\n');
-
   return text.trim();
 }

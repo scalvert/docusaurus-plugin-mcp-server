@@ -30,7 +30,7 @@ npm run build
 Run a single test file:
 
 ```bash
-npx vitest run tests/html-to-markdown-test.ts
+npx vitest run tests/markdown-test.ts
 ```
 
 ## Project Structure
@@ -40,7 +40,7 @@ npx vitest run tests/html-to-markdown-test.ts
 - `src/skills/` — Build-time Agent Skills packaging
 - `skills-builtin/` — Built-in skills shipped with the package (`docs-research`)
 - `src/adapters/` — Runtime handlers (`web-request.ts` for serverless/edge, `node.ts` for local dev, `node-bridge.ts` for Node ↔ web request conversion)
-- `src/processing/` — HTML parsing and markdown conversion
+- `src/processing/` — Page extraction: build directory in, documents out (`extractDocs`)
 - `src/search/` — Built-in BM25 local search and the `evaluateSearch` ranking harness
 - `src/providers/` — Pluggable indexer and search provider system
 - `src/theme/` — React components (McpInstallButton)

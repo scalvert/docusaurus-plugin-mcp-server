@@ -1,17 +1,12 @@
 import path from 'path';
-import pMap from 'p-map';
 import type { LoadContext, Plugin } from '@docusaurus/types';
 import type {
   McpServerPluginOptions,
   ResolvedPluginOptions,
-  ProcessedDoc,
   SkillsArtifact,
 } from '../types/index.js';
 import { DEFAULT_PLUGIN_OPTIONS } from '../types/index.js';
-import { collectRoutes } from './route-collector.js';
-import { extractContent, type ExtractContentOptions } from '../processing/html-parser.js';
-import { htmlToMarkdown } from '../processing/html-to-markdown.js';
-import { extractHeadingsFromMarkdown } from '../processing/heading-extractor.js';
+import { extractDocs } from '../processing/extract-docs.js';
 import { loadIndexer, removedBuiltinError } from '../providers/loader.js';
 import { MIGRATION_GUIDE } from '../errors.js';
 import type { ProviderContext } from '../providers/types.js';
@@ -51,58 +46,6 @@ function resolveOptions(options: McpServerPluginOptions): ResolvedPluginOptions 
 }
 
 /**
- * Options for processing an HTML file
- */
-interface ProcessHtmlOptions {
-  contentSelectors: string[];
-  excludeSelectors: string[];
-  minContentLength: number;
-}
-
-/**
- * Process a single HTML file into a ProcessedDoc
- */
-async function processHtmlFile(
-  htmlPath: string,
-  route: string,
-  options: ProcessHtmlOptions
-): Promise<ProcessedDoc | null> {
-  try {
-    // Extract content from HTML
-    const extractOptions: ExtractContentOptions = {
-      contentSelectors: options.contentSelectors,
-      excludeSelectors: options.excludeSelectors,
-    };
-    const extracted = await extractContent(htmlPath, extractOptions);
-
-    if (!extracted.contentHtml) {
-      console.warn(`[MCP] No content found in ${htmlPath}`);
-      return null;
-    }
-
-    const markdown = await htmlToMarkdown(extracted.contentHtml);
-
-    if (!markdown || markdown.trim().length < options.minContentLength) {
-      console.warn(`[MCP] Insufficient content in ${htmlPath}`);
-      return null;
-    }
-
-    const headings = extractHeadingsFromMarkdown(markdown);
-
-    return {
-      route,
-      title: extracted.title,
-      description: extracted.description,
-      markdown,
-      headings,
-    };
-  } catch (error) {
-    console.error(`[MCP] Error processing ${htmlPath}:`, error);
-    return null;
-  }
-}
-
-/**
  * Docusaurus plugin that generates MCP server artifacts during build
  */
 export default function mcpServerPlugin(
@@ -139,29 +82,15 @@ export default function mcpServerPlugin(
         return;
       }
 
-      const routes = await collectRoutes(outDir, resolvedOptions.excludeRoutes);
-      console.log(`[MCP] Found ${routes.length} routes to process`);
-
-      if (routes.length === 0) {
-        console.warn('[MCP] No routes found to process');
-        return;
-      }
-
-      const processOptions: ProcessHtmlOptions = {
+      const { docs: validDocs, pageCount } = await extractDocs(outDir, {
         contentSelectors: resolvedOptions.contentSelectors,
         excludeSelectors: resolvedOptions.excludeSelectors,
+        excludeRoutes: resolvedOptions.excludeRoutes,
         minContentLength: resolvedOptions.minContentLength,
-      };
-
-      const processedDocs = await pMap(
-        routes,
-        async (route) => {
-          return processHtmlFile(route.htmlPath, route.path, processOptions);
-        },
-        { concurrency: 10 }
-      );
-
-      const validDocs = processedDocs.filter((doc): doc is ProcessedDoc => doc !== null);
+      });
+      if (pageCount === 0) {
+        return;
+      }
       console.log(`[MCP] Successfully processed ${validDocs.length} documents`);
 
       if (validDocs.length === 0) {

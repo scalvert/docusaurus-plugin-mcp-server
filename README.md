@@ -221,7 +221,7 @@ Keep skills to markdown. MCP hosts treat served skills as untrusted input and wo
 |--------|------|---------|-------------|
 | `outputDir` | `string` | `'mcp'` | Output directory for MCP artifacts (relative to build dir) |
 | `contentSelectors` | `string[]` | `['article', 'main', ...]` | CSS selectors for finding content |
-| `excludeSelectors` | `string[]` | `['nav', 'header', ...]` | CSS selectors for elements to remove |
+| `excludeSelectors` | `string[]` | `['nav', 'header', ...]` | CSS selectors for elements to remove. Full CSS since 2.2 (`div.sidebar`, `main .toc`, `[data-noindex]`); before, only tag, `.class`, and `[attr="v"]` matched. Invalid selectors are skipped with a build warning |
 | `minContentLength` | `number` | `50` | Minimum content length to consider a page valid |
 | `server.name` | `string` | `'docs-mcp-server'` | Name of the MCP server |
 | `server.version` | `string` | `'1.0.0'` | Version of the MCP server |
@@ -676,6 +676,8 @@ import {
 ## Moving off the deprecated server configs (2.2)
 
 2.2 changes nothing you have to act on. It adds `build/mcp/bundle.json` and the `artifacts` / `artifactsDir` server options, and deprecates the file (`docsPath`, `indexPath`, `skillsPath`) and pre-loaded data (`docs`, `searchIndexData`, `skills`) configs, and `McpDocsServer.handleHttpRequest()` (use `createNodeHandler`). Those still work through 2.x and are removed in 3.0. [migrations/2.x-3.0.0.md](migrations/2.x-3.0.0.md) has the before/after code and a checklist for an agent to run.
+
+One fix to check: `excludeSelectors` are now full CSS. Before 2.2, only tag names, `.class`, and `[attr="v"]` on plain attributes matched, and anything else (`div.sidebar`, `.a .b`, `[data-x="y"]`) was silently ignored. If you listed such selectors, they now remove what they say, so check the generated docs. The defaults behave as before.
 
 ## Upgrading to 2.0
 

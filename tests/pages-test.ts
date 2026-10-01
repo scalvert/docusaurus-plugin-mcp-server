@@ -1,36 +1,36 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import path from 'path';
-import os from 'os';
-import fs from 'fs-extra';
-import { collectRoutes, discoverHtmlFiles } from '../src/plugin/route-collector.js';
+import path from 'node:path';
+import os from 'node:os';
+import fs from 'node:fs/promises';
+import { discoverPages } from '../src/processing/pages.js';
 
 let tmpDir: string;
 
 async function write(rel: string, contents = '<html></html>') {
   const full = path.join(tmpDir, rel);
-  await fs.ensureDir(path.dirname(full));
+  await fs.mkdir(path.dirname(full), { recursive: true });
   await fs.writeFile(full, contents);
   return full;
 }
 
+const routes = async (excludeRoutes: string[] = []) =>
+  (await discoverPages(tmpDir, excludeRoutes)).map((page) => page.route).sort();
+
 beforeEach(async () => {
-  tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'route-collector-'));
+  tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'pages-'));
 });
 
 afterEach(async () => {
-  await fs.remove(tmpDir);
+  await fs.rm(tmpDir, { recursive: true, force: true });
 });
 
-describe('discoverHtmlFiles', () => {
+describe('discoverPages', () => {
   it('discovers index.html-style routes (trailingSlash: true)', async () => {
     await write('index.html');
     await write('guides/getting-started/index.html');
     await write('api/index.html');
 
-    const routes = await discoverHtmlFiles(tmpDir);
-    const paths = routes.map((r) => r.path).sort();
-
-    expect(paths).toEqual(['/', '/api', '/guides/getting-started']);
+    expect(await routes()).toEqual(['/', '/api', '/guides/getting-started']);
   });
 
   it('discovers sibling-html routes (trailingSlash: false)', async () => {
@@ -38,22 +38,16 @@ describe('discoverHtmlFiles', () => {
     await write('guides/getting-started.html');
     await write('api.html');
 
-    const routes = await discoverHtmlFiles(tmpDir);
-    const paths = routes.map((r) => r.path).sort();
-
-    expect(paths).toEqual(['/', '/api', '/guides/getting-started']);
+    expect(await routes()).toEqual(['/', '/api', '/guides/getting-started']);
   });
 
-  it('discovers mixed output (both forms in the same build)', async () => {
+  it('discovers mixed output (both forms in the same build), once per route', async () => {
     await write('docs/intro.html');
     await write('docs/intro/index.html');
     await write('blog.html');
     await write('index.html');
 
-    const routes = await discoverHtmlFiles(tmpDir);
-    const paths = routes.map((r) => r.path).sort();
-
-    expect(paths).toEqual(['/', '/blog', '/docs/intro', '/docs/intro']);
+    expect(await routes()).toEqual(['/', '/blog', '/docs/intro']);
   });
 
   it('skips 404.html and asset directories', async () => {
@@ -63,33 +57,25 @@ describe('discoverHtmlFiles', () => {
     await write('static/baz.html');
     await write('real-page.html');
 
-    const routes = await discoverHtmlFiles(tmpDir);
-    const paths = routes.map((r) => r.path);
-
-    expect(paths).toEqual(['/real-page']);
+    expect(await routes()).toEqual(['/real-page']);
   });
-});
 
-describe('collectRoutes', () => {
   it('prefers index.html over sibling .html on collision', async () => {
     const sibling = await write('docs/intro.html', '<html><body>sibling</body></html>');
     const indexed = await write('docs/intro/index.html', '<html><body>indexed</body></html>');
 
-    const routes = await collectRoutes(tmpDir, []);
-    const intro = routes.find((r) => r.path === '/docs/intro');
-
+    const intro = (await discoverPages(tmpDir, [])).find((page) => page.route === '/docs/intro');
     expect(intro?.htmlPath).toBe(indexed);
     expect(intro?.htmlPath).not.toBe(sibling);
   });
 
-  it('applies excludePatterns', async () => {
+  it('applies excludeRoutes globs', async () => {
     await write('public.html');
     await write('search.html');
     await write('search/results.html');
+    await write('a1.html');
+    await write('a22.html');
 
-    const routes = await collectRoutes(tmpDir, ['/search*']);
-    const paths = routes.map((r) => r.path).sort();
-
-    expect(paths).toEqual(['/public']);
+    expect(await routes(['/search*', '/a?'])).toEqual(['/a22', '/public']);
   });
 });

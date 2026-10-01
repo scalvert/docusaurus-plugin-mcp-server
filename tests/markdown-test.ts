@@ -1,7 +1,22 @@
 import { describe, it, expect } from 'vitest';
-import { htmlToMarkdown } from '../src/processing/html-to-markdown.js';
+import { unified } from 'unified';
+import rehypeParse from 'rehype-parse';
+import type { Element } from 'hast';
+import { hastToMarkdown } from '../src/processing/markdown.js';
 
-describe('htmlToMarkdown', () => {
+/** Markdown for an HTML fragment, as the content element of a page. */
+function htmlToMarkdown(html: string): Promise<string> {
+  const fragment = unified().use(rehypeParse, { fragment: true }).parse(html);
+  const element: Element = {
+    type: 'element',
+    tagName: 'article',
+    properties: {},
+    children: fragment.children as Element['children'],
+  };
+  return hastToMarkdown(element);
+}
+
+describe('hastToMarkdown', () => {
   it('converts basic HTML to markdown', async () => {
     const html = '<h1>Hello World</h1><p>This is a paragraph.</p>';
     const result = await htmlToMarkdown(html);
@@ -48,11 +63,8 @@ describe('htmlToMarkdown', () => {
     expect(result).toContain('2. Second');
   });
 
-  it('handles empty HTML', async () => {
-    const html = '';
-    const result = await htmlToMarkdown(html);
-
-    expect(result).toBe('');
+  it('handles an empty element', async () => {
+    expect((await htmlToMarkdown('')).trim()).toBe('');
   });
 
   it('converts nested headings', async () => {

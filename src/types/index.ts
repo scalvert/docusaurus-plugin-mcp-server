@@ -26,7 +26,13 @@ export interface McpServerPluginOptions {
   outputDir?: string;
   /** CSS selectors for content extraction, in order of priority */
   contentSelectors?: string[];
-  /** CSS selectors for elements to remove from content before processing */
+  /**
+   * CSS selectors for elements to remove from content before processing.
+   * Full CSS, matched against the whole page (e.g. `div.sidebar`,
+   * `main .toc`, `[data-noindex]`). An invalid selector is skipped with a
+   * build warning. (Before 2.2, only tag names, `.class`, and `[attr="v"]`
+   * on plain attributes matched; anything else was silently ignored.)
+   */
   excludeSelectors?: string[];
   /** Minimum content length (in characters) to consider a page valid. Default: 50 */
   minContentLength?: number;
@@ -195,20 +201,14 @@ export interface DocHeading {
   text: string;
   /** Anchor ID for linking */
   id: string;
-  /** Character offset where this section starts in the markdown */
+  /**
+   * Character offset in `markdown` where this heading's section starts (the
+   * heading line). `markdown.slice(startOffset, endOffset)` is the section,
+   * e.g. for an indexer that chunks documents by section.
+   */
   startOffset: number;
-  /** Character offset where this section ends in the markdown */
+  /** Character offset where this section ends: the next heading at the same or a higher level, or the end */
   endOffset: number;
-}
-
-/**
- * A flattened route from Docusaurus
- */
-export interface FlattenedRoute {
-  /** The URL path */
-  path: string;
-  /** Path to the corresponding HTML file */
-  htmlPath: string;
 }
 
 /**
@@ -399,18 +399,6 @@ export interface DocsSearchParams {
 export interface DocsFetchParams {
   /** Full URL of the page to fetch */
   url: string;
-}
-
-/**
- * Content extraction result from HTML
- */
-export interface ExtractedContent {
-  /** Page title */
-  title: string;
-  /** Meta description */
-  description: string;
-  /** Main content as HTML */
-  contentHtml: string;
 }
 
 /**
