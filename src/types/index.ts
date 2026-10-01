@@ -295,11 +295,11 @@ export interface McpServerBaseConfig {
    * Search provider. Default: 'local'.
    *
    * Accepts either a module specifier (string) loaded via dynamic `import()`,
-   * whose default export must implement {@link SearchProvider}, or an
-   * instance. Pass an instance when running in a bundled environment
-   * (Cloudflare Workers, etc.) where dynamic import of arbitrary specifiers is
-   * not available. Since 2.2 an instance only needs to be a
-   * {@link SearchRanker}: a `{ name, search }` object works.
+   * whose default export is a provider class or object, or an instance. Pass
+   * an instance when running in a bundled environment (Cloudflare Workers,
+   * etc.) where dynamic import of arbitrary specifiers is not available.
+   * Since 2.2 either only needs to be a {@link SearchRanker}: a
+   * `{ name, search }` object works.
    */
   search?: string | SearchProvider | SearchRanker;
   /**

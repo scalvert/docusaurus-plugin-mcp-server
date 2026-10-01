@@ -82,6 +82,13 @@ export async function loadIndexer(specifier: string): Promise<ContentIndexer> {
   }
 }
 
+/** `SearchProvider` for a SearchProvider or `any` (as in 2.1), else the ranker's own type. */
+export type LoadedProvider<P> = 0 extends 1 & P
+  ? SearchProvider
+  : P extends SearchProvider
+    ? SearchProvider
+    : P;
+
 /**
  * Load a search provider by name, module path, or instance.
  *
@@ -106,12 +113,13 @@ export async function loadIndexer(specifier: string): Promise<ContentIndexer> {
  * ```
  */
 // The generic overload comes first: `ReturnType`/`Parameters` read the last
-// overload, which keeps the 2.1 signature. A SearchProvider instance resolves
-// to `SearchProvider`, exactly as in 2.1; any other ranker keeps its own type.
+// overload, which keeps the 2.1 signature. A SearchProvider instance (or an
+// `any`) resolves to `SearchProvider`, exactly as in 2.1; any other ranker
+// keeps its own type.
 export function loadSearchProvider<P extends SearchRanker>(
   specifier: P,
   builtinOptions?: BuiltinSearchOptions
-): Promise<P extends SearchProvider ? SearchProvider : P>;
+): Promise<LoadedProvider<P>>;
 export function loadSearchProvider(
   specifier: string | SearchProvider,
   builtinOptions?: BuiltinSearchOptions

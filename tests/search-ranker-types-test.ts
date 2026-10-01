@@ -64,6 +64,8 @@ describe('SearchRanker types', () => {
     expect(reassigned.name).toBe('local');
     reassigned = await loadSearchProvider('local');
     expect(reassigned.name).toBe('local');
+    // An `any` still resolves to SearchProvider, as in 2.1.
+    expectTypeOf(loadSearchProvider(local as any)).toEqualTypeOf<Promise<SearchProvider>>(); // eslint-disable-line @typescript-eslint/no-explicit-any
     // Names and module paths still resolve to a full SearchProvider.
     expectTypeOf(loadSearchProvider('local')).toEqualTypeOf<Promise<SearchProvider>>();
   });
