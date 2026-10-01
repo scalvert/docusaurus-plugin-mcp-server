@@ -65,13 +65,17 @@ export function htmlHeadings(content: Element): HtmlHeading[] {
  * generated from its text.
  */
 export function extractHeadings(markdown: string, html: HtmlHeading[] = []): DocHeading[] {
-  const found: Array<{ level: number; text: string; start: number }> = [];
+  const found: Array<{ level: number; text: string; plain: string; start: number }> = [];
   const walk = (node: MdastNodes): void => {
     if (node.type === 'heading') {
+      // Image alt text isn't heading text, and isn't in the HTML heading's
+      // text, so match without it. A heading that is only an image is named
+      // by its alt text.
+      const plain = normalize(mdastToString(node, { includeImageAlt: false }));
       found.push({
         level: node.depth,
-        // Image alt text isn't heading text (and isn't in the HTML heading's text).
-        text: normalize(mdastToString(node, { includeImageAlt: false })),
+        text: plain || normalize(mdastToString(node)),
+        plain,
         start: node.position?.start.offset ?? 0,
       });
       return;
@@ -85,8 +89,8 @@ export function extractHeadings(markdown: string, html: HtmlHeading[] = []): Doc
   // heading (e.g. one inside a table cell) is never matched, but it can't take
   // an id from a later heading unless that one has the same level and text.
   let next = 0;
-  const headings: DocHeading[] = found.map(({ level, text, start }) => {
-    const key = matchKey(text);
+  const headings: DocHeading[] = found.map(({ level, text, plain, start }) => {
+    const key = matchKey(plain);
     const index = html.findIndex(
       (h, i) => i >= next && h.level === level && matchKey(h.text) === key
     );
