@@ -71,7 +71,7 @@ export interface McpServerPluginOptions {
    *
    * Each string can be:
    * - 'local' (built-in local search)
-   * - './path/to/indexer.js' (relative path)
+   * - './path/to/indexer.js' (a path; relative paths resolve against the site directory)
    * - '@myorg/custom-indexer' (npm package)
    */
   indexers?: string[] | false;
@@ -295,7 +295,8 @@ export interface McpServerBaseConfig {
    * Search provider. Default: 'local'.
    *
    * Accepts either a module specifier (string) loaded via dynamic `import()`,
-   * whose default export is a provider class or object, or an instance. Pass
+   * whose default export is a provider class or object (a relative path
+   * resolves against the working directory), or an instance. Pass
    * an instance when running in a bundled environment (Cloudflare Workers,
    * etc.) where dynamic import of arbitrary specifiers is not available.
    * Since 2.2 either only needs to be a {@link SearchRanker}: a

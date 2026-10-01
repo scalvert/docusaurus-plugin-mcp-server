@@ -30,14 +30,20 @@ describe('./adapters edge bundle', () => {
       logLevel: 'silent',
     });
 
-    // The only Node built-in allowed is the file-mode dynamic import, which
-    // the data-mode (edge) path never reaches.
+    // The only Node built-ins allowed are dynamic imports on paths the edge
+    // never reaches: reading files (the deprecated file config), and turning a
+    // `search` module path into a file URL (an edge runtime can't import
+    // arbitrary paths anyway; it passes an instance).
     const imports = new Set(
       Object.values(result.metafile.outputs).flatMap((o) =>
         o.imports.filter((i) => i.external).map((i) => `${i.kind}:${i.path}`)
       )
     );
-    expect([...imports]).toEqual(['dynamic-import:node:fs/promises']);
+    expect([...imports].sort()).toEqual([
+      'dynamic-import:node:fs/promises',
+      'dynamic-import:node:path',
+      'dynamic-import:node:url',
+    ]);
   });
 
   it('tsup keeps the node: prefix in the published bundle', () => {
