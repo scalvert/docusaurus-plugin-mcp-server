@@ -373,14 +373,14 @@
     "route": "/docs/rich",
     "title": "Rich Content",
     "description": "A page exercising many Docusaurus rendering features.",
-    "markdown": "# Rich Content\n\nThis page exercises **bold text**, *italic text*, ***bold italic***, and `inline code` so the extractor can be tested against real Docusaurus output. See the [installation guide](/docs/getting-started/installation) or the [Docusaurus website](https://docusaurus.io/docs).\n\n![Example diagram alt text](https://example.com/images/diagram.png)\n\n## Setup[​](#setup \"Direct link to Setup\")\n\nFirst setup section. Install the dependencies before continuing.\n\n### Prerequisites[​](#prerequisites \"Direct link to Prerequisites\")\n\nYou need Node.js 18 or newer.\n\n#### Optional tools[​](#optional-tools \"Direct link to Optional tools\")\n\nA text editor with MDX support is helpful.\n\n## Setup[​](#setup-1 \"Direct link to Setup\")\n\nSecond setup section with the same heading text, so Docusaurus assigns a `-1` suffix to its id.\n\n## Custom[​](#my-custom-id \"Direct link to Custom\")\n\nThis heading uses an explicit custom id.\n\n## Admonitions[​](#admonitions \"Direct link to Admonitions\")\n\n## Tabs[​](#tabs \"Direct link to Tabs\")\n\n- npm\n- Yarn\n\n## Details[​](#details \"Direct link to Details\")\n\n## Table[​](#table \"Direct link to Table\")\n\n## Task list[​](#task-list \"Direct link to Task list\")\n\n- <!-- -->\n  Write the docs\n- <!-- -->\n  Review the docs\n- <!-- -->\n  Publish the docs\n\n## Footnotes[​](#footnotes \"Direct link to Footnotes\")\n\nThis sentence has a footnote.[1](#user-content-fn-1)\n\n## Code blocks[​](#code-blocks \"Direct link to Code blocks\")\n\ninstall.sh\n\n```\n# Install it\n## not a heading\nnpm install example-package\n```\n\n```\nconst greeting = 'hello';\nconsole.log(greeting);\n```\n\n## Diagram[​](#diagram \"Direct link to Diagram\")\n\n<!-- -->\n\n## Entities and breaks[​](#entities-and-breaks \"Direct link to Entities and breaks\")\n\nTom & Jerry use 1 < 2 comparisons with a non-breaking space.\\\nThis text follows a line break.\n\n> This is a blockquote with **emphasis** inside.\n>\n> It spans two paragraphs.\n\n<!-- -->\n\n## Footnotes[​](#footnote-label \"Direct link to Footnotes\")\n\n1. This is the footnote text. [↩](#user-content-fnref-1)\n",
+    "markdown": "# Rich Content\n\nThis page exercises **bold text**, *italic text*, ***bold italic***, and `inline code` so the extractor can be tested against real Docusaurus output. See the [installation guide](/docs/getting-started/installation) or the [Docusaurus website](https://docusaurus.io/docs).\n\n![Example diagram alt text](https://example.com/images/diagram.png)\n\n## Setup[​](#setup \"Direct link to Setup\")\n\nFirst setup section. Install the dependencies before continuing.\n\n### Prerequisites[​](#prerequisites \"Direct link to Prerequisites\")\n\nYou need Node.js 18 or newer.\n\n#### Optional tools[​](#optional-tools \"Direct link to Optional tools\")\n\nA text editor with MDX support is helpful.\n\n## Setup[​](#setup-1 \"Direct link to Setup\")\n\nSecond setup section with the same heading text, so Docusaurus assigns a `-1` suffix to its id.\n\n## Custom[​](#my-custom-id \"Direct link to Custom\")\n\nThis heading uses an explicit custom id.\n\n## Admonitions[​](#admonitions \"Direct link to Admonitions\")\n\n## Tabs[​](#tabs \"Direct link to Tabs\")\n\n## Details[​](#details \"Direct link to Details\")\n\n## Table[​](#table \"Direct link to Table\")\n\n## Task list[​](#task-list \"Direct link to Task list\")\n\n- <!-- -->\n  Write the docs\n- <!-- -->\n  Review the docs\n- <!-- -->\n  Publish the docs\n\n## Footnotes[​](#footnotes \"Direct link to Footnotes\")\n\nThis sentence has a footnote.[1](#user-content-fn-1)\n\n## Code blocks[​](#code-blocks \"Direct link to Code blocks\")\n\ninstall.sh\n\n```\n# Install it\n## not a heading\nnpm install example-package\n```\n\n```\nconst greeting = 'hello';\nconsole.log(greeting);\n```\n\n## Diagram[​](#diagram \"Direct link to Diagram\")\n\n<!-- -->\n\n## Entities and breaks[​](#entities-and-breaks \"Direct link to Entities and breaks\")\n\nTom & Jerry use 1 < 2 comparisons with a non-breaking space.\\\nThis text follows a line break.\n\n> This is a blockquote with **emphasis** inside.\n>\n> It spans two paragraphs.\n\n<!-- -->\n\n## Footnotes\n\n1. This is the footnote text.\n",
     "headings": [
       {
         "level": 1,
         "text": "Rich Content",
         "id": "rich-content",
         "startOffset": 0,
-        "endOffset": 1466
+        "endOffset": 1452
       },
       {
         "level": 2,
@@ -429,77 +429,77 @@
         "text": "Tabs[​](#tabs \"Direct link to Tabs\")",
         "id": "tabstabs-direct-link-to-tabs",
         "startOffset": 985,
-        "endOffset": 1040
+        "endOffset": 1026
       },
       {
         "level": 2,
         "text": "Details[​](#details \"Direct link to Details\")",
         "id": "detailsdetails-direct-link-to-details",
-        "startOffset": 1040,
-        "endOffset": 1090
+        "startOffset": 1026,
+        "endOffset": 1076
       },
       {
         "level": 2,
         "text": "Table[​](#table \"Direct link to Table\")",
         "id": "tabletable-direct-link-to-table",
-        "startOffset": 1090,
-        "endOffset": 1134
+        "startOffset": 1076,
+        "endOffset": 1120
       },
       {
         "level": 2,
         "text": "Task list[​](#task-list \"Direct link to Task list\")",
         "id": "task-listtask-list-direct-link-to-task-list",
-        "startOffset": 1134,
-        "endOffset": 1278
+        "startOffset": 1120,
+        "endOffset": 1264
       },
       {
         "level": 2,
         "text": "Footnotes[​](#footnotes \"Direct link to Footnotes\")",
         "id": "footnotesfootnotes-direct-link-to-footnotes",
-        "startOffset": 1278,
-        "endOffset": 1388
+        "startOffset": 1264,
+        "endOffset": 1374
       },
       {
         "level": 2,
         "text": "Code blocks[​](#code-blocks \"Direct link to Code blocks\")",
         "id": "code-blockscode-blocks-direct-link-to-code-blocks",
-        "startOffset": 1388,
-        "endOffset": 1466
+        "startOffset": 1374,
+        "endOffset": 1452
       },
       {
         "level": 1,
         "text": "Install it",
         "id": "install-it",
-        "startOffset": 1466,
-        "endOffset": 2035
+        "startOffset": 1452,
+        "endOffset": 1947
       },
       {
         "level": 2,
         "text": "not a heading",
         "id": "not-a-heading",
-        "startOffset": 1479,
-        "endOffset": 1587
+        "startOffset": 1465,
+        "endOffset": 1573
       },
       {
         "level": 2,
         "text": "Diagram[​](#diagram \"Direct link to Diagram\")",
         "id": "diagramdiagram-direct-link-to-diagram",
-        "startOffset": 1587,
-        "endOffset": 1647
+        "startOffset": 1573,
+        "endOffset": 1633
       },
       {
         "level": 2,
         "text": "Entities and breaks[​](#entities-and-breaks \"Direct link to Entities and breaks\")",
         "id": "entities-and-breaksentities-and-breaks-direct-link-to-entities-and-breaks",
-        "startOffset": 1647,
-        "endOffset": 1917
+        "startOffset": 1633,
+        "endOffset": 1903
       },
       {
         "level": 2,
-        "text": "Footnotes[​](#footnote-label \"Direct link to Footnotes\")",
-        "id": "footnotesfootnote-label-direct-link-to-footnotes",
-        "startOffset": 1917,
-        "endOffset": 2035
+        "text": "Footnotes",
+        "id": "footnotes",
+        "startOffset": 1903,
+        "endOffset": 1947
       }
     ]
   },

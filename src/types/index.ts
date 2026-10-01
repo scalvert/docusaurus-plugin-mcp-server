@@ -26,7 +26,13 @@ export interface McpServerPluginOptions {
   outputDir?: string;
   /** CSS selectors for content extraction, in order of priority */
   contentSelectors?: string[];
-  /** CSS selectors for elements to remove from content before processing */
+  /**
+   * CSS selectors for elements to remove from content before processing.
+   * Full CSS, matched against the whole page (e.g. `div.sidebar`,
+   * `main .toc`, `[data-noindex]`). An invalid selector is skipped with a
+   * build warning. (Before 2.2, only tag names, `.class`, and `[attr="v"]`
+   * on plain attributes matched; anything else was silently ignored.)
+   */
   excludeSelectors?: string[];
   /** Minimum content length (in characters) to consider a page valid. Default: 50 */
   minContentLength?: number;

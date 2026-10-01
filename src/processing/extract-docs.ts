@@ -11,9 +11,9 @@ import fs from 'node:fs/promises';
 import pMap from 'p-map';
 import { unified } from 'unified';
 import rehypeParse from 'rehype-parse';
-import { select } from 'hast-util-select';
+import { select, selectAll } from 'hast-util-select';
 import { toString } from 'hast-util-to-string';
-import type { Element, Root } from 'hast';
+import type { Element, ElementContent, Root } from 'hast';
 import type { ProcessedDoc } from '../types/index.js';
 import { discoverPages } from './pages.js';
 import { hastToMarkdown } from './markdown.js';
@@ -22,7 +22,7 @@ import { extractHeadingsFromMarkdown } from './headings.js';
 export interface PageOptions {
   /** CSS selectors for the content container, in priority order */
   contentSelectors: string[];
-  /** Selectors for elements to drop from the content */
+  /** CSS selectors for elements to drop from the content */
   excludeSelectors: string[];
   /** Pages with less Markdown than this (in characters) are skipped */
   minContentLength: number;
@@ -54,6 +54,7 @@ export async function extractDocs(
   outDir: string,
   options: ExtractDocsOptions
 ): Promise<ExtractDocsResult> {
+  const onInvalidSelector = warnOnce();
   const pages = await discoverPages(outDir, options.excludeRoutes);
   console.log(`[MCP] Found ${pages.length} routes to process`);
   if (pages.length === 0) {
@@ -65,7 +66,8 @@ export async function extractDocs(
     pages,
     async ({ route, htmlPath }) => {
       try {
-        const result = await extractPage(await fs.readFile(htmlPath, 'utf-8'), route, options);
+        const html = await fs.readFile(htmlPath, 'utf-8');
+        const result = await extractPage(html, route, options, onInvalidSelector);
         if ('skipped' in result) {
           console.warn(
             result.skipped === 'no-content'
@@ -89,21 +91,69 @@ export async function extractDocs(
   };
 }
 
-/** Extract the document for one page's HTML. */
+/**
+ * Called for a selector that can't be used (it doesn't parse, or uses an
+ * unsupported pseudo-class). That selector matches nothing.
+ */
+export type InvalidSelectorHandler = (
+  option: 'contentSelectors' | 'excludeSelectors',
+  selector: string,
+  error: unknown
+) => void;
+
+/** A handler that warns about each invalid selector once. */
+export function warnOnce(): InvalidSelectorHandler {
+  const reported = new Set<string>();
+  return (option, selector, error) => {
+    const key = `${option}\0${selector}`;
+    if (reported.has(key)) return;
+    reported.add(key);
+    console.warn(
+      `[MCP] Ignoring ${option} entry ${JSON.stringify(selector)}: ` +
+        (error instanceof Error ? error.message : String(error))
+    );
+  };
+}
+
+/**
+ * Extract the document for one page's HTML. Invalid selectors are reported
+ * to `onInvalidSelector` (by default, a warning per call) and skipped.
+ */
 export async function extractPage(
   html: string,
   route: string,
-  options: PageOptions
+  options: PageOptions,
+  onInvalidSelector: InvalidSelectorHandler = warnOnce()
 ): Promise<{ doc: ProcessedDoc } | { skipped: SkipReason }> {
   const tree = htmlParser.parse(html);
+  // A selector's errors can depend on the page (hast-util-select only
+  // evaluates a pseudo-class once the rest of the compound matches), so
+  // catch them where selectors run.
+  const safeSelectAll = (
+    option: 'contentSelectors' | 'excludeSelectors',
+    selector: string
+  ): Element[] => {
+    try {
+      return selectAll(selector, tree);
+    } catch (error) {
+      onInvalidSelector(option, selector, error);
+      return [];
+    }
+  };
 
   const content =
-    findContentElement(tree, options.contentSelectors) ?? (select('body', tree) as Element | null);
+    findContentElement(options.contentSelectors, (selector) =>
+      safeSelectAll('contentSelectors', selector)
+    ) ?? (select('body', tree) as Element | null);
   if (!content) {
     return { skipped: 'no-content' };
   }
 
-  const markdown = await hastToMarkdown(removeExcluded(content, options.excludeSelectors));
+  const excluded = [
+    ...ALWAYS_EXCLUDED.flatMap((selector) => selectAll(selector, tree)),
+    ...options.excludeSelectors.flatMap((selector) => safeSelectAll('excludeSelectors', selector)),
+  ];
+  const markdown = await hastToMarkdown(removeExcluded(content, excluded));
   if (!markdown || markdown.trim().length < options.minContentLength) {
     return { skipped: 'too-short' };
   }
@@ -136,10 +186,16 @@ function extractDescription(tree: Root): string {
   return '';
 }
 
-/** The first content selector that matches an element with real text (over 50 characters). */
-function findContentElement(tree: Root, selectors: string[]): Element | null {
+/**
+ * The first element matched by the first content selector, if it has real
+ * text (over 50 characters); else the next selector's.
+ */
+function findContentElement(
+  selectors: string[],
+  selectAllOf: (selector: string) => Element[]
+): Element | null {
   for (const selector of selectors) {
-    const element = select(selector, tree) as Element | null;
+    const element = selectAllOf(selector)[0];
     if (element && toString(element).trim().length > 50) {
       return element;
     }
@@ -151,41 +207,21 @@ function findContentElement(tree: Root, selectors: string[]): Element | null {
 const ALWAYS_EXCLUDED = ['script', 'style', 'noscript'];
 
 /**
- * A copy of `element` without its descendants that match an exclude
- * selector. Supports tag names, `.class`, and `[attr="value"]` on plain
- * (non-hyphenated) attributes.
+ * A copy of the page's content element without the `excluded` elements and
+ * their subtrees. Exclude selectors are full CSS, matched against the whole
+ * page, so `main .x` or `[data-x="y"]` work. The content element itself is
+ * never removed.
  */
-function removeExcluded(element: Element, excludeSelectors: string[]): Element {
-  const selectors = [...ALWAYS_EXCLUDED, ...excludeSelectors];
-  const cloned = JSON.parse(JSON.stringify(element)) as Element;
+function removeExcluded(content: Element, excludedElements: Element[]): Element {
+  const excluded = new Set<ElementContent>(excludedElements);
+  excluded.delete(content);
 
-  const matches = (node: Element): boolean =>
-    selectors.some((selector) => {
-      if (selector.startsWith('.')) {
-        const className = selector.slice(1);
-        const classes = node.properties?.className;
-        return (
-          (Array.isArray(classes) && classes.includes(className)) ||
-          (typeof classes === 'string' && classes.includes(className))
-        );
-      }
-      if (selector.startsWith('[')) {
-        const match = selector.match(/\[([^=]+)="([^"]+)"\]/);
-        return Boolean(match?.[1] && node.properties?.[match[1]] === match[2]);
-      }
-      return node.tagName === selector;
-    });
-
-  function prune(node: Element): void {
-    if (!node.children) return;
-    node.children = node.children.filter((child) => {
-      if (child.type !== 'element') return true;
-      if (matches(child)) return false;
-      prune(child);
-      return true;
-    });
-  }
-
-  prune(cloned);
-  return cloned;
+  const copy = (node: Element): Element => ({
+    ...node,
+    properties: { ...node.properties },
+    children: node.children
+      .filter((child) => !excluded.has(child))
+      .map((child) => (child.type === 'element' ? copy(child) : { ...child })),
+  });
+  return copy(content);
 }
