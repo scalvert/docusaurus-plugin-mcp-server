@@ -6,4 +6,5 @@
   '[role="navigation"]',
   '[role="banner"]',
   '[role="contentinfo"]',
+  '.theme-doc-toc-mobile',
 ];

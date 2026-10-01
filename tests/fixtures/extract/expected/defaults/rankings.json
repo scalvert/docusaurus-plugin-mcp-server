@@ -2,7 +2,7 @@
   "install": [
     {
       "route": "/docs/getting-started/installation",
-      "score": 32.1983,
+      "score": 32.201,
       "matchingHeadings": [
         "Installing the SDK",
         "Verifying Installation"
@@ -10,19 +10,19 @@
     },
     {
       "route": "/docs/rich",
-      "score": 2.5561,
+      "score": 2.552,
       "matchingHeadings": []
     },
     {
       "route": "/docs/intro",
-      "score": 2.102,
+      "score": 2.1015,
       "matchingHeadings": []
     }
   ],
   "api key authentication": [
     {
       "route": "/docs/api/authentication",
-      "score": 180.2299,
+      "score": 180.2333,
       "matchingHeadings": [
         "API Keys",
         "Creating an API Key",
@@ -31,29 +31,29 @@
     },
     {
       "route": "/docs/api/endpoints",
-      "score": 44.0802,
+      "score": 44.0821,
       "matchingHeadings": []
     },
     {
       "route": "/docs/getting-started/configuration",
-      "score": 18.9335,
+      "score": 18.9543,
       "matchingHeadings": []
     },
     {
       "route": "/docs/getting-started/installation",
-      "score": 8.6123,
+      "score": 8.6246,
       "matchingHeadings": []
     },
     {
       "route": "/docs/intro",
-      "score": 6.6874,
+      "score": 6.6858,
       "matchingHeadings": []
     }
   ],
   "setup": [
     {
       "route": "/docs/rich",
-      "score": 10.2436,
+      "score": 10.2344,
       "matchingHeadings": [
         "Setup",
         "Setup"
@@ -63,57 +63,57 @@
   "custom heading": [
     {
       "route": "/docs/rich",
-      "score": 21.2501,
+      "score": 21.2185,
       "matchingHeadings": [
         "Custom"
       ]
     },
     {
       "route": "/",
-      "score": 6.5352,
+      "score": 6.5334,
       "matchingHeadings": []
     },
     {
       "route": "/docs/intro",
-      "score": 2.102,
+      "score": 2.1015,
       "matchingHeadings": []
     },
     {
       "route": "/docs/api/endpoints",
-      "score": 0.6478,
+      "score": 0.6482,
       "matchingHeadings": []
     },
     {
       "route": "/docs/api/authentication",
-      "score": 0.6383,
+      "score": 0.6385,
       "matchingHeadings": []
     }
   ],
   "rate limit": [
     {
       "route": "/docs/api/endpoints",
-      "score": 37.5545,
+      "score": 37.5601,
       "matchingHeadings": [
         "Rate Limiting"
       ]
     },
     {
       "route": "/docs/rich",
-      "score": 1.8683,
+      "score": 1.8612,
       "matchingHeadings": []
     }
   ],
   "endpoints pagination": [
     {
       "route": "/docs/api/endpoints",
-      "score": 57.2602,
+      "score": 57.2668,
       "matchingHeadings": []
     }
   ],
   "configuration options": [
     {
       "route": "/docs/getting-started/configuration",
-      "score": 75.5403,
+      "score": 75.5518,
       "matchingHeadings": [
         "Basic Configuration",
         "Advanced Options",
@@ -122,59 +122,59 @@
     },
     {
       "route": "/docs/rich",
-      "score": 6.0022,
+      "score": 5.9943,
       "matchingHeadings": [
         "Optional tools"
       ]
     },
     {
       "route": "/docs/api/authentication",
-      "score": 4.7831,
+      "score": 4.7835,
       "matchingHeadings": [
         "OAuth Configuration"
       ]
     },
     {
       "route": "/docs/getting-started/installation",
-      "score": 1.674,
+      "score": 1.6778,
       "matchingHeadings": []
     },
     {
       "route": "/docs/intro",
-      "score": 1.6407,
+      "score": 1.6403,
       "matchingHeadings": []
     }
   ],
   "details summary": [
     {
       "route": "/docs/rich",
-      "score": 6.6898,
+      "score": 6.6837,
       "matchingHeadings": [
         "Details"
       ]
     },
     {
       "route": "/docs/getting-started/configuration",
-      "score": 1.6427,
+      "score": 1.6465,
       "matchingHeadings": []
     },
     {
       "route": "/docs/api/endpoints",
-      "score": 1.4687,
+      "score": 1.4696,
       "matchingHeadings": []
     }
   ],
   "foo": [
     {
       "route": "/foo",
-      "score": 31.8142,
+      "score": 31.8126,
       "matchingHeadings": [
         "Foo Directory"
       ]
     },
     {
       "route": "/docs/rich",
-      "score": 3.2792,
+      "score": 3.2762,
       "matchingHeadings": [
         "Footnotes",
         "Footnotes"
@@ -184,7 +184,7 @@
   "nested deep": [
     {
       "route": "/docs/nested/deep",
-      "score": 103.6909,
+      "score": 103.7173,
       "matchingHeadings": [
         "Nested section"
       ]

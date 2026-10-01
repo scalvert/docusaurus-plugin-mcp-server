@@ -287,8 +287,10 @@ export interface McpServerBaseConfig {
   /** Server version. With `artifacts`, defaults to the version the site was built with. */
   version?: string;
   /**
-   * Base URL for constructing full page URLs (e.g., https://docs.example.com).
-   * With `artifacts`, defaults to the site URL the site was built with.
+   * Site URL (e.g., https://docs.example.com) reported by `getStatus()` and
+   * passed to search providers. With `artifacts`, defaults to the site URL the
+   * site was built with. Page URLs in tool responses always come from the
+   * build: to change them, set `url` in `docusaurus.config.*` and rebuild.
    */
   baseUrl?: string;
   /**
@@ -427,6 +429,8 @@ export const DEFAULT_PLUGIN_OPTIONS: ResolvedPluginOptions = {
     '[role="navigation"]',
     '[role="banner"]',
     '[role="contentinfo"]',
+    // Docusaurus's collapsible "On this page" table of contents (mobile).
+    '.theme-doc-toc-mobile',
   ],
   minContentLength: 50,
   server: {

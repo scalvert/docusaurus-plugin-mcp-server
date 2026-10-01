@@ -62,7 +62,7 @@ const handler = createWebRequestHandler({ artifacts: bundle });
 
 Per-platform glue to scaffold:
 
-- **Cloudflare Workers** — `export default { fetch: handler }`; add a `wrangler.toml` whose `main` is the worker entry, and a `[[rules]] type = "Data"` rule globbing `**/*.json` so the JSON imports bundle.
+- **Cloudflare Workers** — `export default { fetch: handler }`; add a `wrangler.toml` whose `main` is the worker entry. Wrangler imports `.json` files as parsed JSON on its own; add no `[[rules]]` for them.
 - **Deno / Bun** — `export default { fetch: handler }` (both honor the `fetch` default export).
 - **Modern Netlify functions** — `export default async (request) => handler(request)` (the new web-standard functions API, not the legacy `event`/`context` one).
 - **Vercel** — use the Edge runtime: `export const config = { runtime: 'edge' }` and `export default handler`.
@@ -79,7 +79,7 @@ Per-platform glue to scaffold:
 
 - **Filesystem paths on edge/Workers.** `artifactsDir` (and the deprecated `docsPath`/`indexPath`) only work where there's a filesystem (local Node). On Workers/edge, import `bundle.json` and pass it as `artifacts`.
 - **Passing the wrong file as `artifacts`.** It must be `bundle.json`, not `docs.json`; the server rejects anything without a `formatVersion` and says what it expected.
-- **Cloudflare JSON imports fail without the Data rule.** Missing `[[rules]] type = "Data"` in `wrangler.toml` makes the `bundle.json` import break at deploy.
+- **Don't add a Wrangler `Data` rule for JSON.** A `[[rules]] type = "Data"` rule for `**/*.json` turns the `bundle.json` import into raw bytes, so the server rejects it ("missing formatVersion"). Wrangler already imports JSON as parsed objects.
 - **Reaching for removed handlers.** `createVercelHandler`, `createNetlifyHandler`, `createCloudflareHandler`, and `generateAdapterFiles` were all removed — there is one generic deploy handler, `createWebRequestHandler`. The Node server lives at `docusaurus-plugin-mcp-server/adapters/node`, not `/adapters`.
 - **Wrong `baseUrl`.** It must be the site origin plus the Docusaurus `baseUrl` (e.g. `https://example.com/docs/`); otherwise the URLs in search results point to the wrong place.
 - **Deploying before building.** The handler needs `build/mcp/*` — run `docusaurus build` first.

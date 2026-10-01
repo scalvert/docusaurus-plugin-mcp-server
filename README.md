@@ -253,6 +253,7 @@ Build-time options control artifact generation and the install-button URL (`serv
   '[role="navigation"]',
   '[role="banner"]',
   '[role="contentinfo"]',
+  '.theme-doc-toc-mobile',
 ];
 ```
 
@@ -434,7 +435,7 @@ These options apply to `McpDocsServer`, `createWebRequestHandler`, `createNodeSe
 | `artifactsDir` | `string` | Yes* | Directory holding the bundle, e.g. `./build/mcp` (`createNodeServer`/`createNodeHandler` only) |
 | `name` | `string` | No | Server name. Default: the plugin's `server.name` from the build |
 | `version` | `string` | No | Server version. Default: the plugin's `server.version` from the build |
-| `baseUrl` | `string` | No | Base URL for full page URLs in responses. Default: the site URL from the build |
+| `baseUrl` | `string` | No | Site URL reported by the status endpoint and passed to search providers. Default: the site URL from the build. Page URLs in tool responses always come from the build: to change them, set `url` in `docusaurus.config.*` and rebuild |
 | `instructions` | `string` | No | Instructions describing how to use the server, surfaced to MCP clients in the `server/discover` (2026-07-28) or `initialize` (2025-era) result. When skills are served, their URIs are appended |
 | `tools` | `object` | No | Per-tool overrides. Supports `docs_search.description` and `docs_fetch.description` to customize tool descriptions |
 | `search` | `string \| SearchRanker` | No | Search provider: a module name or path (a relative path resolves against the server's working directory), or an instance (since 2.2, `{ name, search }` is enough). Default: the built-in `'local'` search. See [SearchProvider](#searchprovider) |
@@ -699,10 +700,11 @@ import {
 
 2.2 changes nothing you have to act on. It adds `build/mcp/bundle.json` and the `artifacts` / `artifactsDir` server options, and deprecates the file (`docsPath`, `indexPath`, `skillsPath`) and pre-loaded data (`docs`, `searchIndexData`, `skills`) configs, and `McpDocsServer.handleHttpRequest()` (use `createNodeHandler`). It also deprecates the search provider methods `isReady()` and `healthCheck()` (a provider can now be just `{ name, search }`, a `SearchRanker`) and the plugin's `search` option, which has done nothing since 2.0. Those still work through 2.x and are removed in 3.0. [migrations/2.x-3.0.0.md](migrations/2.x-3.0.0.md) has the before/after code and a checklist for an agent to run.
 
-Two extraction fixes change the generated docs:
+Three extraction changes alter the generated docs:
 
 - **`excludeSelectors` are full CSS.** Before 2.2, only tag names, `.class`, and `[attr="v"]` on plain attributes matched. Anything else (`div.sidebar`, `.a .b`, `[data-x="y"]`) was silently ignored, and a selector starting with an attribute (`[role="tab"] span`) removed the `[role="tab"]` element itself. If you listed such selectors, they now remove what they say, so check the generated docs. The defaults behave as before.
 - **Headings are read correctly.** Every Docusaurus heading used to carry its permalink into the text and id (`Setup[​](#setup "Direct link to Setup")`, id `setupsetup-direct-link-to-setup`), and `#` lines inside code blocks counted as headings. Now heading text is plain, ids are the page's real anchors (including `-1` duplicates and custom ids), code blocks are skipped, and the permalinks are gone from the Markdown. This changes `docs_fetch` output and search scores, and result order can shift where permalink text inflated a page's score (a query containing "link", for example). Custom indexers that read `DocHeading` see the corrected values.
+- **The mobile "On this page" button is dropped.** `.theme-doc-toc-mobile` joins the default `excludeSelectors`, so docs pages no longer start with an `On this page` line. If you set your own `excludeSelectors`, add it to your list to get the same.
 
 ## Upgrading to 2.0
 
