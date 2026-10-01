@@ -10,7 +10,7 @@
  * so the extension is declared without `directoryRead`.
  */
 
-import { z } from 'zod';
+import * as z from 'zod';
 import {
   ProtocolError,
   ProtocolErrorCode,
