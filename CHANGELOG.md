@@ -11,6 +11,41 @@
 
 
 
+
+## v2.2.0 (2026-10-03)
+
+#### :rocket: Enhancement
+
+* [#157](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/157) feat(providers): SearchRanker; deprecate isReady, healthCheck, and the plugin search option ([@scalvert](https://github.com/scalvert))
+* [#151](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/151) refactor(adapters): one HTTP policy; the Node adapter becomes a bridge ([@scalvert](https://github.com/scalvert))
+* [#149](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/149) feat(server): serve the artifact bundle; deprecate the file and data configs ([@scalvert](https://github.com/scalvert))
+* [#148](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/148) feat(artifacts): write the build as one artifact bundle ([@scalvert](https://github.com/scalvert))
+
+#### :bug: Bug Fix
+
+* [#159](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/159) fix: load under Docusaurus with zod >= 4.6 ([@scalvert](https://github.com/scalvert))
+* [#160](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/160) fix(providers): resolve module paths against the project, not the package ([@scalvert](https://github.com/scalvert))
+* [#158](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/158) fix(processing): name image-only headings by alt text; pin zero-width matching ([@scalvert](https://github.com/scalvert))
+* [#155](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/155) fix(processing): close the #154 review nits ([@scalvert](https://github.com/scalvert))
+* [#154](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/154) fix(processing): read headings from the page, not by regex over Markdown ([@scalvert](https://github.com/scalvert))
+* [#153](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/153) refactor(processing): one page-extraction module; excludeSelectors are full CSS ([@scalvert](https://github.com/scalvert))
+* [#152](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/152) fix(adapters): close the #151 review nits ([@scalvert](https://github.com/scalvert))
+* [#150](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/150) fix(server): close the last #149 review nits before 2.2.0 ([@scalvert](https://github.com/scalvert))
+* [#147](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/147) fix(verify): read serverName from the manifest and honor outputDir ([@scalvert](https://github.com/scalvert))
+
+#### :memo: Documentation
+
+* [#161](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/161) docs: pre-release accuracy fixes; drop the mobile TOC by default ([@scalvert](https://github.com/scalvert))
+
+#### :house: Internal
+
+* [#156](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/156) refactor(mcp): each tool module registers its own handler ([@scalvert](https://github.com/scalvert))
+
+#### Committers: 1
+* Steve Calvert ([@scalvert](https://github.com/scalvert))
+
+
+
 ## v2.1.0 (2026-09-30)
 
 #### :rocket: Enhancement
