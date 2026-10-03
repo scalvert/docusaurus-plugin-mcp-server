@@ -27,32 +27,40 @@ beforeAll(async () => {
 
 afterAll(async () => {
   vi.restoreAllMocks();
-  await fs.rm(tmp, { recursive: true, force: true });
+  await fs.rm(tmp, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
 });
 
+// jiti transpiles the whole bundle on a cold cache: about 1s locally, up to
+// ~5s on CI's Windows and coverage runners.
+const LOAD_TIMEOUT = 60_000;
+
 describe('the built plugin under Docusaurus', () => {
-  it('loads through loadFreshModule and builds the artifact bundle', async () => {
-    const plugin = (await loadFreshModule(DIST)) as (
-      context: LoadContext,
-      options: object
-    ) => Plugin & { postBuild: (props: { outDir: string }) => Promise<void> };
-    expect(typeof plugin).toBe('function');
+  it(
+    'loads through loadFreshModule and builds the artifact bundle',
+    async () => {
+      const plugin = (await loadFreshModule(DIST)) as (
+        context: LoadContext,
+        options: object
+      ) => Plugin & { postBuild: (props: { outDir: string }) => Promise<void> };
+      expect(typeof plugin).toBe('function');
 
-    const outDir = path.join(tmp, 'build');
-    await fs.cp(SITE, outDir, { recursive: true });
-    const context = {
-      siteDir: tmp,
-      siteConfig: { url: 'https://docs.example.com', baseUrl: '/', title: 'Example Docs' },
-    } as unknown as LoadContext;
+      const outDir = path.join(tmp, 'build');
+      await fs.cp(SITE, outDir, { recursive: true });
+      const context = {
+        siteDir: tmp,
+        siteConfig: { url: 'https://docs.example.com', baseUrl: '/', title: 'Example Docs' },
+      } as unknown as LoadContext;
 
-    await plugin(context, {}).postBuild({ outDir } as never);
+      await plugin(context, {}).postBuild({ outDir } as never);
 
-    const bundle = JSON.parse(await fs.readFile(path.join(outDir, 'mcp', 'bundle.json'), 'utf8'));
-    expect(bundle.formatVersion).toBe(1);
-    expect(Object.keys(bundle.docs).length).toBeGreaterThan(5);
-    // Skills use zod schemas too (the built-in skill is on by default).
-    expect(
-      bundle.skills.skills.map((s: { frontmatter: { name: string } }) => s.frontmatter.name)
-    ).toEqual(['docs-research']);
-  });
+      const bundle = JSON.parse(await fs.readFile(path.join(outDir, 'mcp', 'bundle.json'), 'utf8'));
+      expect(bundle.formatVersion).toBe(1);
+      expect(Object.keys(bundle.docs).length).toBeGreaterThan(5);
+      // Skills use zod schemas too (the built-in skill is on by default).
+      expect(
+        bundle.skills.skills.map((s: { frontmatter: { name: string } }) => s.frontmatter.name)
+      ).toEqual(['docs-research']);
+    },
+    LOAD_TIMEOUT
+  );
 });
