@@ -81,7 +81,7 @@ Per-platform glue to scaffold:
 - **Passing the wrong file as `artifacts`.** It must be `bundle.json`, not `docs.json`; the server rejects anything without a `formatVersion` and says what it expected.
 - **Don't add a Wrangler `Data` rule for JSON.** A `[[rules]] type = "Data"` rule for `**/*.json` turns the `bundle.json` import into raw bytes, so the server rejects it ("missing formatVersion"). Wrangler already imports JSON as parsed objects.
 - **Reaching for removed handlers.** `createVercelHandler`, `createNetlifyHandler`, `createCloudflareHandler`, and `generateAdapterFiles` were all removed — there is one generic deploy handler, `createWebRequestHandler`. The Node server lives at `docusaurus-plugin-mcp-server/adapters/node`, not `/adapters`.
-- **Wrong `baseUrl`.** It must be the site origin plus the Docusaurus `baseUrl` (e.g. `https://example.com/docs/`); otherwise the URLs in search results point to the wrong place.
+- **Wrong page URLs.** Page URLs in `docs_search` and `docs_fetch` come from the build: set `url` (and `baseUrl`) in `docusaurus.config.*` and rebuild. The server's `baseUrl` option doesn't change them; it only changes what the status reports and what search providers receive.
 - **Deploying before building.** The handler needs `build/mcp/*` — run `docusaurus build` first.
 - **Forgetting to pass skills (deprecated configs only).** With `artifacts`/`artifactsDir`, skills come from the bundle. With the deprecated configs, the handler only serves skills when you pass `skills` or `skillsPath`.
 - **Invalid skill directories fail the build.** Frontmatter must have `name` (lowercase, hyphens, matching the directory) and `description`; each skill is capped at 512 files / 16 MiB.
