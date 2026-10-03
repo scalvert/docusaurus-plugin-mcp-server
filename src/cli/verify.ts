@@ -88,7 +88,9 @@ async function main(): Promise<void> {
   console.log('');
   console.log('Next steps:');
   console.log('  1. Deploy your site to a hosting provider');
-  console.log('  2. Configure MCP endpoint (see README for platform guides)');
+  console.log(
+    "  2. Serve the MCP endpoint (see the README's Quick Start: Create the API Endpoint)"
+  );
   console.log('  3. Connect your AI tools to the MCP server');
   console.log('');
 
