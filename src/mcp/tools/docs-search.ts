@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import * as z from 'zod';
 import type { SearchResult } from '../../types/index.js';
 import { READ_ONLY_ANNOTATIONS, runTool, type DocsToolModule } from './tool.js';
 
