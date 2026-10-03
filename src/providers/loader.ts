@@ -39,7 +39,16 @@ export function removedBuiltinError(kind: 'indexer' | 'search provider'): Error 
  * const indexer = await loadIndexer('./src/providers/algolia-indexer.js');
  * ```
  */
-export async function loadIndexer(specifier: string): Promise<ContentIndexer> {
+export async function loadIndexer(
+  specifier: string,
+  options: {
+    /**
+     * Directory a relative path (`./my-indexer.js`) resolves against. The
+     * plugin passes the site directory. Default: the working directory.
+     */
+    baseDir?: string;
+  } = {}
+): Promise<ContentIndexer> {
   if (specifier === 'local') {
     const { LocalSearchIndexer } = await import('./indexers/local-search-indexer.js');
     return new LocalSearchIndexer();
@@ -49,12 +58,12 @@ export async function loadIndexer(specifier: string): Promise<ContentIndexer> {
   }
 
   try {
-    const module = await import(specifier);
+    const module = await importModule(specifier, options.baseDir);
     const IndexerClass = module.default;
 
     if (typeof IndexerClass === 'function') {
       // It's a class constructor
-      const instance = new IndexerClass();
+      const instance: unknown = new (IndexerClass as new () => unknown)();
 
       if (!isContentIndexer(instance)) {
         throw new Error(
@@ -168,11 +177,11 @@ async function loadSearch(
   }
 
   try {
-    const module = await import(specifier);
+    const module = await importModule(specifier);
     const ProviderClass = module.default;
 
     if (typeof ProviderClass === 'function') {
-      const instance = new ProviderClass();
+      const instance: unknown = new (ProviderClass as new () => unknown)();
 
       if (!isValidModuleExport(instance)) {
         throw new Error(
@@ -199,6 +208,30 @@ async function loadSearch(
     }
     throw error;
   }
+}
+
+/** A relative or absolute file path, rather than a package name or URL. */
+function isPath(specifier: string): boolean {
+  return (
+    /^\.{1,2}[\\/]/.test(specifier) ||
+    specifier.startsWith('/') ||
+    /^[A-Za-z]:[\\/]/.test(specifier)
+  );
+}
+
+/**
+ * Import a module. A relative path (`./x.js`, `../x.js`) resolves against
+ * `baseDir` (default: the working directory), not against this package; any
+ * path is imported as a file URL, which Windows needs for absolute paths.
+ * Package names are imported as they are.
+ */
+async function importModule(specifier: string, baseDir?: string): Promise<{ default?: unknown }> {
+  if (!isPath(specifier)) {
+    return import(specifier);
+  }
+  // Dynamic, so the edge entry (which bundles this file) has no Node imports.
+  const [{ pathToFileURL }, path] = await Promise.all([import('node:url'), import('node:path')]);
+  return import(pathToFileURL(path.resolve(baseDir ?? process.cwd(), specifier)).href);
 }
 
 /**

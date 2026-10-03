@@ -228,7 +228,7 @@ Keep skills to markdown. MCP hosts treat served skills as untrusted input and wo
 | `server.url` | `string` | (derived) | Explicit MCP HTTP endpoint URL for the install button |
 | `server.urlBase` | `'origin' \| 'site'` | `'origin'` | How to derive the MCP URL when `server.url` is not set. `'origin'` → `{siteUrl}/{outputDir}`; `'site'` → under Docusaurus `baseUrl` |
 | `excludeRoutes` | `string[]` | `['/404*', '/search*']` | Routes to exclude (glob patterns) |
-| `indexers` | `string[] \| false` | `['local']` | Indexers to run during build. Use `false` to disable. Supports built-in (`'local'`), relative paths, or npm packages. |
+| `indexers` | `string[] \| false` | `['local']` | Indexers to run during build. Use `false` to disable. Supports built-in (`'local'`), paths (relative ones resolve against the site directory), or npm packages. |
 | `search` | `string` | `'local'` | **Deprecated since 2.2, removed in 3.0.** Has no effect (since 2.0): the search provider is chosen where the server runs, with the [server config's](#server-configuration) `search` option. `'flexsearch'` is rejected. |
 | `skills` | `{ builtin?: boolean; dir?: string } \| false` | built-in skill only | [Agent Skills](#serving-agent-skills-over-mcp) to package into `skills.json`. `dir` is relative to the site directory. `false` disables skills. |
 
@@ -437,7 +437,7 @@ These options apply to `McpDocsServer`, `createWebRequestHandler`, `createNodeSe
 | `baseUrl` | `string` | No | Base URL for full page URLs in responses. Default: the site URL from the build |
 | `instructions` | `string` | No | Instructions describing how to use the server, surfaced to MCP clients in the `server/discover` (2026-07-28) or `initialize` (2025-era) result. When skills are served, their URIs are appended |
 | `tools` | `object` | No | Per-tool overrides. Supports `docs_search.description` and `docs_fetch.description` to customize tool descriptions |
-| `search` | `string \| SearchRanker` | No | Search provider: a module name or path, or an instance (since 2.2, `{ name, search }` is enough). Default: the built-in `'local'` search. See [SearchProvider](#searchprovider) |
+| `search` | `string \| SearchRanker` | No | Search provider: a module name or path (a relative path resolves against the server's working directory), or an instance (since 2.2, `{ name, search }` is enough). Default: the built-in `'local'` search. See [SearchProvider](#searchprovider) |
 | `localSearch` | `{ fieldBoosts?: {...} }` | No | Field boosts for the built-in search. See [Search](#search) |
 
 \*Pass `artifacts` (edge and serverless, or `McpDocsServer` directly) or `artifactsDir` (Node). In Node, `readArtifactBundle(dir)` from `docusaurus-plugin-mcp-server/adapters/node` gives you the `artifacts` value.
