@@ -1,8 +1,14 @@
+<div align="center">
+
+<img src="assets/icon/dino-mcp-yellow-512.png" alt="The Docusaurus dinosaur hugging the MCP logo" width="160">
+
 # docusaurus-plugin-mcp-server
 
 ![CI Build](https://github.com/scalvert/docusaurus-plugin-mcp-server/actions/workflows/ci.yml/badge.svg)
 [![npm version](https://badge.fury.io/js/docusaurus-plugin-mcp-server.svg)](https://badge.fury.io/js/docusaurus-plugin-mcp-server)
 [![License](https://img.shields.io/npm/l/docusaurus-plugin-mcp-server.svg)](https://github.com/scalvert/docusaurus-plugin-mcp-server/blob/main/LICENSE)
+
+</div>
 
 A Docusaurus plugin that exposes an [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) server endpoint, allowing AI agents like Claude, Cursor, and other MCP-compatible tools to search and retrieve your documentation.
 
