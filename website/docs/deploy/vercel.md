@@ -137,7 +137,9 @@ jobs:
       - run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
 ```
 
-`vercel pull` fetches the project settings, `vercel build` runs your build command and bundles the function on the runner, and `vercel deploy --prebuilt` uploads the result. Pushing a tag such as `v1.4.0` deploys that commit, and **Run workflow** on the Actions tab redeploys the latest commit on demand.
+`vercel pull` fetches the project settings, `vercel build` runs your build command and bundles the function on the runner, and `vercel deploy --prebuilt` uploads the result. Because the build runs on GitHub Actions, Vercel runs no build and uses no build minutes.
+
+Only `VERCEL_TOKEN` is a credential. The org and project IDs are identifiers, so you can put them in the workflow's `env` directly instead of storing them as secrets. Pushing a tag such as `v1.4.0` deploys that commit, and **Run workflow** on the Actions tab redeploys the latest commit on demand.
 
 This site's own [deploy workflow](https://github.com/scalvert/docusaurus-plugin-mcp-server/blob/main/.github/workflows/deploy-website.yml) adds two checks around the deploy: it calls `api/mcp.mjs` against the fresh build before uploading, and `curl`s the production endpoint afterward.
 

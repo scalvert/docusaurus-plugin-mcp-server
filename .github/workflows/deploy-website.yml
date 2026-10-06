@@ -2,7 +2,12 @@ name: Deploy website
 
 # The docs site deploys only when a release is tagged (release-it pushes
 # v<version> tags), so the published docs always match the published package.
-# Git-triggered Vercel deployments are turned off in website/vercel.json.
+# Git-triggered Vercel deployments are turned off in website/vercel.json, and
+# the project isn't connected to the repo.
+#
+# The site is built here, on the Actions runner (`vercel build`), and uploaded
+# as prebuilt output (`vercel deploy --prebuilt`), so Vercel runs no build.
+# The only secret is VERCEL_TOKEN; the org and project IDs aren't credentials.
 on:
   push:
     tags:
@@ -25,8 +30,8 @@ jobs:
       name: website
       url: https://docusaurus-plugin-mcp-server.vercel.app
     env:
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_ORG_ID: team_HQ4Sl3YXRfgD1lAWjmgD4aoI # scalverts-projects
+      VERCEL_PROJECT_ID: prj_xjzkaO8qZnBJ8H8SS0TjosvpFuyq # docusaurus-plugin-mcp-server
     steps:
       - name: Checkout
         uses: actions/checkout@v7
