@@ -43,11 +43,13 @@ Vercel's Node.js runtime runs a default export with a `fetch` method as a web-st
   "framework": "docusaurus-2",
   "buildCommand": "npm run build",
   "outputDirectory": "build",
+  "cleanUrls": true,
   "rewrites": [{ "source": "/mcp", "destination": "/api/mcp" }]
 }
 ```
 
 - `rewrites` serves the function at `/mcp`, the URL the install button advertises. The function also answers at `/api/mcp`.
+- `cleanUrls` serves `docs/intro.html` at `/docs/intro`. Docusaurus writes pages that way when `trailingSlash` is `false`. Without `cleanUrls`, every page except the homepage returns 404 on Vercel. It does no harm with the default `docs/intro/index.html` layout, so keep it either way.
 - `framework`, `buildCommand`, and `outputDirectory` match what Vercel detects for Docusaurus. Setting them here keeps the config in the repo rather than in the dashboard.
 
 ## 3. Set your site URL
@@ -89,6 +91,7 @@ Vercel deploys every push by default. To deploy on release tags only, as this si
   "framework": "docusaurus-2",
   "buildCommand": "npm run build",
   "outputDirectory": "build",
+  "cleanUrls": true,
   "git": { "deploymentEnabled": false },
   "rewrites": [{ "source": "/mcp", "destination": "/api/mcp" }]
 }

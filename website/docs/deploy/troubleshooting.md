@@ -17,6 +17,14 @@ The platform isn't routing `/mcp` to the function.
 - **Cloudflare Workers:** check that `run_worker_first` includes `"/mcp"`.
 - **Node:** check the handler is mounted with `app.all('/mcp', …)`.
 
+## Docs pages return 404, but the homepage and `/mcp` work
+
+With `trailingSlash: false`, Docusaurus writes `/docs/intro` as `docs/intro.html`, and the host has to map the URL to that file.
+
+- **Vercel:** add `"cleanUrls": true` to `vercel.json`.
+- **Express:** pass `{ extensions: ['html'] }` to `express.static`.
+- **Deno:** retry with `.html`, as the [Deno example](./deno-and-bun.md#deno) does.
+
 ## The function build fails with "Cannot find module '…/build/mcp/bundle.json'"
 
 The function was bundled before `docusaurus build` ran, or from a different directory.

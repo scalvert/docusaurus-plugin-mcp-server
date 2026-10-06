@@ -62,7 +62,7 @@ Keep `with { type: 'json' }`: Node.js (Vercel's runtime) and Deno require it, an
 
 Per-platform glue to scaffold (complete, tested setups: https://docusaurus-plugin-mcp-server.vercel.app/docs/deploy):
 
-- **Vercel** — `api/mcp.mjs` with `export default { fetch: handler }` (Node.js runtime; no Edge config needed), plus `vercel.json` `"rewrites": [{ "source": "/mcp", "destination": "/api/mcp" }]`. Import path `../build/mcp/bundle.json`.
+- **Vercel** — `api/mcp.mjs` with `export default { fetch: handler }` (Node.js runtime; no Edge config needed), plus `vercel.json` with `"cleanUrls": true` (pages 404 without it when `trailingSlash: false`) and `"rewrites": [{ "source": "/mcp", "destination": "/api/mcp" }]`. Import path `../build/mcp/bundle.json`.
 - **Netlify** — `netlify/functions/mcp.mjs` with `export default (request) => handler(request)` and `export const config = { path: '/mcp' }`; `netlify.toml` with `publish = "build"` and `[functions] node_bundler = "esbuild"`. Import path `../../build/mcp/bundle.json`.
 - **Cloudflare Workers** — `worker.js` routing `/mcp` to `handler` and everything else to `env.ASSETS.fetch(request)`; `wrangler.jsonc` with `assets: { directory: './build', binding: 'ASSETS', run_worker_first: ['/mcp'] }`. No `nodejs_compat` needed. Wrangler imports `.json` files as parsed JSON on its own; add no `[[rules]]` for them.
 - **Deno / Bun** — `Deno.serve(...)` / `Bun.serve({ routes: { '/mcp': handler }, ... })`, serving `build/` for other paths.
