@@ -1,0 +1,45 @@
+{
+  "name": "docusaurus-plugin-mcp-server-website",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Documentation site for docusaurus-plugin-mcp-server, served over its own MCP endpoint",
+  "scripts": {
+    "docusaurus": "docusaurus",
+    "start": "docusaurus start",
+    "build": "docusaurus build",
+    "postbuild": "docusaurus-mcp-verify",
+    "serve": "docusaurus serve",
+    "clear": "docusaurus clear",
+    "smoke": "node scripts/smoke-mcp.mjs"
+  },
+  "dependencies": {
+    "@docusaurus/core": "^3.10.2",
+    "@docusaurus/faster": "^3.10.2",
+    "@docusaurus/preset-classic": "^3.10.2",
+    "@mdx-js/react": "^3.1.0",
+    "clsx": "^2.1.1",
+    "docusaurus-plugin-mcp-server": "file:..",
+    "prism-react-renderer": "^2.4.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@docusaurus/module-type-aliases": "^3.10.2",
+    "@docusaurus/types": "^3.10.2"
+  },
+  "browserslist": {
+    "production": [
+      ">0.5%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 3 chrome version",
+      "last 3 firefox version",
+      "last 5 safari version"
+    ]
+  },
+  "engines": {
+    "node": ">=22.0.0"
+  }
+}

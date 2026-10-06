@@ -53,19 +53,22 @@ Config shape in particular (`artifacts`/`artifactsDir`, overrides such as `instr
 
 ```js
 import { createWebRequestHandler } from 'docusaurus-plugin-mcp-server/adapters';
-import bundle from './build/mcp/bundle.json';
+import bundle from './build/mcp/bundle.json' with { type: 'json' };
 
 const handler = createWebRequestHandler({ artifacts: bundle });
 ```
 
-`name`, `version`, and `baseUrl` default to what the site was built with; pass them only to override. Skills are in the bundle, so there's nothing to wire up.
+Keep `with { type: 'json' }`: Node.js (Vercel's runtime) and Deno require it, and esbuild, Wrangler, and Bun accept it. `name`, `version`, and `baseUrl` default to what the site was built with; pass them only to override. Skills are in the bundle, so there's nothing to wire up. Serve the endpoint at `/mcp` (what the install button advertises) or set the plugin's `server.url`.
 
-Per-platform glue to scaffold:
+Per-platform glue to scaffold (complete, tested setups: https://docusaurus-plugin-mcp-server.vercel.app/docs/deploy):
 
-- **Cloudflare Workers** — `export default { fetch: handler }`; add a `wrangler.toml` whose `main` is the worker entry. Wrangler imports `.json` files as parsed JSON on its own; add no `[[rules]]` for them.
-- **Deno / Bun** — `export default { fetch: handler }` (both honor the `fetch` default export).
-- **Modern Netlify functions** — `export default async (request) => handler(request)` (the new web-standard functions API, not the legacy `event`/`context` one).
-- **Vercel** — use the Edge runtime: `export const config = { runtime: 'edge' }` and `export default handler`.
+- **Vercel** — `api/mcp.mjs` with `export default { fetch: handler }` (Node.js runtime; no Edge config needed), plus `vercel.json` `"rewrites": [{ "source": "/mcp", "destination": "/api/mcp" }]`. Import path `../build/mcp/bundle.json`.
+- **Netlify** — `netlify/functions/mcp.mjs` with `export default (request) => handler(request)` and `export const config = { path: '/mcp' }`; `netlify.toml` with `publish = "build"` and `[functions] node_bundler = "esbuild"`. Import path `../../build/mcp/bundle.json`.
+- **Cloudflare Workers** — `worker.js` routing `/mcp` to `handler` and everything else to `env.ASSETS.fetch(request)`; `wrangler.jsonc` with `assets: { directory: './build', binding: 'ASSETS', run_worker_first: ['/mcp'] }`. No `nodejs_compat` needed. Wrangler imports `.json` files as parsed JSON on its own; add no `[[rules]]` for them.
+- **Deno / Bun** — `Deno.serve(...)` / `Bun.serve({ routes: { '/mcp': handler }, ... })`, serving `build/` for other paths.
+- **GitHub Pages / static hosts** — can't run the handler; deploy it elsewhere from the same build and set the plugin's `server.url` to it.
+
+Use `.mjs` for function files unless the site's `package.json` has `"type": "module"` (most Docusaurus sites don't).
 
 **3. Run locally.** From `docusaurus-plugin-mcp-server/adapters/node`, `createNodeServer({ artifactsDir: './build/mcp' })` returns an `http.Server` you `.listen()`. Use `createNodeHandler(...)` to mount into an existing `http.createServer` or Express app (`app.all('/mcp', ...)`; it uses `req.body` if `express.json()` ran first). `McpDocsServer.handleHttpRequest` is deprecated in its favor. For `new McpDocsServer(...)` in Node, pass `artifacts: await readArtifactBundle('./build/mcp')`.
 
@@ -73,7 +76,7 @@ Per-platform glue to scaffold:
 
 **Skills.** By default the build packages a built-in `docs-research` skill (search → fetch → cite), loaded from the package's `skills-builtin/docs-research/SKILL.md`. Its description is built from the site `title`, URL and `tagline`, and it gets a generated "Where things are" section grouping the indexed pages by URL path. For a skill that knows the product, write your own `docs-research` in the skills dir (same name replaces the built-in); if you start from a copy of the built-in, replace its `{{siteDocs}}`/`{{siteSummary}}`/`{{siteMap}}` placeholders, which only the built-in gets filled. Add site skills with the plugin option `skills: { dir: 'mcp-skills' }` (site-relative; one directory per skill, each with a `SKILL.md` whose frontmatter `name` matches the directory). `skills: { builtin: false, dir }` ships only yours; `skills: false` disables skills. The server serves them as `skill://<name>/<path>` resources, implements `skills/list`/`skills/get`, and lists the URIs in `instructions` for clients without the extension.
 
-**4. Install button.** Render `McpInstallButton` (from `./theme`) in a navbar component with your `serverUrl`/`serverName`.
+**4. Install button.** Render `McpInstallButton` (from `./theme`); with no props it reads the URL and name from the plugin. For the navbar, register it as a custom item type by swizzle-wrapping `src/theme/NavbarItem/ComponentTypes.js` (`{ ...ComponentTypes, 'custom-mcpInstall': MyItem }`) and add `{ type: 'custom-mcpInstall', position: 'right' }` to `themeConfig.navbar.items`.
 
 ## Common mistakes
 

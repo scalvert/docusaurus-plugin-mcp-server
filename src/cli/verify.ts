@@ -87,11 +87,9 @@ async function main(): Promise<void> {
   console.log('✅ All checks passed!');
   console.log('');
   console.log('Next steps:');
-  console.log('  1. Deploy your site to a hosting provider');
-  console.log(
-    "  2. Serve the MCP endpoint (see the README's Quick Start: Create the API Endpoint)"
-  );
-  console.log('  3. Connect your AI tools to the MCP server');
+  console.log('  1. Deploy your site and serve the MCP endpoint at /mcp. Platform guides:');
+  console.log('     https://docusaurus-plugin-mcp-server.vercel.app/docs/deploy');
+  console.log('  2. Connect your AI tools to the MCP server');
   console.log('');
 
   process.exit(0);

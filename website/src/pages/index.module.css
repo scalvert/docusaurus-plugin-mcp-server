@@ -1,0 +1,65 @@
+.hero {
+  padding: 4rem 0;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+@media screen and (max-width: 996px) {
+  .hero {
+    padding: 2rem;
+  }
+}
+
+.heroLogo {
+  display: block;
+  margin: 0 auto 1rem;
+}
+
+.heroTitle {
+  font-family: var(--ifm-font-family-monospace);
+  font-size: 2.5rem;
+  word-break: break-word;
+}
+
+@media screen and (max-width: 576px) {
+  .heroTitle {
+    font-size: 1.6rem;
+  }
+}
+
+.buttons {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.heroOutline {
+  --ifm-button-border-color: #fff;
+  color: #fff;
+}
+
+.heroOutline:hover {
+  color: var(--ifm-color-primary-darkest);
+  background-color: #fff;
+}
+
+.section {
+  padding: 3rem 0;
+}
+
+.narrow {
+  max-width: 820px;
+}
+
+.sectionAlt {
+  background-color: var(--ifm-background-surface-color);
+  border-top: 1px solid var(--ifm-toc-border-color);
+}
+
+.feature {
+  padding-top: 1rem;
+  padding-bottom: 1rem;
+}

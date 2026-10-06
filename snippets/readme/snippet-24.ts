@@ -1,6 +1,6 @@
 import type { SearchRanker } from 'docusaurus-plugin-mcp-server';
 import { createWebRequestHandler } from 'docusaurus-plugin-mcp-server/adapters';
-import bundle from '../build/mcp/bundle.json';
+import bundle from '../build/mcp/bundle.json' with { type: 'json' };
 
 const glean: SearchRanker = {
   name: 'glean',

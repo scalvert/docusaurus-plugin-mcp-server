@@ -1,0 +1,94 @@
+name: Deploy website
+
+# The docs site deploys only when a release is tagged (release-it pushes
+# v<version> tags), so the published docs always match the published package.
+# Git-triggered Vercel deployments are turned off in website/vercel.json.
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: Tag to deploy (for example v2.3.0). Defaults to the latest tag.
+        required: false
+
+concurrency:
+  group: deploy-website
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy to Vercel
+    runs-on: ubuntu-latest
+    environment:
+      name: website
+      url: https://docusaurus-plugin-mcp-server.vercel.app
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # Manual runs deploy a tag, never an untagged commit.
+      - name: Check out the release tag
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          REF: ${{ inputs.ref }}
+        run: |
+          tag="${REF:-$(git describe --tags --abbrev=0 --match 'v*')}"
+          case "$tag" in v*) ;; *) echo "::error::Not a release tag: $tag"; exit 1 ;; esac
+          git checkout --quiet "refs/tags/$tag"
+          echo "Deploying $tag"
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            website/package-lock.json
+
+      - name: Install and build the plugin
+        run: |
+          npm ci
+          npm run build
+
+      - name: Install site dependencies
+        working-directory: website
+        run: npm ci
+
+      - name: Install the Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel project settings
+        working-directory: website
+        run: vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      # Runs `npm run build` (with docusaurus-mcp-verify) and bundles api/mcp.mjs.
+      - name: Build
+        working-directory: website
+        run: vercel build --prod --token="$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Smoke-test the MCP endpoint
+        working-directory: website
+        run: npm run smoke
+
+      - name: Deploy
+        working-directory: website
+        run: vercel deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Check the production endpoint
+        run: |
+          curl --fail --silent --show-error --retry 5 --retry-delay 5 --retry-all-errors \
+            https://docusaurus-plugin-mcp-server.vercel.app/mcp
