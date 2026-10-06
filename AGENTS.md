@@ -85,10 +85,24 @@ Ranking changes must keep `tests/search-ranking-test.ts` passing; its thresholds
 
 ESM-only (`"type": "module"`). All imports use `.js` extensions in source files.
 
+## Documentation site
+
+`website/` is the docs site (Docusaurus, classic theme), built with this plugin and served over its own MCP endpoint (`website/api/mcp.mjs`, routed from `/mcp` by `website/vercel.json`). It depends on the plugin as `file:..` with `install-links=true` (`website/.npmrc`), so build the root package (`npm run build`) before `npm ci` in `website/`.
+
+```bash
+npm run build && (cd website && npm ci && npm run build && npm run smoke)
+```
+
+- The README is a short quick start; detailed docs live in `website/docs/`. When the public API or behavior changes, update the matching page there (reference pages under `website/docs/reference/`, deploy guides under `website/docs/deploy/`).
+- Code blocks with `snippet=readme/...` in the README and `website/docs/` are kept in sync with `snippets/` by `markdown-code` (`npm run snippets:check` / `snippets:sync`). Edit the snippet file, then sync.
+- `migrations/` is rendered at `/migrations` by a second docs plugin instance, so migration guides must compile as MDX.
+- The site deploys to Vercel only on release tags (`.github/workflows/deploy-website.yml`); `.github/workflows/website.yml` builds and smoke-tests it on every PR. Git-triggered Vercel deployments are off (`git.deploymentEnabled: false`).
+- Deploy guides were verified against real platform builds; keep the function files and configs in them exact.
+
 ## Skills
 
 This repository ships an agent skill at `skills/docusaurus-plugin-mcp-server/SKILL.md`. Keep it accurate as the public API changes.
 
 ## Breaking changes
 
-Every major release gets a migration guide at `migrations/<from>-<to>.md` (published with the package). List each breaking change with before/after code, and end with a "For agents" checklist that an agent can run top to bottom. Errors thrown for removed configuration should link to it (`MIGRATION_GUIDE` in `src/errors.ts`). The README's "Upgrading" section stays a short summary that links to the guide.
+Every major release gets a migration guide at `migrations/<from>-<to>.md` (published with the package). List each breaking change with before/after code, and end with a "For agents" checklist that an agent can run top to bottom. Errors thrown for removed configuration should link to it (`MIGRATION_GUIDE` in `src/errors.ts`). The README's "Upgrading" section stays a short summary that links to the guide; `website/docs/upgrading.md` carries the per-release summary.

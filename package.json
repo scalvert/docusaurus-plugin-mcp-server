@@ -14,7 +14,7 @@
     "claude",
     "cursor"
   ],
-  "homepage": "https://github.com/scalvert/docusaurus-plugin-mcp-server#readme",
+  "homepage": "https://docusaurus-plugin-mcp-server.vercel.app",
   "bugs": {
     "url": "https://github.com/scalvert/docusaurus-plugin-mcp-server/issues"
   },
