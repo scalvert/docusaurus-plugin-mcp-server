@@ -14,6 +14,7 @@ Load this skill when the task involves:
 - Adding/configuring the plugin in `docusaurus.config.js`.
 - Standing up the MCP HTTP endpoint — deploying to a serverless/edge runtime (Cloudflare Workers, modern Netlify functions, Vercel Edge, Deno, Bun) or running it locally on Node.
 - Adding the `McpInstallButton` to a docs site.
+- Marking page content for agents only or people only (`ForAgents`/`ForHumans`).
 - Writing a custom indexer or search provider.
 - Shipping Agent Skills with the docs (the `skills` plugin option, `skills.json`).
 
@@ -30,7 +31,7 @@ ESM-only. Four entry points:
 - `docusaurus-plugin-mcp-server` — the plugin (default export) + `McpDocsServer`, provider types, `DEFAULT_PLUGIN_OPTIONS`.
 - `docusaurus-plugin-mcp-server/adapters` — the web-standard deploy handler `createWebRequestHandler`.
 - `docusaurus-plugin-mcp-server/adapters/node` — `createNodeServer`/`createNodeHandler` for local dev (Node `http`), and `readArtifactBundle(dir)`.
-- `docusaurus-plugin-mcp-server/theme` — `McpInstallButton`.
+- `docusaurus-plugin-mcp-server/theme` — `McpInstallButton`, `ForAgents`, `ForHumans`.
 
 Peers: `zod` (>= 4.2) is required. `@docusaurus/core` (and `react`/`react-dom` for the theme button) are optional peer deps; provide them from your Docusaurus app.
 
@@ -77,6 +78,8 @@ Use `.mjs` for function files unless the site's `package.json` has `"type": "mod
 **Skills.** By default the build packages a built-in `docs-research` skill (search → fetch → cite), loaded from the package's `skills-builtin/docs-research/SKILL.md`. Its description is built from the site `title`, URL and `tagline`, and it gets a generated "Where things are" section grouping the indexed pages by URL path. For a skill that knows the product, write your own `docs-research` in the skills dir (same name replaces the built-in); if you start from a copy of the built-in, replace its `{{siteDocs}}`/`{{siteSummary}}`/`{{siteMap}}` placeholders, which only the built-in gets filled. Add site skills with the plugin option `skills: { dir: 'mcp-skills' }` (site-relative; one directory per skill, each with a `SKILL.md` whose frontmatter `name` matches the directory). `skills: { builtin: false, dir }` ships only yours; `skills: false` disables skills. The server serves them as `skill://<name>/<path>` resources, implements `skills/list`/`skills/get`, and lists the URIs in `instructions` for clients without the extension. Those clients read skill files with `docs_fetch` (it accepts `skill://` URIs whenever skills are served), since many hosts don't let the model call `resources/read`.
 
 **`docs_fetch` URLs.** The server resolves what agents pass (trailing slash, `.md`/`.html`, `/index.html`, query strings, root-relative paths) to the document ID, never rewriting the host; `#heading-id` returns one section. A custom provider's `getDocument` is asked first with the URL as sent, then with the document ID, and the bundle answers if both miss; it only ever receives absolute URLs. The exported `docsFetchTool`/`docsFetchInputSchema` still require an absolute URL (unchanged since 2.0); only the schema the server registers is looser. Resolution lives in `src/mcp/resolve.ts`.
+
+**Agent view.** In an `.mdx` page, `import { ForAgents, ForHumans } from 'docusaurus-plugin-mcp-server/theme'`. `<ForAgents>` content is `hidden` on the rendered page but kept in everything agents get (`docs_fetch`, search, headings); `<ForHumans>` content is shown to people and left out for agents. Both are block-level `div`s: put them on their own lines with a blank line inside each tag so the Markdown parses. Keep headings out of `ForAgents` (Docusaurus would list them in the page TOC). Agent content is public, since it's in the HTML. The attribute contract (`data-mcp-audience`) lives in `src/agent-view/audience.ts`; extraction applies it in `src/agent-view/tree.ts`.
 
 **4. Install button.** Render `McpInstallButton` (from `./theme`); with no props it reads the URL and name from the plugin. For the navbar, register it as a custom item type by swizzle-wrapping `src/theme/NavbarItem/ComponentTypes.js` (`{ ...ComponentTypes, 'custom-mcpInstall': MyItem }`) and add `{ type: 'custom-mcpInstall', position: 'right' }` to `themeConfig.navbar.items`.
 

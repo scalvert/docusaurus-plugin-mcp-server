@@ -1,6 +1,9 @@
 import {
   McpInstallButton,
   type McpInstallButtonProps,
+  ForAgents,
+  ForHumans,
+  type AudienceProps,
   useMcpRegistry,
   createDocsRegistry,
   createDocsRegistryOptions,

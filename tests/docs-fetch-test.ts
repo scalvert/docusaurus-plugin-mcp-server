@@ -1,10 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import {
-  formatNotFound,
-  formatPageContent,
-  formatSection,
-  formatSkillFile,
-} from '../src/mcp/tools/docs-fetch.js';
+import { formatNotFound, formatSection, formatSkillFile } from '../src/mcp/tools/docs-fetch.js';
+import { renderDocument } from '../src/agent-view/render.js';
 import type { ProcessedDoc, SkillFile } from '../src/types/index.js';
 
 const sampleDoc: ProcessedDoc = {
@@ -137,14 +133,9 @@ describe('formatSkillFile', () => {
   });
 });
 
-describe('formatPageContent', () => {
-  it('returns "Page not found" for null doc', () => {
-    const result = formatPageContent(null);
-    expect(result).toContain('Page not found');
-  });
-
+describe('renderDocument', () => {
   it('includes title, description, TOC, and markdown for a full doc', () => {
-    const result = formatPageContent(sampleDoc);
+    const result = renderDocument(sampleDoc);
 
     expect(result).toContain('# Test Page');
     expect(result).toContain('> A test page');
@@ -159,7 +150,7 @@ describe('formatPageContent', () => {
       ...sampleDoc,
       description: '',
     };
-    const result = formatPageContent(doc);
+    const result = renderDocument(doc);
 
     expect(result).not.toContain('> ');
     expect(result).toContain('# Test Page');
@@ -170,7 +161,7 @@ describe('formatPageContent', () => {
       ...sampleDoc,
       headings: [],
     };
-    const result = formatPageContent(doc);
+    const result = renderDocument(doc);
 
     expect(result).not.toContain('## Contents');
     expect(result).not.toContain('---');
@@ -189,7 +180,7 @@ describe('formatPageContent', () => {
         { level: 5, text: 'Deeper', id: 'deeper', startOffset: 29, endOffset: 36 },
       ],
     };
-    const result = formatPageContent(doc);
+    const result = renderDocument(doc);
 
     expect(result).toContain('- [Top](#top)');
     expect(result).toContain('- [Sub](#sub)');
@@ -207,7 +198,7 @@ describe('formatPageContent', () => {
         { level: 3, text: 'H3', id: 'h3', startOffset: 13, endOffset: 20 },
       ],
     };
-    const result = formatPageContent(doc);
+    const result = renderDocument(doc);
     const lines = result.split('\n');
 
     const h1Line = lines.find((l) => l.includes('[H1]'));

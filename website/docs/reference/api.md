@@ -12,7 +12,7 @@ The package is ESM-only and has four entry points:
 | `docusaurus-plugin-mcp-server` | The Docusaurus plugin, the server class, providers, utilities | Node (build time) |
 | `docusaurus-plugin-mcp-server/adapters` | `createWebRequestHandler` for serverless and edge runtimes | Any web-standard runtime. Imports no Node built-ins |
 | `docusaurus-plugin-mcp-server/adapters/node` | The Node server and handler, reading the bundle from disk | Node |
-| `docusaurus-plugin-mcp-server/theme` | The install button and registry helpers | The browser (your Docusaurus theme) |
+| `docusaurus-plugin-mcp-server/theme` | The install button, registry helpers, and `ForAgents`/`ForHumans` | The browser (your Docusaurus theme) |
 
 The `ArtifactBundle` type is exported from the main, `adapters`, and `adapters/node` entry points.
 
@@ -116,6 +116,9 @@ All of them take the [server options](./server-options.md).
 import {
   McpInstallButton,
   type McpInstallButtonProps,
+  ForAgents,
+  ForHumans,
+  type AudienceProps,
   useMcpRegistry,
   createDocsRegistry,
   createDocsRegistryOptions,
@@ -124,6 +127,7 @@ import {
 ```
 
 - **`McpInstallButton`** is the dropdown readers use to install the server in their AI tool. See [Install button](../guides/install-button.md).
+- **`ForAgents`** and **`ForHumans`** mark page content for one audience: agents get `ForAgents` content and not `ForHumans` content, and people see the opposite. See [Writing for agents](../guides/writing-for-agents.md).
 - **`useMcpRegistry()`** is a React hook that returns the MCP config registry from the plugin's global data, or `undefined` if the plugin isn't installed.
 - **`createDocsRegistry(config)`** creates a preconfigured `MCPConfigRegistry` for a docs server.
 - **`createDocsRegistryOptions(config)`** returns the registry options without creating the registry.
