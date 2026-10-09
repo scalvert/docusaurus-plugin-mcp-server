@@ -1,5 +1,6 @@
 import type { CallToolResult, McpServer } from '@modelcontextprotocol/server';
-import type { McpServerToolsConfig, ProcessedDoc, SearchResult } from '../../types/index.js';
+import type { McpServerToolsConfig, SearchResult } from '../../types/index.js';
+import type { Resolve } from '../resolve.js';
 import type { SearchOptions } from '../../providers/types.js';
 
 /**
@@ -9,10 +10,12 @@ import type { SearchOptions } from '../../providers/types.js';
 export interface DocsToolDeps {
   /** Search through the configured provider. */
   search(query: string, options: SearchOptions): Promise<SearchResult[]>;
-  /** A document by URL: from the provider if it can, otherwise from the bundle. */
-  getDocument(url: string): Promise<ProcessedDoc | null>;
+  /** What a URI passed to `docs_fetch` names: a document, a skill file, or nothing. */
+  resolve: Resolve;
   /** Whether the provider is ready; a provider may report not ready after initialization. */
   isReady(): boolean;
+  /** Whether the server serves skills, so `docs_fetch` says it reads `skill://` URIs. */
+  servesSkills: boolean;
 }
 
 /**

@@ -13,7 +13,7 @@ One extracted page of the site: its title, description, markdown, and headings.
 _Avoid_: page, doc, ProcessedDoc (in prose)
 
 **Document ID**:
-The absolute URL that identifies a document, derived from the site's base URL and the page route.
+The absolute URL that identifies a document, derived from the site's base URL and the page route. Agents may pass other forms (a trailing slash, a `#fragment`, a `.md` or `.html` suffix, a root-relative path); the server resolves them to the document ID. A fragment selects a section; it is never part of the ID.
 _Avoid_: route, key, url (unqualified)
 
 **Manifest**:

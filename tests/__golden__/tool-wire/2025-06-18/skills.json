@@ -9,12 +9,19 @@
         "capabilities": {
           "tools": {
             "listChanged": false
+          },
+          "resources": {
+            "listChanged": false
+          },
+          "extensions": {
+            "io.modelcontextprotocol/skills": {}
           }
         },
         "serverInfo": {
           "name": "wire-docs",
           "version": "3.1.4"
-        }
+        },
+        "instructions": "This server publishes Agent Skills with step-by-step guidance for using its tools. Before starting a matching task, read the skill: call docs_fetch with its skill:// URI (or use resources/read if your client supports it). Links inside a skill resolve against its URI, so references/setup.md in skill://example/SKILL.md is skill://example/references/setup.md.\n- skill://widget-setup/SKILL.md: Set up the widget toolkit. Use when installing widgets."
       },
       "jsonrpc": "2.0",
       "id": 0
@@ -63,7 +70,7 @@
           },
           {
             "name": "docs_fetch",
-            "description": "Fetch the complete content of a documentation page. Use this after searching to get the full markdown content of a specific page.",
+            "description": "Fetch the complete content of a documentation page. Use this after searching to get the full markdown content of a specific page. Also reads Agent Skills: pass a skill:// URI from the server instructions.",
             "inputSchema": {
               "type": "object",
               "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -71,7 +78,7 @@
                 "url": {
                   "type": "string",
                   "minLength": 1,
-                  "description": "The page to fetch: a URL from search results or a link in a fetched page (e.g., \"https://docs.example.com/docs/getting-started\" or \"/docs/getting-started\"). Add #heading-id to fetch one section"
+                  "description": "The page to fetch: a URL from search results or a link in a fetched page (e.g., \"https://docs.example.com/docs/getting-started\" or \"/docs/getting-started\"). Add #heading-id to fetch one section, or a skill:// URI from the server instructions"
                 }
               },
               "required": ["url"]
@@ -473,7 +480,7 @@
         "content": [
           {
             "type": "text",
-            "text": "Page not found: skill://widget-setup/SKILL.md\nSearch with docs_search and fetch a URL from its results."
+            "text": "---\nname: widget-setup\ndescription: Set up the widget toolkit. Use when installing widgets.\n---\n\n# Set up widgets\n\n1. Run npm install.\n2. If it fails, read [troubleshooting](references/troubleshooting.md).\n"
           }
         ]
       },
@@ -490,7 +497,7 @@
         "content": [
           {
             "type": "text",
-            "text": "Page not found: skill://widget-setup/references/troubleshooting.md\nSearch with docs_search and fetch a URL from its results."
+            "text": "# Troubleshooting\n\nDelete node_modules and run npm install again.\n"
           }
         ]
       },
@@ -507,7 +514,7 @@
         "content": [
           {
             "type": "text",
-            "text": "Page not found: skill://widget-setup/assets/diagram.png\nSearch with docs_search and fetch a URL from its results."
+            "text": "skill://widget-setup/assets/diagram.png is a binary file (image/png, 8 bytes). Read it with resources/read."
           }
         ]
       },
@@ -524,7 +531,7 @@
         "content": [
           {
             "type": "text",
-            "text": "Page not found: skill://widget-setup/references/missing.md\nSearch with docs_search and fetch a URL from its results."
+            "text": "Skill file not found: skill://widget-setup/references/missing.md. Use a skill:// URI listed in the server instructions, or a file a skill links to."
           }
         ]
       },

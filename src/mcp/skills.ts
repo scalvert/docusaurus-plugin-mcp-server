@@ -21,6 +21,9 @@ import type { SkillArtifact, SkillFile, SkillsArtifact } from '../types/index.js
 
 const SKILLS_EXTENSION_ID = 'io.modelcontextprotocol/skills';
 
+/** Scheme of every skill file URI (`skill://<skill-path>/<file-path>`) */
+export const SKILL_URI_PREFIX = 'skill://';
+
 /**
  * First protocol revision whose results carry `ttlMs`/`cacheScope` (SEP-2549).
  * Revisions are ISO dates, so string comparison orders them.
@@ -34,7 +37,8 @@ interface SkillEntry {
   resources: Array<{ uri: string; digest: string; size: number }>;
 }
 
-function skillFileUri(skill: SkillArtifact, filePath: string): string {
+/** The `skill://` URI of one file in a skill. The only place the URI format is defined. */
+export function skillFileUri(skill: SkillArtifact, filePath: string): string {
   return `skill://${skill.skillPath}/${filePath}`;
 }
 
@@ -56,11 +60,13 @@ function toSkillEntry(skill: SkillArtifact): SkillEntry {
 
 /**
  * Pointer appended to the server instructions so clients without the skills
- * extension can still find and read the skills via resources/read.
+ * extension can still find the skills. It names `docs_fetch` first: many
+ * hosts let only the user, not the model, read resources, but every host lets
+ * the model call tools.
  */
 export function skillsInstructions(skills: SkillArtifact[]): string {
   const lines = [
-    'This server publishes Agent Skills with step-by-step guidance for using its tools. Read a skill with resources/read before starting a matching task:',
+    'This server publishes Agent Skills with step-by-step guidance for using its tools. Before starting a matching task, read the skill: call docs_fetch with its skill:// URI (or use resources/read if your client supports it). Links inside a skill resolve against its URI, so references/setup.md in skill://example/SKILL.md is skill://example/references/setup.md.',
     ...skills.map((skill) => `- ${skillUri(skill)}: ${skill.frontmatter.description}`),
   ];
   return lines.join('\n');

@@ -188,8 +188,11 @@ export interface SearchRanker {
   isReady?(): boolean;
 
   /**
-   * Get a document by its document ID (full URL). Used by `docs_fetch`.
-   * Optional: without it, `docs_fetch` reads the bundle's documents.
+   * Get a document by URL. Used by `docs_fetch`, which calls it with the URL
+   * as the agent sent it (minus any `#fragment`), then with the document ID
+   * (full URL) if that differs. Return null for a URL you don't recognize:
+   * the bundle's documents answer next. Optional: without it, `docs_fetch`
+   * reads the bundle's documents.
    */
   getDocument?(url: string): Promise<ProcessedDoc | null>;
 

@@ -8,7 +8,7 @@ description: 'Answer questions using {{siteSummary}}. Use when the user asks abo
 This MCP server exposes {{siteDocs}} through two tools:
 
 - `docs_search`: full-text search across every page. Returns titles, URLs, matching sections, and snippets.
-- `docs_fetch`: returns the complete markdown of one page, given its URL.
+- `docs_fetch`: returns the complete markdown of one page, given its URL, or one section of it when the URL ends in `#heading-id`.
 
 ## Workflow
 
@@ -23,7 +23,8 @@ This MCP server exposes {{siteDocs}} through two tools:
 ## Tips
 
 - `docs_search` returns up to 16 results by default (max 20). Pass a smaller `limit` for focused lookups.
-- Only pass URLs to `docs_fetch` that came from `docs_search` results, links in this skill, or links in fetched pages.
+- Only pass URLs to `docs_fetch` that came from `docs_search` results, links in this skill, or links in fetched pages. Links from fetched pages work as written, including root-relative ones like `/docs/intro`.
+- To read one part of a long page, add the section's `#heading-id` to its URL; `docs_fetch` then returns just that section.
 - Prefer several targeted searches over one broad one; each search is cheap.
 
 <!-- This is the built-in skill from docusaurus-plugin-mcp-server. To replace it, add your own docs-research skill to the plugin's skills `dir`. -->

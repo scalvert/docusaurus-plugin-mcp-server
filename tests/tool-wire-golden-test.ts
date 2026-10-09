@@ -3,7 +3,8 @@
  * JSON-RPC responses to tools/list and tools/call, in both protocol eras,
  * for the default server and for each way the tool handlers branch
  * (description overrides, a provider that throws, a provider that is not
- * ready, a provider without getDocument).
+ * ready, a provider without getDocument, a bundle with skills, which
+ * docs_fetch then reads by skill:// URI).
  *
  * The snapshot files are the contract. A change that alters them must be
  * intended, and the diff reviewed. Regenerate with:
@@ -24,7 +25,12 @@ import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import path from 'node:path';
 import * as prettier from 'prettier';
 import { McpDocsServer } from '../src/mcp/server.js';
-import type { McpServerToolsConfig, ProcessedDoc, SearchResult } from '../src/types/index.js';
+import type {
+  McpServerToolsConfig,
+  ProcessedDoc,
+  SearchResult,
+  SkillsArtifact,
+} from '../src/types/index.js';
 import type { SearchProvider } from '../src/providers/types.js';
 import type { ArtifactBundle } from '../src/artifacts/bundle.js';
 import { buildTestBundle } from './helpers/bundle.js';
@@ -42,20 +48,48 @@ const LONG_FILLER = Array.from(
   (_, i) => `Paragraph ${i + 1} describes ordinary widget behavior in some detail.`
 ).join('\n\n');
 
+const INSTALL_MD =
+  '# Installation\n\nRun npm install to install the widget toolkit.\n\n' +
+  '## Requirements\n\nNode 22 or later.\n\n### Optional tools\n\nA widget linter.\n\n' +
+  '#### Deep detail\n\nNot listed in the contents.';
+/** Where a heading line starts in INSTALL_MD. Each section here runs to the end of the page. */
+const installAt = (heading: string) => INSTALL_MD.indexOf(heading);
+
 const docs: ProcessedDoc[] = [
   {
     route: '/docs/install',
     title: 'Installation',
     description: 'Install the widget toolkit',
-    markdown:
-      '# Installation\n\nRun npm install to install the widget toolkit.\n\n' +
-      '## Requirements\n\nNode 22 or later.\n\n### Optional tools\n\nA widget linter.\n\n' +
-      '#### Deep detail\n\nNot listed in the contents.',
+    markdown: INSTALL_MD,
     headings: [
-      { level: 1, text: 'Installation', id: 'installation', startOffset: 0, endOffset: 64 },
-      { level: 2, text: 'Requirements', id: 'requirements', startOffset: 64, endOffset: 100 },
-      { level: 3, text: 'Optional tools', id: 'optional-tools', startOffset: 100, endOffset: 136 },
-      { level: 4, text: 'Deep detail', id: 'deep-detail', startOffset: 136, endOffset: 180 },
+      {
+        level: 1,
+        text: 'Installation',
+        id: 'installation',
+        startOffset: 0,
+        endOffset: INSTALL_MD.length,
+      },
+      {
+        level: 2,
+        text: 'Requirements',
+        id: 'requirements',
+        startOffset: installAt('## Requirements'),
+        endOffset: INSTALL_MD.length,
+      },
+      {
+        level: 3,
+        text: 'Optional tools',
+        id: 'optional-tools',
+        startOffset: installAt('### Optional tools'),
+        endOffset: INSTALL_MD.length,
+      },
+      {
+        level: 4,
+        text: 'Deep detail',
+        id: 'deep-detail',
+        startOffset: installAt('#### Deep detail'),
+        endOffset: INSTALL_MD.length,
+      },
     ],
   },
   {
@@ -84,6 +118,52 @@ const docs: ProcessedDoc[] = [
     ],
   },
 ];
+
+const SKILL_MD =
+  '---\nname: widget-setup\ndescription: Set up the widget toolkit. Use when installing widgets.\n---\n\n' +
+  '# Set up widgets\n\n1. Run npm install.\n2. If it fails, read [troubleshooting](references/troubleshooting.md).\n';
+const TROUBLESHOOTING_MD = '# Troubleshooting\n\nDelete node_modules and run npm install again.\n';
+
+/**
+ * A hand-built skills artifact (not the built-in skill), so these snapshots
+ * don't change when the built-in skill's wording does. Digests are
+ * placeholders: nothing in these calls checks them.
+ */
+const skills: SkillsArtifact = {
+  version: 1,
+  skills: [
+    {
+      skillPath: 'widget-setup',
+      frontmatter: {
+        name: 'widget-setup',
+        description: 'Set up the widget toolkit. Use when installing widgets.',
+      },
+      files: [
+        {
+          path: 'SKILL.md',
+          mimeType: 'text/markdown',
+          text: SKILL_MD,
+          digest: 'sha256:skill-md',
+          size: SKILL_MD.length,
+        },
+        {
+          path: 'references/troubleshooting.md',
+          mimeType: 'text/markdown',
+          text: TROUBLESHOOTING_MD,
+          digest: 'sha256:troubleshooting',
+          size: TROUBLESHOOTING_MD.length,
+        },
+        {
+          path: 'assets/diagram.png',
+          mimeType: 'image/png',
+          blob: 'iVBORw0KGgo=',
+          digest: 'sha256:diagram',
+          size: 8,
+        },
+      ],
+    },
+  ],
+};
 
 /** A provider with none of the optional methods; results echo what it was asked. */
 function bundleFetchProvider(): SearchProvider {
@@ -139,6 +219,8 @@ const descriptionOverrides: McpServerToolsConfig = {
 interface Scenario {
   name: string;
   server: (artifacts: ArtifactBundle) => McpDocsServer;
+  /** Serve the bundle built with {@link skills} */
+  withSkills?: boolean;
 }
 
 const SCENARIOS: Scenario[] = [
@@ -158,6 +240,11 @@ const SCENARIOS: Scenario[] = [
   {
     name: 'provider-without-getdocument',
     server: (artifacts) => new McpDocsServer({ artifacts, search: bundleFetchProvider() }),
+  },
+  {
+    name: 'skills',
+    server: (artifacts) => new McpDocsServer({ artifacts }),
+    withSkills: true,
   },
 ];
 
@@ -192,6 +279,28 @@ const CALLS: Call[] = [
   toolCall('docs_fetch: missing url', 'docs_fetch', {}),
   toolCall('docs_fetch: no arguments', 'docs_fetch'),
   toolCall('unknown tool', 'docs_nope', { query: 'widget' }),
+  // Added in 2.3, after the 2.2 calls so their request IDs stay put.
+  toolCall('docs_fetch: empty url', 'docs_fetch', { url: '' }),
+  toolCall('docs_fetch: trailing slash', 'docs_fetch', { url: `${BASE}/docs/faq/` }),
+  toolCall('docs_fetch: .md suffix', 'docs_fetch', { url: `${BASE}/docs/faq.md` }),
+  toolCall('docs_fetch: root-relative path', 'docs_fetch', { url: '/docs/faq' }),
+  toolCall('docs_fetch: section by fragment', 'docs_fetch', {
+    url: `${BASE}/docs/install#requirements`,
+  }),
+  toolCall('docs_fetch: unknown fragment', 'docs_fetch', { url: `${BASE}/docs/faq#nope` }),
+  toolCall('docs_fetch: moved page (similar path)', 'docs_fetch', {
+    url: `${BASE}/docs/old/configuration`,
+  }),
+  toolCall('docs_fetch: skill SKILL.md', 'docs_fetch', { url: 'skill://widget-setup/SKILL.md' }),
+  toolCall('docs_fetch: skill reference file', 'docs_fetch', {
+    url: 'skill://widget-setup/references/troubleshooting.md',
+  }),
+  toolCall('docs_fetch: skill binary file', 'docs_fetch', {
+    url: 'skill://widget-setup/assets/diagram.png',
+  }),
+  toolCall('docs_fetch: unknown skill file', 'docs_fetch', {
+    url: 'skill://widget-setup/references/missing.md',
+  }),
 ];
 
 interface Exchange {
@@ -335,18 +444,17 @@ async function golden(value: unknown, file: string): Promise<string> {
 
 describe.each(ERAS)('tool wire golden: $era', ({ era, run }) => {
   let artifacts: ArtifactBundle;
+  let artifactsWithSkills: ArtifactBundle;
 
   beforeAll(async () => {
-    artifacts = await buildTestBundle(docs, {
-      name: 'wire-docs',
-      version: '3.1.4',
-      baseUrl: BASE,
-    });
+    const options = { name: 'wire-docs', version: '3.1.4', baseUrl: BASE };
+    artifacts = await buildTestBundle(docs, options);
+    artifactsWithSkills = await buildTestBundle(docs, { ...options, skills });
   });
 
-  it.each(SCENARIOS)('$name', async ({ name, server }) => {
+  it.each(SCENARIOS)('$name', async ({ name, server, withSkills }) => {
     const file = path.join(GOLDEN, era, `${name}.json`);
-    const exchanges = await run(server(artifacts));
+    const exchanges = await run(server(withSkills ? artifactsWithSkills : artifacts));
     await expect(await golden(exchanges, file)).toMatchFileSnapshot(file);
   });
 });
