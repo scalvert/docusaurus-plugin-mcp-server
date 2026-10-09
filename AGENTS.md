@@ -27,11 +27,12 @@ This is a Docusaurus plugin that exposes documentation as an MCP (Model Context 
 
 ### Two-Phase Design
 
-**Build Time** (`src/plugin/`): The Docusaurus plugin runs during `docusaurus build`:
-- `docusaurus-plugin.ts` - Main plugin with `postBuild` hook
+**Build Time** (`src/pipeline/`, `src/plugin/`): runs during `docusaurus build`:
+- `src/pipeline/build-outputs.ts` - The build pipeline, with no Docusaurus in it: `buildOutputs({ outDir, options, site })` returns the artifact bundle (or why it skipped) and writes nothing. Test build behavior here, against HTML fixtures (`tests/build-outputs-test.ts`). New build steps go here, not in the hook
+- `src/plugin/docusaurus-plugin.ts` - The Docusaurus adapter: `postBuild` maps `LoadContext` to `SiteInfo`, calls `buildOutputs`, and writes the bundle
 - Processes HTML files → extracts content → converts to markdown → builds search index
 - Packages Agent Skills (built-in `docs-research` + optional site skills) with digests
-- Assembles the artifact bundle and writes it to `build/mcp/bundle.json`, plus 2.x per-file copies (docs.json, search-index.json, skills.json, manifest.json, indexer extras). See `CONTEXT.md` for the terms and `docs/adr/0001-single-artifact-bundle.md` for why
+- Assembles the artifact bundle, written to `build/mcp/bundle.json` plus 2.x per-file copies (docs.json, search-index.json, skills.json, manifest.json, indexer extras). See `CONTEXT.md` for the terms and `docs/adr/0001-single-artifact-bundle.md` for why
 
 **Runtime** (`src/mcp/`, `src/adapters/`): Serverless functions serve MCP requests:
 - `McpDocsServer` class wraps the MCP TypeScript SDK v2 (`@modelcontextprotocol/server`). It serves protocol 2026-07-28 statelessly and routes 2025-era (`initialize`) requests to a stateless JSON-response transport on the same endpoint
