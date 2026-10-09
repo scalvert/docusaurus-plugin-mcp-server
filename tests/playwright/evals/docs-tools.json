@@ -124,6 +124,39 @@
       "expect": {
         "containsText": "Page not found"
       }
+    },
+    {
+      "id": "fetch-section-from-link",
+      "description": "A link as an agent copies it (trailing slash, #fragment) resolves to just that section",
+      "toolName": "docs_fetch",
+      "args": { "url": "https://docs.example.com/docs/intro/#overview" },
+      "tags": ["fetch", "resolve"],
+      "expect": {
+        "isError": false,
+        "containsText": "> Section #overview of https://docs.example.com/docs/intro."
+      }
+    },
+    {
+      "id": "fetch-root-relative",
+      "description": "Root-relative links from fetched pages work as written",
+      "toolName": "docs_fetch",
+      "args": { "url": "/docs/intro" },
+      "tags": ["fetch", "resolve"],
+      "expect": {
+        "isError": false,
+        "matchesPattern": "^# Introduction\\n"
+      }
+    },
+    {
+      "id": "fetch-skill",
+      "description": "docs_fetch reads a skill by the skill:// URI in the server instructions (for hosts without the skills extension)",
+      "toolName": "docs_fetch",
+      "args": { "url": "skill://docs-research/SKILL.md" },
+      "tags": ["fetch", "skills"],
+      "expect": {
+        "isError": false,
+        "matchesPattern": ["^---\\nname: docs-research\\n", "# Researching "]
+      }
     }
   ]
 }

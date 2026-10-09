@@ -104,7 +104,7 @@ See [Connecting AI tools](https://docusaurus-plugin-mcp-server.vercel.app/docs/g
 ## MCP Tools
 
 - **`docs_search`**: BM25-ranked search across your docs. Returns URLs, snippets, and matching headings.
-- **`docs_fetch`**: one page as Markdown, with a table of contents.
+- **`docs_fetch`**: one page, or one `#section`, as Markdown with a table of contents. Accepts links as agents copy them (root-relative, trailing slash, `.md`) and, when skills are served, `skill://` URIs.
 
 Details in [MCP tools](https://docusaurus-plugin-mcp-server.vercel.app/docs/reference/mcp-tools).
 

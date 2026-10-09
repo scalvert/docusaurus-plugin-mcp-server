@@ -156,6 +156,20 @@ describe.each(['modern', 'legacy'] as const)('%s client', (mode) => {
     const instructions = client.getInstructions() ?? '';
     expect(instructions).toContain('Search first.');
     expect(instructions).toContain('skill://docs-research/SKILL.md');
+    expect(instructions).toContain('call docs_fetch with its skill:// URI');
+  });
+
+  it('docs_fetch returns a skill file exactly as resources/read serves it', async () => {
+    const { client } = await connect(server, mode);
+    const uri = 'skill://docs-research/SKILL.md';
+
+    const read = await client.readResource({ uri });
+    const fetched = await client.callTool({ name: 'docs_fetch', arguments: { url: uri } });
+
+    expect(fetched.isError).toBeFalsy();
+    expect(fetched.content).toEqual([
+      { type: 'text', text: (read.contents[0] as { text: string }).text },
+    ]);
   });
 
   it('serves skills/list, skills/get, and skill:// resources with matching digests', async () => {

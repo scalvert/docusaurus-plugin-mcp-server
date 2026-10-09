@@ -70,8 +70,8 @@
               "properties": {
                 "url": {
                   "type": "string",
-                  "format": "uri",
-                  "description": "The full URL of the page to fetch (e.g., \"https://docs.example.com/docs/getting-started\")"
+                  "minLength": 1,
+                  "description": "The page to fetch: a URL from search results or a link in a fetched page (e.g., \"https://docs.example.com/docs/getting-started\" or \"/docs/getting-started\"). Add #heading-id to fetch one section"
                 }
               },
               "required": ["url"]
@@ -294,7 +294,7 @@
         "content": [
           {
             "type": "text",
-            "text": "Input validation error: Invalid arguments for tool docs_fetch: url: Invalid URL"
+            "text": "Server not initialized. Please try again."
           }
         ],
         "isError": true
@@ -350,6 +350,204 @@
         "code": -32602,
         "message": "Tool docs_nope not found"
       }
+    }
+  },
+  {
+    "label": "docs_fetch: empty url",
+    "status": 200,
+    "contentType": "application/json",
+    "body": {
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Input validation error: Invalid arguments for tool docs_fetch: url: Too small: expected string to have >=1 characters"
+          }
+        ],
+        "isError": true
+      },
+      "jsonrpc": "2.0",
+      "id": 17
+    }
+  },
+  {
+    "label": "docs_fetch: trailing slash",
+    "status": 200,
+    "contentType": "application/json",
+    "body": {
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Server not initialized. Please try again."
+          }
+        ],
+        "isError": true
+      },
+      "jsonrpc": "2.0",
+      "id": 18
+    }
+  },
+  {
+    "label": "docs_fetch: .md suffix",
+    "status": 200,
+    "contentType": "application/json",
+    "body": {
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Server not initialized. Please try again."
+          }
+        ],
+        "isError": true
+      },
+      "jsonrpc": "2.0",
+      "id": 19
+    }
+  },
+  {
+    "label": "docs_fetch: root-relative path",
+    "status": 200,
+    "contentType": "application/json",
+    "body": {
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Server not initialized. Please try again."
+          }
+        ],
+        "isError": true
+      },
+      "jsonrpc": "2.0",
+      "id": 20
+    }
+  },
+  {
+    "label": "docs_fetch: section by fragment",
+    "status": 200,
+    "contentType": "application/json",
+    "body": {
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Server not initialized. Please try again."
+          }
+        ],
+        "isError": true
+      },
+      "jsonrpc": "2.0",
+      "id": 21
+    }
+  },
+  {
+    "label": "docs_fetch: unknown fragment",
+    "status": 200,
+    "contentType": "application/json",
+    "body": {
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Server not initialized. Please try again."
+          }
+        ],
+        "isError": true
+      },
+      "jsonrpc": "2.0",
+      "id": 22
+    }
+  },
+  {
+    "label": "docs_fetch: moved page (similar path)",
+    "status": 200,
+    "contentType": "application/json",
+    "body": {
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Server not initialized. Please try again."
+          }
+        ],
+        "isError": true
+      },
+      "jsonrpc": "2.0",
+      "id": 23
+    }
+  },
+  {
+    "label": "docs_fetch: skill SKILL.md",
+    "status": 200,
+    "contentType": "application/json",
+    "body": {
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Server not initialized. Please try again."
+          }
+        ],
+        "isError": true
+      },
+      "jsonrpc": "2.0",
+      "id": 24
+    }
+  },
+  {
+    "label": "docs_fetch: skill reference file",
+    "status": 200,
+    "contentType": "application/json",
+    "body": {
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Server not initialized. Please try again."
+          }
+        ],
+        "isError": true
+      },
+      "jsonrpc": "2.0",
+      "id": 25
+    }
+  },
+  {
+    "label": "docs_fetch: skill binary file",
+    "status": 200,
+    "contentType": "application/json",
+    "body": {
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Server not initialized. Please try again."
+          }
+        ],
+        "isError": true
+      },
+      "jsonrpc": "2.0",
+      "id": 26
+    }
+  },
+  {
+    "label": "docs_fetch: unknown skill file",
+    "status": 200,
+    "contentType": "application/json",
+    "body": {
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Server not initialized. Please try again."
+          }
+        ],
+        "isError": true
+      },
+      "jsonrpc": "2.0",
+      "id": 27
     }
   }
 ]

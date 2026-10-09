@@ -65,6 +65,7 @@ At runtime the server:
 
 - declares the `io.modelcontextprotocol/skills` extension and implements `skills/list` and `skills/get`.
 - serves every skill file as a resource at `skill://<name>/<path>`, for example `skill://docs-research/SKILL.md`.
-- appends the skill URIs to the server `instructions`, so clients that don't support the extension yet can still find the skills and load them with `resources/read`.
+- appends the skill URIs to the server `instructions`, so clients that don't support the extension yet can still find the skills.
+- lets `docs_fetch` read any skill file by its `skill://` URI. Few hosts support the skills extension yet, and many let only the user, not the model, read resources, but every host lets the model call tools. The instructions tell the agent to use `docs_fetch`, or `resources/read` where the client supports it.
 
 Keep skills to Markdown. MCP hosts treat served skills as untrusted input and won't run bundled scripts without the user's explicit approval.

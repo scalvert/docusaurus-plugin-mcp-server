@@ -1,6 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { formatPageContent } from '../src/mcp/tools/docs-fetch.js';
-import type { ProcessedDoc } from '../src/types/index.js';
+import {
+  formatNotFound,
+  formatPageContent,
+  formatSection,
+  formatSkillFile,
+} from '../src/mcp/tools/docs-fetch.js';
+import type { ProcessedDoc, SkillFile } from '../src/types/index.js';
 
 const sampleDoc: ProcessedDoc = {
   route: '/docs/test',
@@ -12,6 +17,125 @@ const sampleDoc: ProcessedDoc = {
     { level: 2, text: 'Section', id: 'section', startOffset: 11, endOffset: 30 },
   ],
 };
+
+const SECTION_MD =
+  '# Installation\n\nIntro.\n\n## Requirements\n\nNode 22.\n\n### Optional\n\nA linter.\n\n## Next\n\nDone.\n';
+const at = (heading: string) => SECTION_MD.indexOf(heading);
+const sectionDoc: ProcessedDoc = {
+  route: '/docs/install',
+  title: 'Installation',
+  description: '',
+  markdown: SECTION_MD,
+  headings: [
+    {
+      level: 1,
+      text: 'Installation',
+      id: 'installation',
+      startOffset: 0,
+      endOffset: SECTION_MD.length,
+    },
+    {
+      level: 2,
+      text: 'Requirements',
+      id: 'requirements',
+      startOffset: at('## Requirements'),
+      endOffset: at('## Next'),
+    },
+    {
+      level: 3,
+      text: 'Optional',
+      id: 'optional',
+      startOffset: at('### Optional'),
+      endOffset: at('## Next'),
+    },
+    {
+      level: 2,
+      text: 'Next',
+      id: 'next',
+      startOffset: at('## Next'),
+      endOffset: SECTION_MD.length,
+    },
+  ],
+};
+
+describe('formatSection', () => {
+  it('returns the section and its subsections, up to the next same-level heading', () => {
+    const text = formatSection('https://x.dev/docs/install', sectionDoc, 'requirements');
+    expect(text).toBe(
+      '# Installation: Requirements\n\n' +
+        '> Section #requirements of https://x.dev/docs/install. Fetch the URL without #requirements for the whole page.\n\n' +
+        '## Requirements\n\nNode 22.\n\n### Optional\n\nA linter.\n'
+    );
+  });
+
+  it('falls back to the whole page, with a note, for an unknown fragment', () => {
+    const text = formatSection('https://x.dev/docs/install', sectionDoc, 'nope');
+    expect(
+      text.startsWith(
+        '> No section #nope on this page; showing the whole page.\n\n# Installation\n'
+      )
+    ).toBe(true);
+    expect(text).toContain('## Next');
+  });
+});
+
+describe('formatNotFound', () => {
+  it('lists similar pages, then points to docs_search', () => {
+    expect(
+      formatNotFound({
+        kind: 'not-found',
+        tried: 'https://x.dev/docs/old/setup',
+        similar: [
+          { id: 'https://x.dev/docs/guides/setup', title: 'Setup' },
+          { id: 'https://x.dev/docs/api/setup', title: '' },
+        ],
+      })
+    ).toBe(
+      'Page not found: https://x.dev/docs/old/setup\n' +
+        'Pages with a similar path:\n' +
+        '- https://x.dev/docs/guides/setup (Setup)\n' +
+        '- https://x.dev/docs/api/setup\n' +
+        'Or search with docs_search and fetch a URL from its results.'
+    );
+  });
+
+  it('points to docs_search when nothing is similar', () => {
+    expect(formatNotFound({ kind: 'not-found', tried: 'https://x.dev/nope', similar: [] })).toBe(
+      'Page not found: https://x.dev/nope\nSearch with docs_search and fetch a URL from its results.'
+    );
+  });
+});
+
+describe('formatSkillFile', () => {
+  it('returns a text file verbatim', () => {
+    const file: SkillFile = {
+      path: 'SKILL.md',
+      mimeType: 'text/markdown',
+      text: 'setup/SKILL.md',
+      digest: 'sha256:x',
+      size: 14,
+    };
+    expect(formatSkillFile('skill://setup/SKILL.md', file)).toBe('setup/SKILL.md');
+  });
+
+  it('points binary files at resources/read', () => {
+    const text = formatSkillFile('skill://setup/logo.png', {
+      path: 'logo.png',
+      mimeType: 'image/png',
+      blob: 'AA==',
+      digest: 'sha256:x',
+      size: 1,
+    });
+    expect(text).toContain('binary file (image/png, 1 bytes)');
+    expect(text).toContain('resources/read');
+  });
+
+  it('says when the file is not found', () => {
+    expect(formatSkillFile('skill://nope/SKILL.md', null)).toContain(
+      'Skill file not found: skill://nope/SKILL.md'
+    );
+  });
+});
 
 describe('formatPageContent', () => {
   it('returns "Page not found" for null doc', () => {

@@ -35,7 +35,7 @@ Each result has:
 
 ## `docs_fetch`
 
-Returns one page's full content as Markdown. Use it after searching.
+Returns one page's full content as Markdown, or one section of it. Use it after searching.
 
 ```json snippet=readme/snippet-10.json
 {
@@ -48,7 +48,7 @@ Returns one page's full content as Markdown. Use it after searching.
 
 | Parameter | Type | Description |
 | --- | --- | --- |
-| `url` | `string` | Full URL of the page, from search results |
+| `url` | `string` | The page: a URL from search results or a link in a fetched page. Add `#heading-id` for one section. Also a `skill://` URI when the server serves [skills](../guides/agent-skills.md) |
 
 The result has:
 
@@ -56,13 +56,21 @@ The result has:
 - a table of contents with anchor links
 - the full Markdown content
 
+The server resolves the forms agents commonly pass to the page's URL: a trailing slash, a `.md` or `.html` suffix, `/index.html`, a query string, and root-relative paths like `/docs/authentication` (resolved against the site's origin). It never rewrites the host.
+
+- **`#heading-id`**: returns only that section, through its subsections, with a note naming the page. An unknown heading ID returns the whole page.
+- **Not found**: names the URL it tried, lists up to three pages whose path ends the same way (for moved pages), and points to `docs_search`.
+- **`skill://` URI**: the skill file's text, exactly as `resources/read` serves it.
+
+The exported `docsFetchTool.inputSchema` and `docsFetchInputSchema` still require an absolute URL, as in 2.0; only the schema the server registers accepts the other forms.
+
 ## Other MCP features
 
 | Feature | Details |
 | --- | --- |
 | Protocol versions | 2026-07-28 (stateless, `server/discover`), and 2025-era revisions through `initialize`, on the same endpoint |
 | Skills extension | `io.modelcontextprotocol/skills`: `skills/list`, `skills/get`. See [Agent Skills](../guides/agent-skills.md) |
-| Resources | Every skill file at `skill://<name>/<path>`, readable with `resources/read` |
+| Resources | Every skill file at `skill://<name>/<path>`, readable with `resources/read` or `docs_fetch` |
 | Instructions | The `instructions` server option, with skill URIs appended |
 | Caching | List and read results carry cache hints: `ttlMs` 5 minutes, `cacheScope: public` |
 | Errors | Unknown tools return JSON-RPC `-32602` |

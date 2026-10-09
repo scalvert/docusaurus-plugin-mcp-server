@@ -102,6 +102,8 @@ With an `artifacts` or `artifactsDir` server config, `initialize` receives the a
 
 `getDocument` and `getDocCount` are optional. Without them, `docs_fetch` and the status check use the bundle's documents.
 
+`docs_fetch` calls `getDocument` with the URL the agent sent (without any `#fragment`), then with the page's canonical URL if that differs, for example without a trailing slash or `.md` suffix. It only ever passes absolute URLs: a root-relative path reaches your provider as the canonical URL. Return `null` for a URL you don't recognize, and the bundle's documents answer next.
+
 This holds whether the server config passes an instance or a module path (`search: './my-search.js'`, whose default export is a `SearchRanker` class or object). Existing `SearchProvider` classes keep working unchanged. `loadSearchProvider()`, called directly with a module path, still requires a full `SearchProvider` in 2.x.
 
 :::warning[Deprecated since 2.2]

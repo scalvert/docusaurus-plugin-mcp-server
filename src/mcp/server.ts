@@ -29,6 +29,7 @@ import { docsSearch } from './tools/docs-search.js';
 import { docsFetch } from './tools/docs-fetch.js';
 import type { DocsToolDeps, DocsToolModule } from './tools/tool.js';
 import { registerSkills, skillsCapabilities, skillsInstructions } from './skills.js';
+import { createResolver, type Resolve } from './resolve.js';
 // The bridge lives with the adapters but is a dependency of handleHttpRequest,
 // which predates the web handler and stays part of this class's public API.
 import { toWebRequest, writeWebResponse } from '../adapters/node-bridge.js';
@@ -146,6 +147,7 @@ export class McpDocsServer {
   private identity: ServerIdentity | null = null;
   private searchProvider: SearchRanker | null = null;
   private skillsArtifact: SkillsArtifact | null = null;
+  private resolve: Resolve | null = null;
   private handler: McpHttpHandler | null = null;
   private initialized = false;
   private initPromise: Promise<void> | null = null;
@@ -185,7 +187,7 @@ export class McpDocsServer {
       }
     );
 
-    this.registerTools(server);
+    this.registerTools(server, skills);
     if (skills) {
       registerSkills(server, skills, { cacheHint: CACHE_HINT });
     }
@@ -194,36 +196,27 @@ export class McpDocsServer {
 
   /**
    * Register the docs tools. Each tool module owns its description, schema,
-   * and handler; the server supplies search, document lookup, and readiness.
+   * and handler; the server supplies search, URI resolution, readiness, and
+   * whether skills are served.
    */
-  private registerTools(server: McpServer): void {
+  private registerTools(server: McpServer, skills: SkillsArtifact | null): void {
     const provider = this.searchProvider;
-    if (!provider) {
-      // Unreachable: servers are created only after initialize() sets the provider.
+    const resolve = this.resolve;
+    if (!provider || !resolve) {
+      // Unreachable: servers are created only after initialize() sets both.
       throw new Error('MCP search provider not initialized');
     }
 
     const deps: DocsToolDeps = {
       search: (query, options) => provider.search(query, options),
-      getDocument: (url) => this.getDocument(url),
+      resolve,
       // Deprecated since 2.2; a provider without it is always ready.
       isReady: () => provider.isReady?.() ?? true,
+      servesSkills: skills !== null,
     };
     for (const tool of DOCS_TOOLS) {
       tool.register(server, deps, this.config.tools);
     }
-  }
-
-  /**
-   * Get a document by URL: from the search provider if it implements
-   * `getDocument`, otherwise from the bundle's documents.
-   */
-  private async getDocument(url: string): Promise<ProcessedDoc | null> {
-    if (this.searchProvider?.getDocument) {
-      return this.searchProvider.getDocument(url);
-    }
-
-    return this.bundle?.docs[url] ?? null;
   }
 
   /**
@@ -397,6 +390,13 @@ export class McpDocsServer {
     };
 
     await searchProvider.initialize?.(providerContext, initData);
+
+    this.resolve = createResolver({
+      baseUrl: identity.baseUrl,
+      provider: searchProvider,
+      docs: bundle.docs,
+      skills: bundle.skills?.skills.length ? bundle.skills : null,
+    });
 
     this.handler = createMcpHandler(() => this.createMcpServer(), {
       // Legacy traffic is routed separately (see dispatch) to keep v1's JSON responses.

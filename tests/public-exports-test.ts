@@ -147,6 +147,14 @@ describe('public API surface', () => {
     expect(Object.keys(docsFetchInputSchema)).toEqual(['url']);
   });
 
+  it('the exported docs_fetch shape still requires an absolute URL, as in 2.0', () => {
+    // The server registers a looser schema; custom handlers built on this one may rely on a URL.
+    const schema = z.object(docsFetchInputSchema);
+    expect(schema.safeParse({ url: 'https://docs.example.com/docs/intro' }).success).toBe(true);
+    expect(schema.safeParse({ url: '/docs/intro' }).success).toBe(false);
+    expect(docsFetchTool.inputSchema.safeParse({ url: '/docs/intro' }).success).toBe(false);
+  });
+
   it('buildSkillsArtifact packages the built-in skill', async () => {
     const artifact = await buildSkillsArtifact({ builtin: true, siteTitle: 'Docs' });
     expect(artifact).toMatchObject({ version: 1 });

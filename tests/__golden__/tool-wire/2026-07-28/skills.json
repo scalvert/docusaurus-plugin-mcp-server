@@ -1,32 +1,5 @@
 [
   {
-    "label": "initialize",
-    "status": 200,
-    "contentType": "application/json",
-    "body": {
-      "result": {
-        "protocolVersion": "2025-06-18",
-        "capabilities": {
-          "tools": {
-            "listChanged": false
-          }
-        },
-        "serverInfo": {
-          "name": "wire-docs",
-          "version": "3.1.4"
-        }
-      },
-      "jsonrpc": "2.0",
-      "id": 0
-    }
-  },
-  {
-    "label": "notifications/initialized",
-    "status": 202,
-    "contentType": null,
-    "body": null
-  },
-  {
     "label": "tools/list",
     "status": 200,
     "contentType": "application/json",
@@ -63,7 +36,7 @@
           },
           {
             "name": "docs_fetch",
-            "description": "Fetch the complete content of a documentation page. Use this after searching to get the full markdown content of a specific page.",
+            "description": "Fetch the complete content of a documentation page. Use this after searching to get the full markdown content of a specific page. Also reads Agent Skills: pass a skill:// URI from the server instructions.",
             "inputSchema": {
               "type": "object",
               "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -71,7 +44,7 @@
                 "url": {
                   "type": "string",
                   "minLength": 1,
-                  "description": "The page to fetch: a URL from search results or a link in a fetched page (e.g., \"https://docs.example.com/docs/getting-started\" or \"/docs/getting-started\"). Add #heading-id to fetch one section"
+                  "description": "The page to fetch: a URL from search results or a link in a fetched page (e.g., \"https://docs.example.com/docs/getting-started\" or \"/docs/getting-started\"). Add #heading-id to fetch one section, or a skill:// URI from the server instructions"
                 }
               },
               "required": ["url"]
@@ -81,10 +54,19 @@
               "openWorldHint": false
             }
           }
-        ]
+        ],
+        "resultType": "complete",
+        "ttlMs": 300000,
+        "cacheScope": "public",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
       },
       "jsonrpc": "2.0",
-      "id": 1
+      "id": 0
     }
   },
   {
@@ -98,10 +80,17 @@
             "type": "text",
             "text": "Found 3 result(s):\n\n1. **Installation**\n   URL: https://docs.example.com/docs/install\n   Installation Run npm install to install the widget toolkit. Requirements Node 22 or later. Optional tools A widget linter. Deep detail Not listed in the contents.\n\n2. **Configuration Guide**\n   URL: https://docs.example.com/docs/guides/configuration\n   ...nfiguration Guide Paragraph 1 describes ordinary widget behavior in some detail. Paragraph 2 describes ordinary widget behavior in some detail. Paragraph 3 describes ordinary widget behavior in some deta...\n\n3. **FAQ**\n   URL: https://docs.example.com/docs/faq\n   Common questions about the widget toolkit, answered briefly.\n\nUse docs_fetch with the URL to retrieve the full page content."
           }
-        ]
+        ],
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
       },
       "jsonrpc": "2.0",
-      "id": 2
+      "id": 1
     }
   },
   {
@@ -115,10 +104,17 @@
             "type": "text",
             "text": "Found 1 result(s):\n\n1. **Installation**\n   URL: https://docs.example.com/docs/install\n   Installation Run npm install to install the widget toolkit. Requirements Node 22 or later. Optional tools A widget linter. Deep detail Not listed in the contents.\n\nUse docs_fetch with the URL to retrieve the full page content."
           }
-        ]
+        ],
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
       },
       "jsonrpc": "2.0",
-      "id": 3
+      "id": 2
     }
   },
   {
@@ -132,10 +128,17 @@
             "type": "text",
             "text": "Found 1 result(s):\n\n1. **Configuration Guide**\n   URL: https://docs.example.com/docs/guides/configuration\n   ...bes ordinary widget behavior in some detail. The frobnicate option turns on frobnication for every widget. Paragraph 1 describes ordinary widget behavior in some detail. Paragraph 2 describes ordinary widget...\n\nUse docs_fetch with the URL to retrieve the full page content."
           }
-        ]
+        ],
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
       },
       "jsonrpc": "2.0",
-      "id": 4
+      "id": 3
     }
   },
   {
@@ -149,10 +152,17 @@
             "type": "text",
             "text": "No matching documents found."
           }
-        ]
+        ],
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
       },
       "jsonrpc": "2.0",
-      "id": 5
+      "id": 4
     }
   },
   {
@@ -167,10 +177,17 @@
             "text": "Input validation error: Invalid arguments for tool docs_search: query: Too small: expected string to have >=1 characters"
           }
         ],
-        "isError": true
+        "isError": true,
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
       },
       "jsonrpc": "2.0",
-      "id": 6
+      "id": 5
     }
   },
   {
@@ -185,10 +202,17 @@
             "text": "Input validation error: Invalid arguments for tool docs_search: limit: Too big: expected number to be <=20"
           }
         ],
-        "isError": true
+        "isError": true,
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
       },
       "jsonrpc": "2.0",
-      "id": 7
+      "id": 6
     }
   },
   {
@@ -203,10 +227,17 @@
             "text": "Input validation error: Invalid arguments for tool docs_search: query: Invalid input: expected string, received undefined"
           }
         ],
-        "isError": true
+        "isError": true,
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
       },
       "jsonrpc": "2.0",
-      "id": 8
+      "id": 7
     }
   },
   {
@@ -221,10 +252,17 @@
             "text": "Input validation error: Invalid arguments for tool docs_search: query: Invalid input: expected string, received undefined"
           }
         ],
-        "isError": true
+        "isError": true,
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
       },
       "jsonrpc": "2.0",
-      "id": 9
+      "id": 8
     }
   },
   {
@@ -238,10 +276,17 @@
             "type": "text",
             "text": "# Installation\n\n> Install the widget toolkit\n\n## Contents\n\n- [Installation](#installation)\n  - [Requirements](#requirements)\n    - [Optional tools](#optional-tools)\n\n---\n\n# Installation\n\nRun npm install to install the widget toolkit.\n\n## Requirements\n\nNode 22 or later.\n\n### Optional tools\n\nA widget linter.\n\n#### Deep detail\n\nNot listed in the contents."
           }
-        ]
+        ],
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
       },
       "jsonrpc": "2.0",
-      "id": 10
+      "id": 9
     }
   },
   {
@@ -255,10 +300,17 @@
             "type": "text",
             "text": "# FAQ\n\nCommon questions about the widget toolkit, answered briefly."
           }
-        ]
+        ],
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
       },
       "jsonrpc": "2.0",
-      "id": 11
+      "id": 10
     }
   },
   {
@@ -272,10 +324,17 @@
             "type": "text",
             "text": "Page not found: https://docs.example.com/docs/missing\nSearch with docs_search and fetch a URL from its results."
           }
-        ]
+        ],
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
       },
       "jsonrpc": "2.0",
-      "id": 12
+      "id": 11
     }
   },
   {
@@ -289,10 +348,17 @@
             "type": "text",
             "text": "Page not found: https://docs.example.com/not%20a%20url\nSearch with docs_search and fetch a URL from its results."
           }
-        ]
+        ],
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
       },
       "jsonrpc": "2.0",
-      "id": 13
+      "id": 12
     }
   },
   {
@@ -307,10 +373,17 @@
             "text": "Input validation error: Invalid arguments for tool docs_fetch: url: Invalid input: expected string, received undefined"
           }
         ],
-        "isError": true
+        "isError": true,
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
       },
       "jsonrpc": "2.0",
-      "id": 14
+      "id": 13
     }
   },
   {
@@ -325,10 +398,17 @@
             "text": "Input validation error: Invalid arguments for tool docs_fetch: url: Invalid input: expected string, received undefined"
           }
         ],
-        "isError": true
+        "isError": true,
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
       },
       "jsonrpc": "2.0",
-      "id": 15
+      "id": 14
     }
   },
   {
@@ -337,7 +417,7 @@
     "contentType": "application/json",
     "body": {
       "jsonrpc": "2.0",
-      "id": 16,
+      "id": 15,
       "error": {
         "code": -32602,
         "message": "Tool docs_nope not found"
@@ -356,10 +436,17 @@
             "text": "Input validation error: Invalid arguments for tool docs_fetch: url: Too small: expected string to have >=1 characters"
           }
         ],
-        "isError": true
+        "isError": true,
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
       },
       "jsonrpc": "2.0",
-      "id": 17
+      "id": 16
     }
   },
   {
@@ -373,10 +460,17 @@
             "type": "text",
             "text": "# FAQ\n\nCommon questions about the widget toolkit, answered briefly."
           }
-        ]
+        ],
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
       },
       "jsonrpc": "2.0",
-      "id": 18
+      "id": 17
     }
   },
   {
@@ -390,10 +484,17 @@
             "type": "text",
             "text": "# FAQ\n\nCommon questions about the widget toolkit, answered briefly."
           }
-        ]
+        ],
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
       },
       "jsonrpc": "2.0",
-      "id": 19
+      "id": 18
     }
   },
   {
@@ -407,10 +508,17 @@
             "type": "text",
             "text": "# FAQ\n\nCommon questions about the widget toolkit, answered briefly."
           }
-        ]
+        ],
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
       },
       "jsonrpc": "2.0",
-      "id": 20
+      "id": 19
     }
   },
   {
@@ -424,10 +532,17 @@
             "type": "text",
             "text": "# Installation: Requirements\n\n> Section #requirements of https://docs.example.com/docs/install. Fetch the URL without #requirements for the whole page.\n\n## Requirements\n\nNode 22 or later.\n\n### Optional tools\n\nA widget linter.\n\n#### Deep detail\n\nNot listed in the contents.\n"
           }
-        ]
+        ],
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
       },
       "jsonrpc": "2.0",
-      "id": 21
+      "id": 20
     }
   },
   {
@@ -441,10 +556,17 @@
             "type": "text",
             "text": "> No section #nope on this page; showing the whole page.\n\n# FAQ\n\nCommon questions about the widget toolkit, answered briefly."
           }
-        ]
+        ],
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
       },
       "jsonrpc": "2.0",
-      "id": 22
+      "id": 21
     }
   },
   {
@@ -458,10 +580,17 @@
             "type": "text",
             "text": "Page not found: https://docs.example.com/docs/old/configuration\nPages with a similar path:\n- https://docs.example.com/docs/guides/configuration (Configuration Guide)\nOr search with docs_search and fetch a URL from its results."
           }
-        ]
+        ],
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
       },
       "jsonrpc": "2.0",
-      "id": 23
+      "id": 22
     }
   },
   {
@@ -473,12 +602,19 @@
         "content": [
           {
             "type": "text",
-            "text": "Page not found: skill://widget-setup/SKILL.md\nSearch with docs_search and fetch a URL from its results."
+            "text": "---\nname: widget-setup\ndescription: Set up the widget toolkit. Use when installing widgets.\n---\n\n# Set up widgets\n\n1. Run npm install.\n2. If it fails, read [troubleshooting](references/troubleshooting.md).\n"
           }
-        ]
+        ],
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
       },
       "jsonrpc": "2.0",
-      "id": 24
+      "id": 23
     }
   },
   {
@@ -490,12 +626,19 @@
         "content": [
           {
             "type": "text",
-            "text": "Page not found: skill://widget-setup/references/troubleshooting.md\nSearch with docs_search and fetch a URL from its results."
+            "text": "# Troubleshooting\n\nDelete node_modules and run npm install again.\n"
           }
-        ]
+        ],
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
       },
       "jsonrpc": "2.0",
-      "id": 25
+      "id": 24
     }
   },
   {
@@ -507,12 +650,19 @@
         "content": [
           {
             "type": "text",
-            "text": "Page not found: skill://widget-setup/assets/diagram.png\nSearch with docs_search and fetch a URL from its results."
+            "text": "skill://widget-setup/assets/diagram.png is a binary file (image/png, 8 bytes). Read it with resources/read."
           }
-        ]
+        ],
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
       },
       "jsonrpc": "2.0",
-      "id": 26
+      "id": 25
     }
   },
   {
@@ -524,12 +674,19 @@
         "content": [
           {
             "type": "text",
-            "text": "Page not found: skill://widget-setup/references/missing.md\nSearch with docs_search and fetch a URL from its results."
+            "text": "Skill file not found: skill://widget-setup/references/missing.md. Use a skill:// URI listed in the server instructions, or a file a skill links to."
           }
-        ]
+        ],
+        "resultType": "complete",
+        "_meta": {
+          "io.modelcontextprotocol/serverInfo": {
+            "name": "wire-docs",
+            "version": "3.1.4"
+          }
+        }
       },
       "jsonrpc": "2.0",
-      "id": 27
+      "id": 26
     }
   }
 ]
