@@ -2,6 +2,7 @@ import * as z from 'zod';
 import type { ProcessedDoc, SkillFile } from '../../types/index.js';
 import type { Resolved } from '../resolve.js';
 import { SKILL_URI_PREFIX } from '../skills.js';
+import { renderDocument } from '../../agent-view/render.js';
 import { READ_ONLY_ANNOTATIONS, runTool, type DocsToolModule } from './tool.js';
 
 /**
@@ -91,7 +92,7 @@ export function formatResolved(resolved: Resolved, servesSkills: boolean): strin
       return formatSkillFile(resolved.uri, resolved.file);
     case 'document':
       return resolved.fragment === undefined
-        ? formatPageContent(resolved.doc)
+        ? renderDocument(resolved.doc)
         : formatSection(resolved.id, resolved.doc, resolved.fragment);
     case 'not-found':
       return servesSkills && resolved.tried.startsWith(SKILL_URI_PREFIX)
@@ -108,7 +109,7 @@ export function formatResolved(resolved: Resolved, servesSkills: boolean): strin
 export function formatSection(id: string, doc: ProcessedDoc, fragment: string): string {
   const heading = doc.headings.find((h) => h.id === fragment);
   if (!heading) {
-    return `> No section #${fragment} on this page; showing the whole page.\n\n${formatPageContent(doc)}`;
+    return `> No section #${fragment} on this page; showing the whole page.\n\n${renderDocument(doc)}`;
   }
   return [
     `# ${doc.title}: ${heading.text}`,
@@ -147,45 +148,4 @@ export function formatSkillFile(uri: string, file: SkillFile | null): string {
     return file.text;
   }
   return `${uri} is a binary file (${file.mimeType}, ${file.size} bytes). Read it with resources/read.`;
-}
-
-/**
- * Format page content for MCP response
- */
-export function formatPageContent(doc: ProcessedDoc | null): string {
-  if (!doc) {
-    return 'Page not found. Please check the URL and try again.';
-  }
-
-  const lines: string[] = [];
-
-  // Header
-  lines.push(`# ${doc.title}`);
-  lines.push('');
-
-  // Metadata
-  if (doc.description) {
-    lines.push(`> ${doc.description}`);
-    lines.push('');
-  }
-
-  // Table of contents (if there are headings)
-  if (doc.headings.length > 0) {
-    lines.push('## Contents');
-    lines.push('');
-    for (const heading of doc.headings) {
-      if (heading.level <= 3) {
-        const indent = '  '.repeat(heading.level - 1);
-        lines.push(`${indent}- [${heading.text}](#${heading.id})`);
-      }
-    }
-    lines.push('');
-    lines.push('---');
-    lines.push('');
-  }
-
-  // Main content
-  lines.push(doc.markdown);
-
-  return lines.join('\n');
 }

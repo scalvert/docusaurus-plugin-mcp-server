@@ -35,3 +35,7 @@ _Avoid_: search engine, search backend
 **Search ranker**:
 The least a search provider must be for the documentation server to use it: a name and a search function (`SearchRanker`). Setup, document lookup, and the document count are optional; the server falls back to the artifact bundle for the last two.
 _Avoid_: minimal provider, search function (for the whole object)
+
+**Agent view**:
+A page as agents get it: content marked for agents (`ForAgents`) included, content marked for people (`ForHumans`) left out. Documents, and so the search index and `docs_fetch` output, are agent views.
+_Avoid_: agent mode, LLM version, markdown version

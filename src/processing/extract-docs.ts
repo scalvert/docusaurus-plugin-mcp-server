@@ -18,6 +18,7 @@ import type { ProcessedDoc } from '../types/index.js';
 import { discoverPages } from './pages.js';
 import { hastToMarkdown } from './markdown.js';
 import { extractHeadings, htmlHeadings } from './headings.js';
+import { toAgentView } from '../agent-view/tree.js';
 
 export interface PageOptions {
   /** CSS selectors for the content container, in priority order */
@@ -174,7 +175,8 @@ export async function extractPage(
       ...parseable.flatMap((selector) => safeSelectAll('excludeSelectors', selector)),
     ];
   }
-  const cleaned = removeExcluded(content, excluded);
+  // Everything below reads the agent view: Markdown, headings, and so search.
+  const cleaned = toAgentView(removeExcluded(content, excluded));
   const markdown = await hastToMarkdown(cleaned);
   if (!markdown || markdown.trim().length < options.minContentLength) {
     return { skipped: 'too-short' };
