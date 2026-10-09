@@ -37,5 +37,21 @@ The least a search provider must be for the documentation server to use it: a na
 _Avoid_: minimal provider, search function (for the whole object)
 
 **Agent view**:
-A page as agents get it: content marked for agents (`ForAgents`) included, content marked for people (`ForHumans`) left out. Documents, and so the search index and `docs_fetch` output, are agent views.
+A page as agents get it: content marked for agents (`ForAgents`) included, content marked for people (`ForHumans`) left out. Documents (and so the search index and `docs_fetch` output) and agent guides are agent views.
 _Avoid_: agent mode, LLM version, markdown version
+
+**Agent guide**:
+A procedure an agent can carry out for a user, or walk the user through, written inside a docs page and compiled at build time into a skill. Its kind is `setup` or `troubleshooting`. See `docs/agent-guide-format.md`.
+_Avoid_: runbook, playbook, agent steps, install.md (for ours)
+
+**Step**:
+One action in a setup agent guide, with a stable ID, an optional check, and optional markers for steps a person must do (`needs="user"`) or confirm first.
+_Avoid_: task, instruction
+
+**Check**:
+How an agent tells that a step, or a symptom's fix, worked: something observable, such as command output or text on screen.
+_Avoid_: verification, test, success criteria
+
+**Symptom**:
+One troubleshooting entry in an agent guide: what the user sees (exact error text where there is one), its cause, the fix, a check, and when to escalate.
+_Avoid_: issue, problem, FAQ entry
