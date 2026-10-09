@@ -1,11 +1,14 @@
 /**
  * Build-time packaging of Agent Skills into the `skills.json` artifact.
  *
- * Each skill is a directory with a `SKILL.md` (YAML frontmatter + markdown)
- * and optional supporting files, per the Agent Skills specification. This
- * module reads skill directories, validates them against the constraints of
- * the MCP skills extension (SEP-2640), and precomputes per-file SHA-256
- * digests and sizes so the runtime can serve `skills/list` without hashing.
+ * Each skill is a `SKILL.md` (YAML frontmatter + markdown) and optional
+ * supporting files, per the Agent Skills specification. Packaging works on
+ * in-memory {@link SkillSource}s, whatever produced them; reading a skill
+ * directory is one way to get a source ({@link readSkillDir}). This module
+ * validates sources against the constraints of the MCP skills extension
+ * (SEP-2640), precomputes per-file SHA-256 digests and sizes so the runtime
+ * can serve `skills/list` without hashing, and decides what happens when two
+ * sources share a name ({@link packageSkills}).
  */
 
 import path from 'node:path';
@@ -170,35 +173,49 @@ function toSkillFile(filePath: string, bytes: Buffer): SkillFile {
 }
 
 /**
- * Package one skill from its files. `skillDir` is the skill's directory; its
- * basename must equal the frontmatter name, and it is used in error messages.
- * `files` must include `SKILL.md`.
+ * One skill to package, before validation, from wherever it came from: the
+ * package's built-in skills, an author's skills directory, or (later) pages.
  */
-export function packageSkill(skillDir: string, files: RawSkillFile[]): SkillArtifact {
-  const dirName = path.basename(skillDir);
+export interface SkillSource {
+  /** The name the skill must have; its SKILL.md frontmatter `name` has to match */
+  name: string;
+  /** Where it came from, for error messages, e.g. the skill's directory */
+  origin: string;
+  /** Decides name collisions: an author skill replaces a built-in one of the same name */
+  kind: 'builtin' | 'author';
+  /** Every file, with `SKILL.md` among them, paths relative to the skill root */
+  files: RawSkillFile[];
+}
+
+/**
+ * Package one skill: validate it, then compute digests and sizes. Throws
+ * {@link SkillValidationError}, naming `source.origin`, if it is invalid.
+ */
+export function packageSkill(source: SkillSource): SkillArtifact {
+  const { origin, files } = source;
   const skillMd = files.find((f) => f.path === 'SKILL.md');
   if (!skillMd) {
-    throw new SkillValidationError(skillDir, 'missing SKILL.md at the skill root');
+    throw new SkillValidationError(origin, 'missing SKILL.md at the skill root');
   }
 
-  const frontmatter = parseSkillFrontmatter(skillMd.bytes.toString('utf8'), skillDir);
-  if (frontmatter.name !== dirName) {
+  const frontmatter = parseSkillFrontmatter(skillMd.bytes.toString('utf8'), origin);
+  if (frontmatter.name !== source.name) {
     throw new SkillValidationError(
-      skillDir,
-      `frontmatter name "${frontmatter.name}" must match the directory name "${dirName}"`
+      origin,
+      `frontmatter name "${frontmatter.name}" must match the directory name "${source.name}"`
     );
   }
 
   if (files.length > MAX_SKILL_FILES) {
     throw new SkillValidationError(
-      skillDir,
+      origin,
       `${files.length} files exceeds the ${MAX_SKILL_FILES}-file limit`
     );
   }
   const totalBytes = files.reduce((sum, f) => sum + f.bytes.length, 0);
   if (totalBytes > MAX_SKILL_BYTES) {
     throw new SkillValidationError(
-      skillDir,
+      origin,
       `${totalBytes} bytes exceeds the ${MAX_SKILL_BYTES}-byte limit`
     );
   }
@@ -256,35 +273,34 @@ async function readSkillFiles(root: string, relDir = ''): Promise<RawSkillFile[]
 }
 
 /**
- * Package one skill directory. Built-in skills pass `renderSkillMd` to fill
- * their `{{siteTitle}}` template before validation and hashing, so they go
- * through exactly the same path as author skills.
+ * A skill directory as a source. The directory name is the name the skill
+ * must have, and the directory is its origin in error messages.
  */
-export async function loadSkillDir(
+export async function readSkillDir(
   skillDir: string,
-  renderSkillMd?: (markdown: string) => string
-): Promise<SkillArtifact> {
-  let files = await readSkillFiles(skillDir);
-  if (renderSkillMd) {
-    files = files.map((f) =>
-      f.path === 'SKILL.md'
-        ? { ...f, bytes: Buffer.from(renderSkillMd(f.bytes.toString('utf8')), 'utf8') }
-        : f
-    );
-  }
-  return packageSkill(skillDir, files);
+  kind: SkillSource['kind']
+): Promise<SkillSource> {
+  return {
+    name: path.basename(skillDir),
+    origin: skillDir,
+    kind,
+    files: await readSkillFiles(skillDir),
+  };
 }
 
 /**
- * Package every `<dir>/<name>/SKILL.md` skill directory.
+ * Every `<dir>/<name>/SKILL.md` skill directory as a source, in name order.
  */
-export async function loadSkillsDir(dir: string): Promise<SkillArtifact[]> {
+export async function readSkillsDir(
+  dir: string,
+  kind: SkillSource['kind']
+): Promise<SkillSource[]> {
   if (!(await fs.pathExists(dir))) {
     throw new Error(`[MCP] Skills directory not found: ${dir}`);
   }
 
   const entries = await fs.readdir(dir, { withFileTypes: true });
-  const skills: SkillArtifact[] = [];
+  const sources: SkillSource[] = [];
 
   for (const entry of entries.sort((a, b) => compareNames(a.name, b.name))) {
     if (entry.name.startsWith('.')) continue;
@@ -293,10 +309,55 @@ export async function loadSkillsDir(dir: string): Promise<SkillArtifact[]> {
     // skills); symlinks inside a skill are skipped by readSkillFiles.
     if (!(await fs.stat(skillDir)).isDirectory()) continue;
 
-    skills.push(await loadSkillDir(skillDir));
+    sources.push(await readSkillDir(skillDir, kind));
   }
 
-  return skills;
+  return sources;
+}
+
+/** A source with its SKILL.md rewritten, e.g. a built-in template filled in. */
+export function withSkillMd(
+  source: SkillSource,
+  render: (markdown: string) => string
+): SkillSource {
+  return {
+    ...source,
+    files: source.files.map((f) =>
+      f.path === 'SKILL.md'
+        ? { ...f, bytes: Buffer.from(render(f.bytes.toString('utf8')), 'utf8') }
+        : f
+    ),
+  };
+}
+
+/**
+ * Package every source into the `skills.json` artifact, deciding name
+ * collisions in one place: an author skill replaces a built-in skill of the
+ * same name (keeping its position); any other repeated name is an error.
+ */
+export function packageSkills(sources: SkillSource[]): SkillsArtifact {
+  const byName = new Map<
+    string,
+    { kind: SkillSource['kind']; origin: string; skill: SkillArtifact }
+  >();
+
+  for (const source of sources) {
+    const skill = packageSkill(source);
+    const name = skill.frontmatter.name;
+    const existing = byName.get(name);
+    if (existing) {
+      if (existing.kind !== 'builtin' || source.kind === 'builtin') {
+        throw new SkillValidationError(
+          source.origin,
+          `skill name "${name}" is already used by ${existing.origin}`
+        );
+      }
+      console.log(`[MCP] Skill "${name}" overrides the built-in skill`);
+    }
+    byName.set(name, { kind: source.kind, origin: source.origin, skill });
+  }
+
+  return { version: 1, skills: [...byName.values()].map((entry) => entry.skill) };
 }
 
 /**
@@ -333,7 +394,7 @@ export interface BuildSkillsOptions {
  * @experimental May change in a 2.x minor release; pin a version if you depend on it.
  */
 export async function buildSkillsArtifact(options: BuildSkillsOptions): Promise<SkillsArtifact> {
-  const byName = new Map<string, SkillArtifact>();
+  const sources: SkillSource[] = [];
 
   if (options.builtin) {
     const builtinDir = path.join(await findBuiltinSkillsDir(), BUILTIN_SKILL_NAME);
@@ -343,18 +404,15 @@ export async function buildSkillsArtifact(options: BuildSkillsOptions): Promise<
       tagline: options.siteTagline,
       docs: options.docs,
     });
-    const skill = await loadSkillDir(builtinDir, (md) => renderSkillTemplate(md, vars));
-    byName.set(skill.frontmatter.name, skill);
+    // The template is filled before validation and hashing, so the built-in
+    // skill goes through exactly the same checks as author skills.
+    const source = await readSkillDir(builtinDir, 'builtin');
+    sources.push(withSkillMd(source, (md) => renderSkillTemplate(md, vars)));
   }
 
   if (options.dir) {
-    for (const skill of await loadSkillsDir(options.dir)) {
-      if (byName.has(skill.frontmatter.name)) {
-        console.log(`[MCP] Skill "${skill.frontmatter.name}" overrides the built-in skill`);
-      }
-      byName.set(skill.frontmatter.name, skill);
-    }
+    sources.push(...(await readSkillsDir(options.dir, 'author')));
   }
 
-  return { version: 1, skills: [...byName.values()] };
+  return packageSkills(sources);
 }
