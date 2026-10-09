@@ -7,7 +7,10 @@ import { parse as parseYaml } from 'yaml';
 import {
   buildSkillsArtifact,
   packageSkill,
+  packageSkills,
   parseSkillFrontmatter,
+  type RawSkillFile,
+  type SkillSource,
   SkillValidationError,
   MAX_SKILL_FILES,
 } from '../src/skills/packager.js';
@@ -63,17 +66,31 @@ describe('parseSkillFrontmatter', () => {
   });
 });
 
+/** An in-memory author skill, as a page or a test would produce one. */
+const source = (
+  name: string,
+  files: RawSkillFile[],
+  kind: SkillSource['kind'] = 'author'
+): SkillSource => ({ name, origin: `<${name}>`, kind, files });
+
+const minimal = (name: string, kind: SkillSource['kind'] = 'author', origin?: string) => ({
+  ...source(name, [{ path: 'SKILL.md', bytes: Buffer.from(skillMd(name)) }], kind),
+  ...(origin ? { origin } : {}),
+});
+
 describe('packageSkill', () => {
   it('orders SKILL.md first and computes digests and sizes over raw bytes', () => {
     const md = Buffer.from(skillMd('guide'));
     const ref = Buffer.from('# Reference — ünïcode\n');
     const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x00, 0x01]);
 
-    const skill = packageSkill('guide', [
-      { path: 'references/api.md', bytes: ref },
-      { path: 'assets/logo.png', bytes: png },
-      { path: 'SKILL.md', bytes: md },
-    ]);
+    const skill = packageSkill(
+      source('guide', [
+        { path: 'references/api.md', bytes: ref },
+        { path: 'assets/logo.png', bytes: png },
+        { path: 'SKILL.md', bytes: md },
+      ])
+    );
 
     expect(skill.skillPath).toBe('guide');
     expect(skill.files.map((f) => f.path)).toEqual([
@@ -99,14 +116,14 @@ describe('packageSkill', () => {
 
   it('requires the directory name to match frontmatter name', () => {
     expect(() =>
-      packageSkill('other', [{ path: 'SKILL.md', bytes: Buffer.from(skillMd('guide')) }])
+      packageSkill(source('other', [{ path: 'SKILL.md', bytes: Buffer.from(skillMd('guide')) }]))
     ).toThrow(/must match the directory name/);
   });
 
   it('requires SKILL.md', () => {
-    expect(() => packageSkill('guide', [{ path: 'README.md', bytes: Buffer.from('x') }])).toThrow(
-      /missing SKILL.md/
-    );
+    expect(() =>
+      packageSkill(source('guide', [{ path: 'README.md', bytes: Buffer.from('x') }]))
+    ).toThrow(/missing SKILL.md/);
   });
 
   it('enforces the per-skill file limit', () => {
@@ -114,7 +131,42 @@ describe('packageSkill', () => {
     for (let i = 0; i < MAX_SKILL_FILES; i++) {
       files.push({ path: `f${i}.md`, bytes: Buffer.from('x') });
     }
-    expect(() => packageSkill('big', files)).toThrow(/file limit/);
+    expect(() => packageSkill(source('big', files))).toThrow(/file limit/);
+  });
+});
+
+describe('packageSkills', () => {
+  it('packages sources in order', () => {
+    const artifact = packageSkills([minimal('alpha'), minimal('beta')]);
+    expect(artifact.version).toBe(1);
+    expect(artifact.skills.map((s) => s.skillPath)).toEqual(['alpha', 'beta']);
+  });
+
+  it('names the origin when a source is invalid', () => {
+    const bad = source('guide', [{ path: 'README.md', bytes: Buffer.from('x') }]);
+    expect(() => packageSkills([{ ...bad, origin: 'page /docs/setup' }])).toThrow(
+      /Invalid skill at page \/docs\/setup: missing SKILL.md/
+    );
+  });
+
+  it('lets an author skill replace a built-in one, keeping its position', () => {
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const builtin = minimal('docs-research', 'builtin');
+    const author = minimal('docs-research', 'author', 'site/mcp-skills/docs-research');
+    const artifact = packageSkills([builtin, minimal('other'), author]);
+    expect(artifact.skills.map((s) => s.skillPath)).toEqual(['docs-research', 'other']);
+    expect(log).toHaveBeenCalledWith('[MCP] Skill "docs-research" overrides the built-in skill');
+    log.mockRestore();
+  });
+
+  it.each([
+    ['two author skills', 'author', 'author'],
+    ['two built-in skills', 'builtin', 'builtin'],
+    ['a built-in after an author skill', 'author', 'builtin'],
+  ] as const)('rejects a repeated name from %s', (_label, first, second) => {
+    expect(() =>
+      packageSkills([minimal('dup', first, 'first/dup'), minimal('dup', second, 'second/dup')])
+    ).toThrow(/Invalid skill at second\/dup: skill name "dup" is already used by first\/dup/);
   });
 });
 
