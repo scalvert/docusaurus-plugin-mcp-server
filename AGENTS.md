@@ -110,7 +110,7 @@ npm run build && (cd website && npm ci && npm run build && npm run smoke)
 This repository ships agent skills under `skills/`, installed with `npx skills add scalvert/docusaurus-plugin-mcp-server`:
 
 - `skills/docusaurus-plugin-mcp-server/SKILL.md` is hand-written: the API reference and common mistakes. Keep it accurate as the public API changes, and keep its "Step-by-step skills" table in step with the guides.
-- Every other directory is an agent guide compiled from a website page (Getting started, the Vercel, Netlify, Cloudflare Workers, and static-host deploy pages, and Agent guides), with symptoms from `website/docs/deploy/troubleshooting.md`. Don't edit them: edit the page, then in `website/` run `npm run build && npm run skills:sync` and commit `skills/`. `website/scripts/sync-skills.mjs` copies them from the bundle, and CI (`npm run skills:check`) fails when they don't match the site.
+- `skills/guides/<name>/` are agent guides compiled from website pages (Getting started, the Vercel, Netlify, Cloudflare Workers, and static-host deploy pages, and Agent guides), with symptoms from `website/docs/deploy/troubleshooting.md`. Don't edit them: edit the page, then in `website/` run `npm run build && npm run skills:sync` and commit `skills/guides/`. `website/scripts/sync-skills.mjs` copies them from the bundle, and CI (`npm run skills:check`) fails when they don't match the site. They're a level down because the agent baseline check (`configure-agents check`, the `agent-baseline` workflow) holds every `skills/<name>/SKILL.md` to the library-skill sections; the skills CLI finds both levels.
 
 ## Breaking changes
 

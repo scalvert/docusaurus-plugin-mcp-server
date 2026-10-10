@@ -13,12 +13,12 @@ Every procedure on this site is a guide. Read a page, then the skill the build m
 
 | Page | Skill |
 | --- | --- |
-| [Getting started](../getting-started.md) | [`setup-docusaurus-mcp`](https://github.com/scalvert/docusaurus-plugin-mcp-server/blob/main/skills/setup-docusaurus-mcp/SKILL.md) |
-| [Deploy to Vercel](../deploy/vercel.md) | [`deploy-docusaurus-mcp-vercel`](https://github.com/scalvert/docusaurus-plugin-mcp-server/blob/main/skills/deploy-docusaurus-mcp-vercel/SKILL.md) |
-| [Deploy to Netlify](../deploy/netlify.md) | [`deploy-docusaurus-mcp-netlify`](https://github.com/scalvert/docusaurus-plugin-mcp-server/blob/main/skills/deploy-docusaurus-mcp-netlify/SKILL.md) |
-| [Deploy to Cloudflare Workers](../deploy/cloudflare-workers.md) | [`deploy-docusaurus-mcp-cloudflare`](https://github.com/scalvert/docusaurus-plugin-mcp-server/blob/main/skills/deploy-docusaurus-mcp-cloudflare/SKILL.md) |
-| [GitHub Pages and other static hosts](../deploy/static-hosts.md) | [`deploy-docusaurus-mcp-static-host`](https://github.com/scalvert/docusaurus-plugin-mcp-server/blob/main/skills/deploy-docusaurus-mcp-static-host/SKILL.md) |
-| This page | [`write-docusaurus-agent-guide`](https://github.com/scalvert/docusaurus-plugin-mcp-server/blob/main/skills/write-docusaurus-agent-guide/SKILL.md) |
+| [Getting started](../getting-started.md) | [`setup-docusaurus-mcp`](https://github.com/scalvert/docusaurus-plugin-mcp-server/blob/main/skills/guides/setup-docusaurus-mcp/SKILL.md) |
+| [Deploy to Vercel](../deploy/vercel.md) | [`deploy-docusaurus-mcp-vercel`](https://github.com/scalvert/docusaurus-plugin-mcp-server/blob/main/skills/guides/deploy-docusaurus-mcp-vercel/SKILL.md) |
+| [Deploy to Netlify](../deploy/netlify.md) | [`deploy-docusaurus-mcp-netlify`](https://github.com/scalvert/docusaurus-plugin-mcp-server/blob/main/skills/guides/deploy-docusaurus-mcp-netlify/SKILL.md) |
+| [Deploy to Cloudflare Workers](../deploy/cloudflare-workers.md) | [`deploy-docusaurus-mcp-cloudflare`](https://github.com/scalvert/docusaurus-plugin-mcp-server/blob/main/skills/guides/deploy-docusaurus-mcp-cloudflare/SKILL.md) |
+| [GitHub Pages and other static hosts](../deploy/static-hosts.md) | [`deploy-docusaurus-mcp-static-host`](https://github.com/scalvert/docusaurus-plugin-mcp-server/blob/main/skills/guides/deploy-docusaurus-mcp-static-host/SKILL.md) |
+| This page | [`write-docusaurus-agent-guide`](https://github.com/scalvert/docusaurus-plugin-mcp-server/blob/main/skills/guides/write-docusaurus-agent-guide/SKILL.md) |
 
 Their symptoms come from [Troubleshooting deployments](../deploy/troubleshooting.md), where each section names the guides it belongs to. This site's MCP endpoint serves the skills (`skill://setup-docusaurus-mcp/SKILL.md`), and the repository ships the same files, so `npx skills add scalvert/docusaurus-plugin-mcp-server` installs them.
 
