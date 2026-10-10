@@ -26,6 +26,7 @@ coverage/
 
 # Playwright
 playwright-report/
+playwright-report-site/
 test-results/
 .playwright-mcp/
 

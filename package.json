@@ -71,6 +71,7 @@
     "test:all": "npm run lint && npm run typecheck && npm run test && npm run test:mcp && npm run snippets:check",
     "test:coverage": "vitest run --coverage",
     "test:mcp": "playwright test",
+    "test:site": "playwright test -c playwright.site.config.ts",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
