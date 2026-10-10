@@ -10,6 +10,7 @@ import {
   Step,
   Check,
   Symptom,
+  mdxComponents,
   useMcpRegistry,
   createDocsRegistry,
   createDocsRegistryOptions,

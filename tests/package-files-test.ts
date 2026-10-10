@@ -23,6 +23,10 @@ describe('published package contents', () => {
     expect(paths).toContain('skills-builtin/docs-research/SKILL.md');
   });
 
+  it("includes the plugin's theme (getThemePath)", () => {
+    expect(paths).toContain('dist/theme-mdx/MDXComponents.js');
+  });
+
   it('includes the 1.x -> 2.0 migration guide that errors and the repo skill point to', () => {
     expect(paths).toContain('migrations/1.x-2.0.0.md');
   });

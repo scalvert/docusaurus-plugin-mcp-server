@@ -63,4 +63,33 @@ describe('the built plugin under Docusaurus', () => {
     },
     LOAD_TIMEOUT
   );
+
+  it(
+    "points getThemePath at dist/theme-mdx, whose MDXComponents extends the theme's",
+    async () => {
+      const plugin = (await loadFreshModule(DIST)) as (
+        context: LoadContext,
+        options: object
+      ) => Plugin;
+      const context = { siteDir: tmp, siteConfig: {} } as unknown as LoadContext;
+      const themePath = plugin(context, {}).getThemePath!();
+      expect(themePath).toBe(path.join(path.dirname(DIST), 'theme-mdx'));
+
+      // Docusaurus aliases every .js/.ts file here (not .d.ts) as
+      // @theme/<name>; anything besides MDXComponents would shadow a theme
+      // component.
+      const components = (await fs.readdir(themePath)).filter(
+        (file) => /\.(js|jsx|ts|tsx)$/.test(file) && !file.endsWith('.d.ts')
+      );
+      expect(components).toEqual(['MDXComponents.js']);
+
+      const source = await fs.readFile(path.join(themePath, 'MDXComponents.js'), 'utf8');
+      expect(source).toContain("from '@theme-init/MDXComponents'");
+      // The built theme entry, not a bundled copy: pages that import the
+      // components explicitly get the same module.
+      expect(source).toContain("from '../theme/index.js'");
+      await expect(fs.access(path.join(themePath, '../theme/index.js'))).resolves.toBeUndefined();
+    },
+    LOAD_TIMEOUT
+  );
 });

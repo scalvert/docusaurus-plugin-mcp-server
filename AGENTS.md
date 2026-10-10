@@ -48,6 +48,8 @@ The package has four export paths configured in `package.json`:
 - `./adapters/node` → Local-dev Node server (`src/adapters-node.ts`)
 - `./theme` → React components (`src/theme/index.ts`)
 
+The plugin also has a Docusaurus theme (`getThemePath`, off with `mdxComponents: false`): `src/theme-mdx/MDXComponents.ts`, built to `dist/theme-mdx/`, adds `mdxComponents` (`src/theme/mdx-components.ts`) to `@theme-init/MDXComponents` so pages use the components without an import. Docusaurus aliases every `.js`/`.ts` file in that directory as `@theme/<name>`, so it holds only `MDXComponents`. Its import of the components is rewritten to the built `../theme/index.js` and kept external (`tsup.config.ts`), so pages that import from `./theme` get the same module. `THEME_MDX_DIR` (`src/theme-mdx-dir.ts`) sits at the root of `src` so the same relative URL finds the directory in source and in `dist`; `tests/docusaurus-load-test.ts` checks the built path.
+
 ### Key Modules
 
 - `src/mcp/server.ts` - Core MCP server using `@modelcontextprotocol/server` (era dispatch, cache hints)

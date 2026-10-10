@@ -11,11 +11,9 @@ This site's [Getting started](../getting-started.md) page is a guide: the server
 
 ## Write a setup guide
 
-Wrap the procedure in `AgentGuide`, and each step in `Step`:
+Wrap the procedure in `AgentGuide`, and each step in `Step`. The components need no import; the plugin adds them to your theme's MDX components:
 
 ````mdx
-import { AgentGuide, Check, DoneWhen, Step } from 'docusaurus-plugin-mcp-server/theme';
-
 <AgentGuide
   name="setup-widget"
   kind="setup"
@@ -66,8 +64,6 @@ Use [`ForAgents`](./writing-for-agents.md) inside a step for what only an agent 
 A `Symptom` is one thing that can go wrong: what the user sees, why, how to fix it, and when to give up and escalate. Symptoms usually live on a troubleshooting page and attach to their guide by name. An existing section can be wrapped as it is; its heading becomes the title:
 
 ```mdx
-import { Check, Symptom } from 'docusaurus-plugin-mcp-server/theme';
-
 <Symptom id="not-found" guide="setup-widget">
 
 ## `command not found: widget`

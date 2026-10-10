@@ -12,6 +12,7 @@ export {
   type StepProps,
   type SymptomProps,
 } from './Guide.js';
+export { mdxComponents } from './mdx-components.js';
 export {
   useMcpRegistry,
   createDocsRegistry,

@@ -12,7 +12,7 @@ The package is ESM-only and has four entry points:
 | `docusaurus-plugin-mcp-server` | The Docusaurus plugin, the server class, providers, utilities | Node (build time) |
 | `docusaurus-plugin-mcp-server/adapters` | `createWebRequestHandler` for serverless and edge runtimes | Any web-standard runtime. Imports no Node built-ins |
 | `docusaurus-plugin-mcp-server/adapters/node` | The Node server and handler, reading the bundle from disk | Node |
-| `docusaurus-plugin-mcp-server/theme` | The install button, registry helpers, and `ForAgents`/`ForHumans` | The browser (your Docusaurus theme) |
+| `docusaurus-plugin-mcp-server/theme` | The install button, `ForAgents`/`ForHumans`, the agent guide components, and registry helpers | The browser (your Docusaurus theme) |
 
 The `ArtifactBundle` type is exported from the main, `adapters`, and `adapters/node` entry points.
 
@@ -126,6 +126,7 @@ import {
   Step,
   Check,
   Symptom,
+  mdxComponents,
   useMcpRegistry,
   createDocsRegistry,
   createDocsRegistryOptions,
@@ -133,9 +134,12 @@ import {
 } from 'docusaurus-plugin-mcp-server/theme';
 ```
 
+MDX pages don't need to import the components: the plugin adds them to your theme's MDX components ([`mdxComponents` option](./plugin-options.md#mdx-components)). Import them in your own React components, or when the option is off.
+
 - **`McpInstallButton`** is the dropdown readers use to install the server in their AI tool. See [Install button](../guides/install-button.md).
 - **`ForAgents`** and **`ForHumans`** mark page content for one audience: agents get `ForAgents` content and not `ForHumans` content, and people see the opposite. See [Writing for agents](../guides/writing-for-agents.md).
 - **`AgentGuide`**, **`DoneWhen`**, **`Prerequisites`**, **`Step`**, **`Check`**, and **`Symptom`** mark up a setup or troubleshooting procedure that the build compiles into an Agent Skill. Their props types (`AgentGuideProps`, `StepProps`, `SymptomProps`, `GuidePartProps`) are exported too. See [Agent guides](../guides/agent-guides.md).
+- **`mdxComponents`** is the object of components the plugin adds to MDX, keyed by name. Spread it into a swizzled `MDXComponents` that you ejected.
 - **`useMcpRegistry()`** is a React hook that returns the MCP config registry from the plugin's global data, or `undefined` if the plugin isn't installed.
 - **`createDocsRegistry(config)`** creates a preconfigured `MCPConfigRegistry` for a docs server.
 - **`createDocsRegistryOptions(config)`** returns the registry options without creating the registry.

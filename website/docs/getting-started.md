@@ -3,8 +3,6 @@ title: Getting started
 description: Add the plugin to a Docusaurus site, build the artifact bundle, and run the MCP server locally.
 ---
 
-import { AgentGuide, Check, DoneWhen, ForAgents, Prerequisites, Step } from 'docusaurus-plugin-mcp-server/theme';
-
 # Getting started
 
 This page takes you from an existing Docusaurus 3 site to an MCP server running on your machine. Deploying it is covered in [Deploy](./deploy/index.md).
