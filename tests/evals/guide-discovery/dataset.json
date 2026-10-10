@@ -1,0 +1,89 @@
+{
+  "name": "guide-discovery",
+  "description": "Questions someone setting up, deploying, or troubleshooting docusaurus-plugin-mcp-server would ask, put to an agent connected only to this site's MCP server. A case passes when the answer carries facts that only the matching guide gives.",
+  "cases": [
+    {
+      "id": "setup",
+      "description": "Finds setup-docusaurus-mcp (Getting started)",
+      "tags": ["setup"],
+      "input": "I maintain a Docusaurus 3 documentation site and want AI agents to be able to search it over MCP. What exactly do I install and configure, and how do I check it works before I deploy anything?",
+      "assertions": {
+        "matchesPattern": [
+          "npm (install|i) (--save )?docusaurus-plugin-mcp-server",
+          "docusaurus-mcp-verify"
+        ],
+        "toolCallCount": { "min": 1 }
+      }
+    },
+    {
+      "id": "deploy-vercel",
+      "description": "Finds deploy-docusaurus-mcp-vercel",
+      "tags": ["deploy"],
+      "input": "My Docusaurus site already builds with the MCP plugin. How do I deploy the MCP endpoint to Vercel so it's served at /mcp? List the files I need to add.",
+      "assertions": {
+        "matchesPattern": ["api/mcp\\.mjs", "rewrites", "build/mcp/bundle\\.json"],
+        "toolCallCount": { "min": 1 }
+      }
+    },
+    {
+      "id": "deploy-netlify",
+      "description": "Finds deploy-docusaurus-mcp-netlify",
+      "tags": ["deploy"],
+      "input": "My Docusaurus site already builds with the MCP plugin. How do I deploy its MCP endpoint on Netlify, at /mcp?",
+      "assertions": {
+        "matchesPattern": ["netlify/functions/mcp\\.mjs", "path:\\s*['\"]/mcp['\"]"],
+        "toolCallCount": { "min": 1 }
+      }
+    },
+    {
+      "id": "deploy-cloudflare",
+      "description": "Finds deploy-docusaurus-mcp-cloudflare",
+      "tags": ["deploy"],
+      "input": "I want to host my Docusaurus site and its MCP endpoint on Cloudflare Workers. What's the setup?",
+      "assertions": {
+        "matchesPattern": ["wrangler\\.jsonc", "run_worker_first"],
+        "toolCallCount": { "min": 1 }
+      }
+    },
+    {
+      "id": "deploy-static-host",
+      "description": "Finds deploy-docusaurus-mcp-static-host",
+      "tags": ["deploy"],
+      "input": "My Docusaurus docs are hosted on GitHub Pages. Can the MCP server run there too? If not, what should I do instead?",
+      "assertions": {
+        "matchesPattern": ["server\\.url", "[Ww]orker"],
+        "toolCallCount": { "min": 1 }
+      }
+    },
+    {
+      "id": "troubleshoot-406",
+      "description": "Finds the 406 symptom in the troubleshooting guide",
+      "tags": ["troubleshoot"],
+      "input": "Tool calls to my deployed docs MCP endpoint return 406 Not Acceptable when I test them with curl. What's wrong, and what's the fix?",
+      "assertions": {
+        "matchesPattern": ["[Aa]ccept", "text/event-stream"],
+        "toolCallCount": { "min": 1 }
+      }
+    },
+    {
+      "id": "troubleshoot-404",
+      "description": "Finds the /mcp 404 symptom and gives the platform's routing fix",
+      "tags": ["troubleshoot"],
+      "input": "I deployed my Docusaurus site with the MCP plugin to Netlify. The docs work, but https://my-docs.netlify.app/mcp shows my site's 404 page. What should I check?",
+      "assertions": {
+        "matchesPattern": ["path:\\s*['\"]/mcp['\"]", "netlify/functions"],
+        "toolCallCount": { "min": 1 }
+      }
+    },
+    {
+      "id": "write-guide",
+      "description": "Finds write-docusaurus-agent-guide",
+      "tags": ["authoring"],
+      "input": "One of my Docusaurus pages has a setup procedure. How do I mark it up so AI agents can follow it step by step, and check that it worked? Show me the markup.",
+      "assertions": {
+        "matchesPattern": ["<AgentGuide", "<Step", "<Check"],
+        "toolCallCount": { "min": 1 }
+      }
+    }
+  ]
+}
