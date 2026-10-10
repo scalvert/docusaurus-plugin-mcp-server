@@ -34,8 +34,11 @@ export interface SymptomFragment {
   title?: string;
   /** Where the symptom is on its page: its heading's `id`, else the symptom `id` */
   anchor?: string;
-  /** The `guide` prop (required outside a guide) */
-  guide?: string;
+  /**
+   * The guides named by the `guide` prop (space-separated; required outside
+   * a guide). Inside a guide, empty or that guide alone.
+   */
+  guides: string[];
   /** The page it's on */
   route: string;
   blocks: SymptomBlock[];
@@ -130,8 +133,29 @@ function without(node: Element, drop: (child: Element) => boolean): Element {
   };
 }
 
-async function markdownOf(node: Element): Promise<string> {
+/**
+ * Links and images resolved against the page's URL, in place on a copy.
+ * Guides are read away from the page (an installed skill has no site to be
+ * relative to), so `/docs/x`, `#section`, and `../x` become absolute URLs.
+ */
+function resolveLinks(node: Element, url: string): void {
+  const attribute = node.tagName === 'a' ? 'href' : node.tagName === 'img' ? 'src' : undefined;
+  const target = attribute ? node.properties?.[attribute] : undefined;
+  if (attribute && typeof target === 'string' && target !== '') {
+    try {
+      node.properties = { ...node.properties, [attribute]: new URL(target, url).href };
+    } catch {
+      // Not a URL even relative to the page; leave it as the page wrote it.
+    }
+  }
+  for (const child of node.children) {
+    if (child.type === 'element') resolveLinks(child, url);
+  }
+}
+
+async function markdownOf(node: Element, ctx: { url?: string }): Promise<string> {
   const content = without(node, (child) => has(child, 'label'));
+  if (ctx.url) resolveLinks(content, ctx.url);
   return (await hastToMarkdown({ ...content, tagName: 'div', properties: {} })).trim();
 }
 
@@ -163,6 +187,8 @@ function symptomLabel(node: Element): SymptomBlock['label'] {
 
 interface Context {
   route: string;
+  /** The page's URL, to resolve links against */
+  url?: string;
   pageTitle: string;
   guide?: GuideFragment;
   step?: StepFragment;
@@ -195,7 +221,7 @@ async function visit(node: Element, ctx: Context): Promise<void> {
         misplaced(ctx, 'check', 'must be inside a <Step> or <Symptom>');
         return;
       }
-      (ctx.step ?? ctx.symptom)!.checks.push(await markdownOf(node));
+      (ctx.step ?? ctx.symptom)!.checks.push(await markdownOf(node, ctx));
       return visitChildren(node, { ...ctx, part: 'check' });
     case 'doneWhen':
     case 'prerequisites':
@@ -211,7 +237,7 @@ async function visit(node: Element, ctx: Context): Promise<void> {
         misplaced(ctx, role, 'is only for setup guides');
         return;
       }
-      ctx.guide[role].push(await markdownOf(node));
+      ctx.guide[role].push(await markdownOf(node, ctx));
       return visitChildren(node, { ...ctx, part: role });
     default:
       return visitChildren(node, ctx);
@@ -272,7 +298,10 @@ async function visitStep(node: Element, ctx: Context): Promise<void> {
     needsUser: value(node, 'stepNeeds') === 'user',
     confirm: has(node, 'stepConfirm'),
     symptoms: (value(node, 'stepSymptoms') ?? '').split(/\s+/).filter(Boolean),
-    body: await markdownOf(without(node, (child) => child === heading || has(child, 'check'))),
+    body: await markdownOf(
+      without(node, (child) => child === heading || has(child, 'check')),
+      ctx
+    ),
     checks: [],
   };
   ctx.guide.steps.push(step);
@@ -284,7 +313,7 @@ async function visitSymptom(node: Element, ctx: Context): Promise<void> {
     misplaced(ctx, 'symptom', "can't be inside a <Step>");
     return;
   }
-  const guideName = value(node, 'symptomGuide');
+  const guideNames = [...new Set((value(node, 'symptomGuide') ?? '').split(/\s+/).filter(Boolean))];
   const titleProp = value(node, 'symptomTitle');
   const heading = titleProp ? undefined : firstHeading(node);
   const id = value(node, 'symptom');
@@ -293,7 +322,7 @@ async function visitSymptom(node: Element, ctx: Context): Promise<void> {
     id,
     title: titleProp ?? (await headingText(heading)),
     anchor: typeof headingId === 'string' && headingId ? headingId : id,
-    guide: guideName,
+    guides: guideNames,
     route: ctx.route,
     blocks: [],
     checks: [],
@@ -304,21 +333,22 @@ async function visitSymptom(node: Element, ctx: Context): Promise<void> {
     (child) => child === heading || has(child, 'check') || has(child, 'label')
   );
   for (const child of children(body)) {
-    const markdown = await markdownOf(child);
+    const markdown = await markdownOf(child, ctx);
     if (markdown) symptom.blocks.push({ label: symptomLabel(child), markdown });
   }
 
   if (ctx.guide) {
-    if (guideName && guideName !== ctx.guide.name) {
+    const others = guideNames.filter((name) => name !== ctx.guide!.name);
+    if (others.length > 0) {
       ctx.result.errors.push(
-        `${ctx.route}: <Symptom id="${symptom.id ?? ''}"> is inside guide "${ctx.guide.name}" but names guide "${guideName}"`
+        `${ctx.route}: <Symptom id="${symptom.id ?? ''}"> is inside guide "${ctx.guide.name}" but names guide "${others.join(' ')}"; a symptom shared by several guides goes outside them`
       );
       return;
     }
     ctx.guide.symptoms.push(symptom);
-  } else if (!guideName) {
+  } else if (guideNames.length === 0) {
     ctx.result.errors.push(
-      `${ctx.route}: <Symptom id="${symptom.id ?? ''}"> is outside a guide, so it needs a guide prop naming one`
+      `${ctx.route}: <Symptom id="${symptom.id ?? ''}"> is outside a guide, so it needs a guide prop naming one or more`
     );
     return;
   } else {
@@ -352,6 +382,11 @@ export interface ExtractGuidesInput {
   content: Element;
   /** The agent view of the content element: what guides are read from */
   view: Element;
+  /**
+   * The page's URL. Links and images in guides resolve against it; without
+   * it they're left as the page wrote them.
+   */
+  url?: string;
 }
 
 /** The page's guide markup, or null if it has none. */
@@ -363,7 +398,12 @@ export async function extractGuides(input: ExtractGuidesInput): Promise<PageGuid
     errors: [],
     warnings: [],
   };
-  await visit(input.view, { route: input.route, pageTitle: input.pageTitle, result });
+  await visit(input.view, {
+    route: input.route,
+    url: input.url,
+    pageTitle: input.pageTitle,
+    result,
+  });
 
   const outside = countOutside(input.tree, input.content);
   if (outside > 0) {

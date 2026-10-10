@@ -139,14 +139,17 @@ export function compileGuides({ pages, baseUrl }: CompileGuidesInput): CompiledG
     if (fragment.name) byName.set(fragment.name, guide);
   }
 
+  // A symptom outside a guide attaches to every guide it names.
   for (const symptom of sorted.flatMap((page) => page.symptoms)) {
-    const guide = byName.get(symptom.guide!);
-    if (guide) {
-      guide.symptoms.push(symptom);
-    } else {
-      errors.push(
-        `${symptom.route}: <Symptom id="${symptom.id ?? ''}"> names guide "${symptom.guide}", which doesn't exist`
-      );
+    for (const name of symptom.guides) {
+      const guide = byName.get(name);
+      if (guide) {
+        guide.symptoms.push(symptom);
+      } else {
+        errors.push(
+          `${symptom.route}: <Symptom id="${symptom.id ?? ''}"> names guide "${name}", which doesn't exist`
+        );
+      }
     }
   }
 

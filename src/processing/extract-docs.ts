@@ -20,6 +20,7 @@ import { hastToMarkdown } from './markdown.js';
 import { extractHeadings, htmlHeadings } from './headings.js';
 import { toAgentView } from '../agent-view/tree.js';
 import { extractGuides, type PageGuides } from '../guides/extract.js';
+import { documentId } from '../artifacts/bundle.js';
 
 export interface PageOptions {
   /** CSS selectors for the content container, in priority order */
@@ -28,6 +29,11 @@ export interface PageOptions {
   excludeSelectors: string[];
   /** Pages with less Markdown than this (in characters) are skipped */
   minContentLength: number;
+  /**
+   * The site's URL with its base path (`https://docs.example.com/docs/`).
+   * Links in agent guides resolve against each page's URL under it.
+   */
+  baseUrl?: string;
 }
 
 export interface ExtractDocsOptions extends PageOptions {
@@ -188,7 +194,14 @@ export async function extractPage(
   }
 
   const title = extractTitle(tree);
-  const guides = await extractGuides({ route, pageTitle: title, tree, content, view: cleaned });
+  const guides = await extractGuides({
+    route,
+    pageTitle: title,
+    tree,
+    content,
+    view: cleaned,
+    url: options.baseUrl ? documentId({ route }, options.baseUrl) : undefined,
+  });
   return {
     doc: {
       route,

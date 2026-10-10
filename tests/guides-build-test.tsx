@@ -137,6 +137,37 @@ describe('agent guides in the build', () => {
     );
   });
 
+  it('makes links in compiled guides absolute, under the site’s base path', async () => {
+    await writePage(
+      '/docs/setup',
+      'Set up the widget',
+      <AgentGuide
+        name="setup-widget"
+        kind="setup"
+        description="Install the widget. Use when needed."
+      >
+        <DoneWhen>The widget prints its version.</DoneWhen>
+        <Step id="install" title="Install it">
+          <p>
+            Pick a version from <a href="/sub/docs/reference/versions">versions</a>, then read{' '}
+            <a href="#upgrading">upgrading</a>.
+          </p>
+          <Check>It prints a version.</Check>
+        </Step>
+      </AgentGuide>
+    );
+    const result = await buildOutputs({
+      outDir,
+      options: resolvePluginOptions({}),
+      site: { ...site, siteDir, baseUrl: '/sub/' },
+    });
+    if (result.kind !== 'built') throw new Error(result.reason);
+    const guide = result.bundle.skills!.skills.find((s) => s.skillPath === 'setup-widget')!;
+    const skillMd = guide.files.find((f) => f.path === 'SKILL.md')!.text;
+    expect(skillMd).toContain('[versions](https://docs.example.com/sub/docs/reference/versions)');
+    expect(skillMd).toContain('[upgrading](https://docs.example.com/sub/docs/setup#upgrading)');
+  });
+
   it('fails the build with every guide problem at once', async () => {
     await writePage(
       '/docs/broken',

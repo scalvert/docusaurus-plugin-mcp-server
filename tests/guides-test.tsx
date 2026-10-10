@@ -366,6 +366,16 @@ describe('build checks', () => {
       symptom('s', 'data-mcp-symptom-guide="nope"'),
       'names guide "nope", which doesn\'t exist',
     ],
+    [
+      'a shared symptom naming one missing guide among others',
+      guide('', done + step('a')) + symptom('s', 'data-mcp-symptom-guide="g nope"'),
+      'names guide "nope", which doesn\'t exist',
+    ],
+    [
+      'a symptom inside a guide naming other guides',
+      guide('', done + step('a') + symptom('s', 'data-mcp-symptom-guide="g other"')),
+      'is inside guide "g" but names guide "other"',
+    ],
   ])('fails on %s', async (_label, body, expected) => {
     const { errors } = await problems(['/p', body]);
     expect(errors.join('\n')).toContain(expected);
@@ -427,5 +437,72 @@ describe('build checks', () => {
       `<p>This paragraph has enough text for extraction to pick the article.</p><div data-mcp-audience="humans">${guide('', done + step('a'))}</div>`
     );
     expect(page.guides).toBeUndefined();
+  });
+});
+
+const ENOUGH = '<p>This paragraph has enough text for extraction to pick the article.</p>';
+
+describe('shared symptoms', () => {
+  it('attaches a symptom outside the guides to every guide it names', async () => {
+    const named = (name: string) =>
+      guide('', done + step('a')).replace('data-mcp-guide="g"', `data-mcp-guide="${name}"`);
+    const guides = await pageGuides(
+      '/deploy',
+      'Deploy',
+      ENOUGH + named('deploy-a') + named('deploy-b')
+    );
+    const shared = await pageGuides(
+      '/troubleshooting',
+      'Troubleshooting',
+      ENOUGH + symptom('status-500', 'data-mcp-symptom-guide="deploy-a deploy-b"')
+    );
+    const compiled = await compile(guides.guides, shared.guides);
+    expect(compiled.errors).toEqual([]);
+    for (const name of ['deploy-a', 'deploy-b']) {
+      expect(file(compiled, name, 'SKILL.md')).toContain(
+        '[Error status-500](references/troubleshooting.md#status-500)'
+      );
+      expect(file(compiled, name, 'references/troubleshooting.md')).toContain(
+        '## Error status-500 {#status-500}'
+      );
+    }
+  });
+});
+
+describe('links in guides', () => {
+  const body =
+    '<p>See <a href="/docs/reference/options">options</a>, <a href="#check-it">the check</a>, ' +
+    '<a href="../deploy/">deploying</a>, and <a href="https://example.org/x">elsewhere</a>.</p>' +
+    '<p><img src="/img/diagram.png" alt="Diagram"></p>' +
+    '<div data-mcp-check=""><p>Run <code>curl</code>; see <a href="/docs/status">status</a>.</p></div>';
+
+  it('resolve against the page URL, so a guide read away from the site still works', async () => {
+    const result = await extractPage(
+      html('Setup', ENOUGH + guide('', done + step('a', body))),
+      '/docs/guides/setup',
+      { ...options, baseUrl: 'https://docs.example.com/' },
+      () => {}
+    );
+    if (!('doc' in result)) throw new Error('page skipped');
+    const compiled = await compile(result.guides);
+    const skill = file(compiled, 'g', 'SKILL.md');
+    expect(skill).toContain('[options](https://docs.example.com/docs/reference/options)');
+    expect(skill).toContain('[the check](https://docs.example.com/docs/guides/setup#check-it)');
+    expect(skill).toContain('[deploying](https://docs.example.com/docs/deploy/)');
+    expect(skill).toContain('[elsewhere](https://example.org/x)');
+    expect(skill).toContain('![Diagram](https://docs.example.com/img/diagram.png)');
+    expect(skill).toContain('[status](https://docs.example.com/docs/status)');
+    // The page's own document keeps the links as the page wrote them.
+    expect(result.doc.markdown).toContain('[options](/docs/reference/options)');
+  });
+
+  it('stay as the page wrote them without a site URL', async () => {
+    const page = await pageGuides(
+      '/docs/guides/setup',
+      'Setup',
+      ENOUGH + guide('', done + step('a', body))
+    );
+    const skill = file(await compile(page.guides), 'g', 'SKILL.md');
+    expect(skill).toContain('[options](/docs/reference/options)');
   });
 });

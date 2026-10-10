@@ -85,11 +85,13 @@ A `Symptom` is one thing that can go wrong: what the user sees, why, how to fix 
 
 Start symptom titles with the exact error text: agents match errors by searching for what they saw. A step's `symptoms` prop lists the symptoms to try when its check fails; without it, the agent gets the whole list.
 
+A symptom several guides share, like a deployment error that happens on every platform, names them all: `guide="deploy-vercel deploy-netlify"`. Each guide gets it, and you write it once.
+
 A troubleshooting guide (`kind="troubleshooting"`) has symptoms and no steps, for problems that aren't tied to one setup.
 
 ## What the build does
 
-The build reads guides from the built HTML, compiles each into a skill named after the guide, and serves it with your other skills. Agents read it with `docs_fetch` (`skill://setup-widget/SKILL.md`) or the skills extension.
+The build reads guides from the built HTML, compiles each into a skill named after the guide, and serves it with your other skills. Agents read it with `docs_fetch` (`skill://setup-widget/SKILL.md`) or the skills extension. Links in a compiled guide are absolute URLs, so the guide still works when an agent reads it away from your site.
 
 It fails, listing every problem, when a guide is malformed: a missing `name`, `kind`, `description`, or `DoneWhen`; a step or symptom without an `id`; a `symptoms` prop naming a symptom that doesn't exist; a guide name that's already a skill; or markup in the wrong place, such as a `Step` outside a guide. It warns when a step has no `Check` or a guide has no symptoms. `docusaurus-mcp-verify` repeats the warnings for an existing build.
 
