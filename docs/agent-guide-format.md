@@ -71,7 +71,7 @@ claude mcp add --transport http glean https://example-be.glean.com/mcp/default
 </AgentGuide>
 ````
 
-Symptoms usually live on the troubleshooting page and attach to their guide by name:
+Symptoms usually live on the troubleshooting page and attach to their guide by name. A symptom that several guides share names them all, space-separated (`guide="deploy-vercel deploy-netlify"`), and each compiled guide gets a copy:
 
 ```mdx
 <Symptom id="invalid-token" guide="setup-remote-mcp" title="`401 invalid_token` when the host connects">
@@ -114,6 +114,8 @@ Our components also show readers a few labels: a step's `title`, a symptom's `ti
 - **`needs="user"`:** a person has to do this step, for example signing in, approving access, or changing an admin-only setting. The agent tells the user what to do and waits for them to confirm.
 - **`confirm`:** the step changes or deletes something the user may want to keep. The agent asks before running it.
 - **`symptoms`:** space-separated symptom IDs to offer when this step's check fails. Without it, the step points at the whole troubleshooting list.
+- **Symptom `guide`:** one or more guide names, space-separated. Required outside a guide; inside one, it may only name that guide (a symptom shared by several guides goes outside them).
+- **Links and images** in compiled guides are absolute URLs, resolved against the page they came from. A skill is read away from the site, where `/docs/x` or `#section` would point nowhere. The page's own document keeps links as the page wrote them.
 
 ## The agent view
 
@@ -133,7 +135,7 @@ The build fails with a `GuideValidationError` when:
 - a setup guide has no steps, or a troubleshooting guide has steps
 - a step or symptom has no `id`, or two steps or two symptoms in the same guide share one
 - a symptom has no `title` and no heading
-- a symptom names a guide that doesn't exist, or a step's `symptoms` names a symptom the guide doesn't have
+- a symptom names a guide that doesn't exist, a symptom inside a guide names a different guide, or a step's `symptoms` names a symptom the guide doesn't have
 - a `Step`, `Check`, or `Symptom` sits somewhere the table above doesn't allow, or guides are nested
 
 The build warns when:

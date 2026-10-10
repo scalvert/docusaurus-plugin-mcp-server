@@ -99,6 +99,11 @@ export async function buildOutputs({ outDir, options, site }: BuildInput): Promi
     return { kind: 'skipped', reason: 'indexing-disabled' };
   }
 
+  // Resolve the site's baseUrl (e.g. "/docs/") against the origin so document
+  // URLs are correct for sites served under a sub-path. Use the URL constructor
+  // rather than path.join, which would collapse "https://" into "https:/".
+  const baseUrl = new URL(site.baseUrl, site.url).href;
+
   const {
     docs,
     pageCount,
@@ -108,6 +113,7 @@ export async function buildOutputs({ outDir, options, site }: BuildInput): Promi
     excludeSelectors: options.excludeSelectors,
     excludeRoutes: options.excludeRoutes,
     minContentLength: options.minContentLength,
+    baseUrl,
   });
   if (pageCount === 0) {
     return { kind: 'skipped', reason: 'no-pages' };
@@ -120,10 +126,6 @@ export async function buildOutputs({ outDir, options, site }: BuildInput): Promi
   }
 
   const outputDir = path.join(outDir, options.outputDir);
-  // Resolve the site's baseUrl (e.g. "/docs/") against the origin so document
-  // URLs are correct for sites served under a sub-path. Use the URL constructor
-  // rather than path.join, which would collapse "https://" into "https:/".
-  const baseUrl = new URL(site.baseUrl, site.url).href;
   const providerContext: ProviderContext = {
     baseUrl,
     serverName: options.server.name,

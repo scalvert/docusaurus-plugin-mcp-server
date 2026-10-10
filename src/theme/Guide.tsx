@@ -123,7 +123,10 @@ export interface SymptomProps {
    * first heading inside the symptom, so an existing section can be wrapped.
    */
   title?: string;
-  /** The guide this belongs to, when it isn't inside one */
+  /**
+   * The guides this belongs to, space-separated, when it isn't inside one
+   * (`"deploy-vercel deploy-netlify"`). Each named guide gets the symptom.
+   */
   guide?: string;
   children?: ReactNode;
 }
