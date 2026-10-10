@@ -1,6 +1,6 @@
 ---
 title: Getting started
-description: Add the plugin to a Docusaurus site, build the artifact bundle, and run the MCP server locally.
+description: Set up an MCP server for your Docusaurus docs. Install the plugin, build the artifact bundle, and run the server locally.
 ---
 
 # Getting started
