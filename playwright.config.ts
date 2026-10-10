@@ -1,4 +1,5 @@
 import { defineConfig } from '@playwright/test';
+import { protocolMatrix } from '@gleanwork/mcp-server-tester';
 
 const TEST_PORT = 3457;
 
@@ -10,8 +11,8 @@ export default defineConfig({
 
   reporter: [['html', { open: 'never' }], ['list']],
 
-  // Eval snapshots are plain text, so share one baseline across platforms
-  // (the default template appends the OS, which breaks CI on Linux).
+  // Snapshots are plain text, so share one baseline across platforms and
+  // protocols (the default template appends the OS and project name).
   snapshotPathTemplate: '{testDir}/{testFileName}-snapshots/{arg}{ext}',
 
   // Start the test MCP server before running tests
@@ -22,9 +23,11 @@ export default defineConfig({
     timeout: 30000,
   },
 
-  projects: [
+  // Every spec runs once per protocol: a 2025-era client (`initialize`) and a
+  // 2026-07-28 client. The server serves both eras on one endpoint.
+  projects: protocolMatrix(
     {
-      name: 'mcp-tests',
+      name: 'mcp',
       use: {
         mcpConfig: {
           transport: 'http',
@@ -32,5 +35,6 @@ export default defineConfig({
         },
       },
     },
-  ],
+    ['legacy', '2026-07-28']
+  ),
 });

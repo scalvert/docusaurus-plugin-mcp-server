@@ -83,9 +83,9 @@ Ranking changes must keep `tests/search-ranking-test.ts` passing; its thresholds
 ## Testing
 
 - Unit tests: `tests/*.ts` using Vitest. Build servers in tests with `buildTestBundle` from `tests/helpers/bundle.ts`, not by reading artifact filenames. `tests/protocol-eras-test.ts` drives the v2 client (`@modelcontextprotocol/client`) in both 2026-07-28 and 2025-era modes
-- Integration tests: `tests/playwright/` using `@gleanwork/mcp-server-tester` (a 2025-era client, so it also guards backward compatibility)
-  - `mcp.spec.ts` - conformance checks and protocol behavior
-  - `evals.spec.ts` + `evals/*.json` - direct-mode eval datasets for tool output; update snapshots with `npm run test:mcp -- --update-snapshots`
+- Integration tests: `tests/playwright/` using `@gleanwork/mcp-server-tester` (MST) 2.0 beta, pinned exactly. Every spec runs once per protocol (`protocolMatrix` in `playwright.config.ts`): `mcp@legacy`, a 2025-era client that guards backward compatibility, and `mcp@2026-07-28`
+  - `mcp.spec.ts` - conformance checks (including the SEP-2640 skills checks), skills, and cross-era behavior
+  - `tool-checks.spec.ts` + `tool-checks.json` - one Playwright test per tool call against the fixture docs; update snapshots with `npm run test:mcp -- --update-snapshots`
 
 ## Package Format
 
