@@ -3,8 +3,6 @@ title: Writing for agents
 description: Mark page content for agents only or for people only with ForAgents and ForHumans, so one page serves both.
 ---
 
-import { ForAgents, ForHumans } from 'docusaurus-plugin-mcp-server/theme';
-
 # Writing for agents
 
 A page written for people sometimes says things an agent can't use ("click the blue button at the top right") and leaves out things an agent needs ("stop here if the user isn't an admin"). Two components let one page carry both, so you don't keep a second copy for agents that drifts from the first:
@@ -16,11 +14,9 @@ Everything the plugin gives agents follows this: the pages `docs_fetch` returns,
 
 ## Use them in a page
 
-Import them from the theme entry point in any `.mdx` page:
+Use them in any page. The plugin adds them to your theme's MDX components, so there's nothing to import:
 
 ```mdx
-import { ForAgents, ForHumans } from 'docusaurus-plugin-mcp-server/theme';
-
 ## Turn on the connector
 
 Open **Settings → Connectors** and turn on the connector.

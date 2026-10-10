@@ -4,8 +4,6 @@ description: Fixes for the errors you're most likely to hit when deploying the M
 sidebar_label: Troubleshooting
 ---
 
-import { Check, Symptom } from 'docusaurus-plugin-mcp-server/theme';
-
 # Troubleshooting deployments
 
 Start with the status check, `curl https://docs.example.com/mcp`. What it returns tells you which section below applies.

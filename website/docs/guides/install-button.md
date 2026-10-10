@@ -64,7 +64,9 @@ With no props, the button reads the endpoint URL and server name from the plugin
 
 ## Use it anywhere else
 
-The button is a regular React component, so it also works in MDX pages and your own components:
+The button is a regular React component, so it also works in your own components. In an MDX page it needs no import: write `<McpInstallButton />` (see [MDX components](../reference/plugin-options.md#mdx-components)).
+
+In a component file, import it:
 
 ```tsx snippet=readme/snippet-08.tsx
 import { McpInstallButton } from 'docusaurus-plugin-mcp-server/theme';

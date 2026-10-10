@@ -32,6 +32,7 @@ module.exports = {
 | `excludeSelectors` | `string[]` | see below | CSS selectors for elements to remove from the content. Full CSS since 2.2. Invalid selectors are skipped with a build warning |
 | `minContentLength` | `number` | `50` | Pages with less extracted text than this are skipped |
 | `excludeRoutes` | `string[]` | `['/404*', '/search*']` | Glob patterns for routes to leave out |
+| `mdxComponents` | `boolean` | `true` | Make the plugin's components available in MDX pages without an import (see [below](#mdx-components)). Set `false` if your theme has no `MDXComponents` |
 | `indexers` | `string[] \| false` | `['local']` | Indexers to run at build time: `'local'` (built-in), a path (relative to the site directory), or an npm package. `false` turns indexing off |
 | `skills` | `{ builtin?: boolean; dir?: string } \| false` | built-in skill only | [Agent Skills](../guides/agent-skills.md) to package. `dir` is relative to the site directory. `false` turns skills off |
 | `search` | `string` | `'local'` | **Deprecated since 2.2, removed in 3.0.** Has had no effect since 2.0. Choose the search provider with the [server's `search` option](./server-options.md). `'flexsearch'` is rejected |
@@ -71,3 +72,23 @@ Setting `excludeSelectors` replaces the defaults, so include the ones you want t
 | `https://my-org.github.io` | `/my-docs/` | `server.url: 'https://mcp.example.com/mcp'` | `https://mcp.example.com/mcp` |
 
 [`resolveServerUrl`](./api.md#resolveserverurl) computes the same value in code.
+
+## MDX components
+
+The plugin adds its components to your theme's `MDXComponents`, so any page can use `McpInstallButton`, `ForAgents`, `ForHumans`, and the [agent guide](../guides/agent-guides.md) components (`AgentGuide`, `DoneWhen`, `Prerequisites`, `Step`, `Check`, `Symptom`) without importing them. Pages that import them from `docusaurus-plugin-mcp-server/theme` keep working, and a component a page imports itself takes precedence, so your own `Step` is unaffected.
+
+- **The classic theme** (and `preset-classic`) works as is: the plugin extends the `MDXComponents` of the theme loaded before it.
+- **A swizzled `MDXComponents` that wraps the original** (`import MDXComponents from '@theme-original/MDXComponents'`) keeps the plugin's components.
+- **A swizzled `MDXComponents` you ejected** (a full copy) replaces them. Spread them into yours:
+
+  ```js title="src/theme/MDXComponents.js"
+  import { mdxComponents } from 'docusaurus-plugin-mcp-server/theme';
+
+  export default {
+    // ...your components
+    ...mdxComponents,
+  };
+  ```
+
+- **A theme with no `MDXComponents`** fails the build with a missing `@theme-init/MDXComponents`. Set `mdxComponents: false` and import the components in each page.
+

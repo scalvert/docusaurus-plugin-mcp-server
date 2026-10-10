@@ -3,6 +3,7 @@ import type { McpServerPluginOptions } from '../types/index.js';
 import { resolveServerUrl } from './resolve-server-url.js';
 import { buildOutputs, resolvePluginOptions } from '../pipeline/build-outputs.js';
 import { writeArtifactBundle } from '../artifacts/node.js';
+import { THEME_MDX_DIR } from '../theme-mdx-dir.js';
 
 /**
  * Docusaurus plugin that generates MCP server artifacts during build. An
@@ -17,6 +18,10 @@ export default function mcpServerPlugin(
 
   return {
     name: 'docusaurus-plugin-mcp-server',
+
+    // The theme's one component, MDXComponents, adds the plugin's components
+    // to MDX so pages can use them without an import.
+    ...(options.mdxComponents !== false && { getThemePath: () => THEME_MDX_DIR }),
 
     // Expose configuration to theme components via globalData
     async contentLoaded({ actions }) {

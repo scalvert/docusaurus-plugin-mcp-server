@@ -18,7 +18,7 @@ This document defines version 1 of the format: how a guide is marked up in a pag
 
 ## Marking up a page
 
-Import the components from `docusaurus-plugin-mcp-server/theme`, or register them once in a swizzled `src/theme/MDXComponents`.
+The plugin adds the components to the theme's MDX components, so pages use them without an import (the `mdxComponents` plugin option; on by default). They can also be imported from `docusaurus-plugin-mcp-server/theme`.
 
 ````mdx
 import {

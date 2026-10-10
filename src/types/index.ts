@@ -62,6 +62,16 @@ export interface McpServerPluginOptions {
   excludeRoutes?: string[];
 
   /**
+   * Make the plugin's components (`McpInstallButton`, `ForAgents`,
+   * `ForHumans`, and the agent guide components) available in MDX pages
+   * without an import, by adding them to the theme's `MDXComponents`.
+   * Default: true. Set `false` if the site's theme has no `MDXComponents`
+   * (the classic theme has one), or to keep explicit imports. Pages that import
+   * the components work either way.
+   */
+  mdxComponents?: boolean;
+
+  /**
    * Indexers to run during build.
    *
    * - undefined (default): runs the built-in 'local' indexer
