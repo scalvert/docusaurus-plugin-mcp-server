@@ -3,6 +3,7 @@ import rehypeRemark from 'rehype-remark';
 import remarkGfm from 'remark-gfm';
 import remarkStringify from 'remark-stringify';
 import { toHtml } from 'hast-util-to-html';
+import { toString } from 'hast-util-to-string';
 import type { Element, Root } from 'hast';
 
 const processor = unified()
@@ -15,7 +16,7 @@ const processor = unified()
  * tree (no second HTML parse). If conversion fails, falls back to plain text.
  */
 export async function hastToMarkdown(element: Element): Promise<string> {
-  const root: Root = { type: 'root', children: [element] };
+  const root: Root = { type: 'root', children: [normalizeCodeBlocks(element)] };
   try {
     const mdast = await processor.run(root);
     return cleanMarkdown(String(processor.stringify(mdast)));
@@ -23,6 +24,61 @@ export async function hastToMarkdown(element: Element): Promise<string> {
     console.error('Error converting HTML to Markdown:', error);
     return extractTextFallback(toHtml(element));
   }
+}
+
+function classesOf(node: Element): string[] {
+  const value = node.properties?.className;
+  return Array.isArray(value)
+    ? value.map(String)
+    : typeof value === 'string'
+      ? value.split(/\s+/)
+      : [];
+}
+
+function tokenLines(node: Element): Element[] {
+  const lines: Element[] = [];
+  for (const child of node.children) {
+    if (child.type !== 'element') continue;
+    if (classesOf(child).includes('token-line')) lines.push(child);
+    else lines.push(...tokenLines(child));
+  }
+  return lines;
+}
+
+/**
+ * Docusaurus (Prism) code blocks put each line in its own `.token-line`
+ * element ending in `<br>` (a `span` before Docusaurus 3.8, a `div` since),
+ * and the language in a `language-*` class on the `<pre>`. Rebuild each as
+ * `<pre><code class="language-*">` plain text, so the Markdown keeps one line
+ * per line (a `div` per line would otherwise become blank-line-separated
+ * blocks) and the fence gets its language. Other `<pre>`s are left alone.
+ */
+function normalizeCodeBlocks(node: Element): Element {
+  if (node.tagName === 'pre') {
+    const language = classesOf(node).find((name) => name.startsWith('language-'));
+    const lines = tokenLines(node);
+    if (!language && lines.length === 0) return node;
+    const text = lines.length > 0 ? lines.map((line) => toString(line)).join('\n') : toString(node);
+    return {
+      type: 'element',
+      tagName: 'pre',
+      properties: {},
+      children: [
+        {
+          type: 'element',
+          tagName: 'code',
+          properties: language ? { className: [language] } : {},
+          children: [{ type: 'text', value: text.replace(/\n+$/, '') }],
+        },
+      ],
+    };
+  }
+  return {
+    ...node,
+    children: node.children.map((child) =>
+      child.type === 'element' ? normalizeCodeBlocks(child) : child
+    ),
+  };
 }
 
 /** Collapse blank-line runs and trailing whitespace; end with one newline. */

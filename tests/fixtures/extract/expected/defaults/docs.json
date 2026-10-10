@@ -10,7 +10,7 @@
     "route": "/docs/api/authentication",
     "title": "Authentication",
     "description": "All API requests require authentication using an API key.",
-    "markdown": "All API requests require authentication using an API key.\n\n## API Keys\n\nAPI keys are used to authenticate requests to our API. You can manage your API keys in the [dashboard](https://dashboard.example.com).\n\n### Creating an API Key\n\n1. Log in to your dashboard\n2. Navigate to **Settings** > **API Keys**\n3. Click **Create New Key**\n4. Give your key a descriptive name\n5. Copy and securely store the key (it won't be shown again)\n\n### Key Types\n\n| Type     | Description                 | Use Case               |\n| -------- | --------------------------- | ---------------------- |\n| **Test** | For development and testing | Sandbox environment    |\n| **Live** | For production use          | Production environment |\n\n## Using API Keys\n\nInclude your API key in the `Authorization` header:\n\n```\ncurl https://api.example.com/v1/users \\\n  -H \"Authorization: Bearer YOUR_API_KEY\"\n```\n\nOr using the SDK:\n\n```\nconst client = new Client({\n  apiKey: 'your-api-key',\n});\n```\n\n## OAuth Configuration\n\nFor applications that need to act on behalf of users, we support OAuth 2.0.\n\n### OAuth Flow\n\n1. Redirect user to authorization URL\n2. User grants permission\n3. Receive authorization code\n4. Exchange code for access token\n5. Use access token for API requests\n\n### Implementation\n\n```\nimport { OAuth } from '@example/sdk';\n\nconst oauth = new OAuth({\n  clientId: 'your-client-id',\n  clientSecret: 'your-client-secret',\n  redirectUri: 'https://yourapp.com/callback',\n});\n\n// Generate authorization URL\nconst authUrl = oauth.getAuthorizationUrl({\n  scopes: ['read', 'write'],\n  state: 'random-state-string',\n});\n\n// Exchange code for token\nconst tokens = await oauth.exchangeCode(authorizationCode);\n```\n\n### Scopes\n\n| Scope    | Description                   |\n| -------- | ----------------------------- |\n| `read`   | Read-only access to resources |\n| `write`  | Create and modify resources   |\n| `delete` | Delete resources              |\n| `admin`  | Full administrative access    |\n\n## Token Refresh\n\nAccess tokens expire after 1 hour. Use the refresh token to get a new access token:\n\n```\nconst newTokens = await oauth.refreshToken(refreshToken);\n```\n\n## Security Best Practices\n\n- Never expose API keys in client-side code\n- Use environment variables for key storage\n- Rotate keys periodically\n- Use the minimum required scopes\n- Monitor API key usage in your dashboard\n",
+    "markdown": "All API requests require authentication using an API key.\n\n## API Keys\n\nAPI keys are used to authenticate requests to our API. You can manage your API keys in the [dashboard](https://dashboard.example.com).\n\n### Creating an API Key\n\n1. Log in to your dashboard\n2. Navigate to **Settings** > **API Keys**\n3. Click **Create New Key**\n4. Give your key a descriptive name\n5. Copy and securely store the key (it won't be shown again)\n\n### Key Types\n\n| Type     | Description                 | Use Case               |\n| -------- | --------------------------- | ---------------------- |\n| **Test** | For development and testing | Sandbox environment    |\n| **Live** | For production use          | Production environment |\n\n## Using API Keys\n\nInclude your API key in the `Authorization` header:\n\n```bash\ncurl https://api.example.com/v1/users \\\n  -H \"Authorization: Bearer YOUR_API_KEY\"\n```\n\nOr using the SDK:\n\n```javascript\nconst client = new Client({\n  apiKey: 'your-api-key',\n});\n```\n\n## OAuth Configuration\n\nFor applications that need to act on behalf of users, we support OAuth 2.0.\n\n### OAuth Flow\n\n1. Redirect user to authorization URL\n2. User grants permission\n3. Receive authorization code\n4. Exchange code for access token\n5. Use access token for API requests\n\n### Implementation\n\n```javascript\nimport { OAuth } from '@example/sdk';\n\nconst oauth = new OAuth({\n  clientId: 'your-client-id',\n  clientSecret: 'your-client-secret',\n  redirectUri: 'https://yourapp.com/callback',\n});\n\n// Generate authorization URL\nconst authUrl = oauth.getAuthorizationUrl({\n  scopes: ['read', 'write'],\n  state: 'random-state-string',\n});\n\n// Exchange code for token\nconst tokens = await oauth.exchangeCode(authorizationCode);\n```\n\n### Scopes\n\n| Scope    | Description                   |\n| -------- | ----------------------------- |\n| `read`   | Read-only access to resources |\n| `write`  | Create and modify resources   |\n| `delete` | Delete resources              |\n| `admin`  | Full administrative access    |\n\n## Token Refresh\n\nAccess tokens expire after 1 hour. Use the refresh token to get a new access token:\n\n```javascript\nconst newTokens = await oauth.refreshToken(refreshToken);\n```\n\n## Security Best Practices\n\n- Never expose API keys in client-side code\n- Use environment variables for key storage\n- Rotate keys periodically\n- Use the minimum required scopes\n- Monitor API key usage in your dashboard\n",
     "headings": [
       {
         "level": 2,
@@ -38,49 +38,49 @@
         "text": "Using API Keys",
         "id": "using-api-keys",
         "startOffset": 718,
-        "endOffset": 967
+        "endOffset": 981
       },
       {
         "level": 2,
         "text": "OAuth Configuration",
         "id": "oauth-configuration",
-        "startOffset": 967,
-        "endOffset": 1974
+        "startOffset": 981,
+        "endOffset": 1998
       },
       {
         "level": 3,
         "text": "OAuth Flow",
         "id": "oauth-flow",
-        "startOffset": 1068,
-        "endOffset": 1250
+        "startOffset": 1082,
+        "endOffset": 1264
       },
       {
         "level": 3,
         "text": "Implementation",
         "id": "implementation",
-        "startOffset": 1250,
-        "endOffset": 1691
+        "startOffset": 1264,
+        "endOffset": 1715
       },
       {
         "level": 3,
         "text": "Scopes",
         "id": "scopes",
-        "startOffset": 1691,
-        "endOffset": 1974
+        "startOffset": 1715,
+        "endOffset": 1998
       },
       {
         "level": 2,
         "text": "Token Refresh",
         "id": "token-refresh",
-        "startOffset": 1974,
-        "endOffset": 2144
+        "startOffset": 1998,
+        "endOffset": 2178
       },
       {
         "level": 2,
         "text": "Security Best Practices",
         "id": "security-best-practices",
-        "startOffset": 2144,
-        "endOffset": 2363
+        "startOffset": 2178,
+        "endOffset": 2397
       }
     ]
   },
@@ -88,91 +88,91 @@
     "route": "/docs/api/endpoints",
     "title": "API Endpoints",
     "description": "Reference documentation for all available API endpoints.",
-    "markdown": "Reference documentation for all available API endpoints.\n\n## Users\n\n### List Users\n\nRetrieve a paginated list of users.\n\n```\nGET /v1/users\n```\n\n**Query Parameters:**\n\n| Parameter | Type    | Default | Description                            |\n| --------- | ------- | ------- | -------------------------------------- |\n| `page`    | integer | 1       | Page number                            |\n| `limit`   | integer | 20      | Items per page (max 100)               |\n| `status`  | string  | -       | Filter by status: `active`, `inactive` |\n\n**Example Request:**\n\n```\ncurl https://api.example.com/v1/users?limit=10 \\\n  -H \"Authorization: Bearer YOUR_API_KEY\"\n```\n\n**Example Response:**\n\n```\n{\n  \"data\": [\n    {\n      \"id\": \"user_123\",\n      \"email\": \"john@example.com\",\n      \"name\": \"John Doe\",\n      \"status\": \"active\",\n      \"createdAt\": \"2024-01-15T10:30:00Z\"\n    }\n  ],\n  \"pagination\": {\n    \"page\": 1,\n    \"limit\": 10,\n    \"total\": 42\n  }\n}\n```\n\n### Get User\n\nRetrieve a single user by ID.\n\n```\nGET /v1/users/:id\n```\n\n**Example Request:**\n\n```\ncurl https://api.example.com/v1/users/user_123 \\\n  -H \"Authorization: Bearer YOUR_API_KEY\"\n```\n\n### Create User\n\nCreate a new user.\n\n```\nPOST /v1/users\n```\n\n**Request Body:**\n\n```\n{\n  \"email\": \"jane@example.com\",\n  \"name\": \"Jane Smith\",\n  \"role\": \"member\"\n}\n```\n\n**Example Request:**\n\n```\ncurl -X POST https://api.example.com/v1/users \\\n  -H \"Authorization: Bearer YOUR_API_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"email\": \"jane@example.com\", \"name\": \"Jane Smith\"}'\n```\n\n### Update User\n\nUpdate an existing user.\n\n```\nPATCH /v1/users/:id\n```\n\n### Delete User\n\nDelete a user.\n\n```\nDELETE /v1/users/:id\n```\n\n## Projects\n\n### List Projects\n\n```\nGET /v1/projects\n```\n\n### Create Project\n\n```\nPOST /v1/projects\n```\n\n**Request Body:**\n\n```\n{\n  \"name\": \"My Project\",\n  \"description\": \"A sample project\"\n}\n```\n\n## Error Handling\n\nAll endpoints return errors in a consistent format:\n\n```\n{\n  \"error\": {\n    \"code\": \"invalid_request\",\n    \"message\": \"The request was invalid\",\n    \"details\": {\n      \"field\": \"email\",\n      \"issue\": \"Invalid email format\"\n    }\n  }\n}\n```\n\n### Error Codes\n\n| Code              | HTTP Status | Description                |\n| ----------------- | ----------- | -------------------------- |\n| `unauthorized`    | 401         | Invalid or missing API key |\n| `forbidden`       | 403         | Insufficient permissions   |\n| `not_found`       | 404         | Resource not found         |\n| `invalid_request` | 400         | Invalid request parameters |\n| `rate_limited`    | 429         | Too many requests          |\n| `server_error`    | 500         | Internal server error      |\n\n## Rate Limiting\n\nAPI requests are limited to:\n\n- **100 requests per minute** for standard plans\n- **1000 requests per minute** for enterprise plans\n\nRate limit headers are included in all responses:\n\n```\nX-RateLimit-Limit: 100\nX-RateLimit-Remaining: 95\nX-RateLimit-Reset: 1704067200\n```\n",
+    "markdown": "Reference documentation for all available API endpoints.\n\n## Users\n\n### List Users\n\nRetrieve a paginated list of users.\n\n```http\nGET /v1/users\n```\n\n**Query Parameters:**\n\n| Parameter | Type    | Default | Description                            |\n| --------- | ------- | ------- | -------------------------------------- |\n| `page`    | integer | 1       | Page number                            |\n| `limit`   | integer | 20      | Items per page (max 100)               |\n| `status`  | string  | -       | Filter by status: `active`, `inactive` |\n\n**Example Request:**\n\n```bash\ncurl https://api.example.com/v1/users?limit=10 \\\n  -H \"Authorization: Bearer YOUR_API_KEY\"\n```\n\n**Example Response:**\n\n```json\n{\n  \"data\": [\n    {\n      \"id\": \"user_123\",\n      \"email\": \"john@example.com\",\n      \"name\": \"John Doe\",\n      \"status\": \"active\",\n      \"createdAt\": \"2024-01-15T10:30:00Z\"\n    }\n  ],\n  \"pagination\": {\n    \"page\": 1,\n    \"limit\": 10,\n    \"total\": 42\n  }\n}\n```\n\n### Get User\n\nRetrieve a single user by ID.\n\n```http\nGET /v1/users/:id\n```\n\n**Example Request:**\n\n```bash\ncurl https://api.example.com/v1/users/user_123 \\\n  -H \"Authorization: Bearer YOUR_API_KEY\"\n```\n\n### Create User\n\nCreate a new user.\n\n```http\nPOST /v1/users\n```\n\n**Request Body:**\n\n```json\n{\n  \"email\": \"jane@example.com\",\n  \"name\": \"Jane Smith\",\n  \"role\": \"member\"\n}\n```\n\n**Example Request:**\n\n```bash\ncurl -X POST https://api.example.com/v1/users \\\n  -H \"Authorization: Bearer YOUR_API_KEY\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"email\": \"jane@example.com\", \"name\": \"Jane Smith\"}'\n```\n\n### Update User\n\nUpdate an existing user.\n\n```http\nPATCH /v1/users/:id\n```\n\n### Delete User\n\nDelete a user.\n\n```http\nDELETE /v1/users/:id\n```\n\n## Projects\n\n### List Projects\n\n```http\nGET /v1/projects\n```\n\n### Create Project\n\n```http\nPOST /v1/projects\n```\n\n**Request Body:**\n\n```json\n{\n  \"name\": \"My Project\",\n  \"description\": \"A sample project\"\n}\n```\n\n## Error Handling\n\nAll endpoints return errors in a consistent format:\n\n```json\n{\n  \"error\": {\n    \"code\": \"invalid_request\",\n    \"message\": \"The request was invalid\",\n    \"details\": {\n      \"field\": \"email\",\n      \"issue\": \"Invalid email format\"\n    }\n  }\n}\n```\n\n### Error Codes\n\n| Code              | HTTP Status | Description                |\n| ----------------- | ----------- | -------------------------- |\n| `unauthorized`    | 401         | Invalid or missing API key |\n| `forbidden`       | 403         | Insufficient permissions   |\n| `not_found`       | 404         | Resource not found         |\n| `invalid_request` | 400         | Invalid request parameters |\n| `rate_limited`    | 429         | Too many requests          |\n| `server_error`    | 500         | Internal server error      |\n\n## Rate Limiting\n\nAPI requests are limited to:\n\n- **100 requests per minute** for standard plans\n- **1000 requests per minute** for enterprise plans\n\nRate limit headers are included in all responses:\n\n```http\nX-RateLimit-Limit: 100\nX-RateLimit-Remaining: 95\nX-RateLimit-Reset: 1704067200\n```\n",
     "headings": [
       {
         "level": 2,
         "text": "Users",
         "id": "users",
         "startOffset": 58,
-        "endOffset": 1671
+        "endOffset": 1711
       },
       {
         "level": 3,
         "text": "List Users",
         "id": "list-users",
         "startOffset": 68,
-        "endOffset": 953
+        "endOffset": 965
       },
       {
         "level": 3,
         "text": "Get User",
         "id": "get-user",
-        "startOffset": 953,
-        "endOffset": 1147
+        "startOffset": 965,
+        "endOffset": 1167
       },
       {
         "level": 3,
         "text": "Create User",
         "id": "create-user",
-        "startOffset": 1147,
-        "endOffset": 1536
+        "startOffset": 1167,
+        "endOffset": 1568
       },
       {
         "level": 3,
         "text": "Update User",
         "id": "update-user",
-        "startOffset": 1536,
-        "endOffset": 1608
+        "startOffset": 1568,
+        "endOffset": 1644
       },
       {
         "level": 3,
         "text": "Delete User",
         "id": "delete-user",
-        "startOffset": 1608,
-        "endOffset": 1671
+        "startOffset": 1644,
+        "endOffset": 1711
       },
       {
         "level": 2,
         "text": "Projects",
         "id": "projects",
-        "startOffset": 1671,
-        "endOffset": 1868
+        "startOffset": 1711,
+        "endOffset": 1920
       },
       {
         "level": 3,
         "text": "List Projects",
         "id": "list-projects",
-        "startOffset": 1684,
-        "endOffset": 1729
+        "startOffset": 1724,
+        "endOffset": 1773
       },
       {
         "level": 3,
         "text": "Create Project",
         "id": "create-project",
-        "startOffset": 1729,
-        "endOffset": 1868
+        "startOffset": 1773,
+        "endOffset": 1920
       },
       {
         "level": 2,
         "text": "Error Handling",
         "id": "error-handling",
-        "startOffset": 1868,
-        "endOffset": 2666
+        "startOffset": 1920,
+        "endOffset": 2722
       },
       {
         "level": 3,
         "text": "Error Codes",
         "id": "error-codes",
-        "startOffset": 2128,
-        "endOffset": 2666
+        "startOffset": 2184,
+        "endOffset": 2722
       },
       {
         "level": 2,
         "text": "Rate Limiting",
         "id": "rate-limiting",
-        "startOffset": 2666,
-        "endOffset": 2954
+        "startOffset": 2722,
+        "endOffset": 3014
       }
     ]
   },
@@ -180,63 +180,63 @@
     "route": "/docs/getting-started/configuration",
     "title": "Configuration",
     "description": "Learn how to configure the SDK for your use case.",
-    "markdown": "Learn how to configure the SDK for your use case.\n\n## Basic Configuration\n\nThe simplest configuration requires only an API key:\n\n```\nimport { Client } from '@example/sdk';\n\nconst client = new Client({\n  apiKey: 'your-api-key',\n});\n```\n\n## Advanced Options\n\nFor more control, you can specify additional options:\n\n```\nconst client = new Client({\n  apiKey: 'your-api-key',\n  baseUrl: 'https://api.example.com/v2',\n  timeout: 30000, // 30 seconds\n  retries: 3,\n  debug: true,\n});\n```\n\n### Option Reference\n\n| Option    | Type      | Default                      | Description              |\n| --------- | --------- | ---------------------------- | ------------------------ |\n| `apiKey`  | `string`  | required                     | Your API key             |\n| `baseUrl` | `string`  | `https://api.example.com/v1` | API base URL             |\n| `timeout` | `number`  | `10000`                      | Request timeout in ms    |\n| `retries` | `number`  | `2`                          | Number of retry attempts |\n| `debug`   | `boolean` | `false`                      | Enable debug logging     |\n\n## Environment-Specific Configuration\n\n### Development\n\n```\nconst client = new Client({\n  apiKey: process.env.EXAMPLE_API_KEY,\n  baseUrl: 'https://sandbox.example.com/v1',\n  debug: true,\n});\n```\n\n### Production\n\n```\nconst client = new Client({\n  apiKey: process.env.EXAMPLE_API_KEY,\n  timeout: 5000,\n  retries: 5,\n});\n```\n\n## Logging\n\nEnable detailed logging by setting `debug: true`:\n\n```\nconst client = new Client({\n  apiKey: 'your-api-key',\n  debug: true,\n});\n```\n\nThis will log all requests and responses to the console.\n\n## Next Steps\n\nWith configuration complete, check out the [API Reference](/docs/api/authentication) to start making requests.\n",
+    "markdown": "Learn how to configure the SDK for your use case.\n\n## Basic Configuration\n\nThe simplest configuration requires only an API key:\n\n```javascript\nimport { Client } from '@example/sdk';\n\nconst client = new Client({\n  apiKey: 'your-api-key',\n});\n```\n\n## Advanced Options\n\nFor more control, you can specify additional options:\n\n```javascript\nconst client = new Client({\n  apiKey: 'your-api-key',\n  baseUrl: 'https://api.example.com/v2',\n  timeout: 30000, // 30 seconds\n  retries: 3,\n  debug: true,\n});\n```\n\n### Option Reference\n\n| Option    | Type      | Default                      | Description              |\n| --------- | --------- | ---------------------------- | ------------------------ |\n| `apiKey`  | `string`  | required                     | Your API key             |\n| `baseUrl` | `string`  | `https://api.example.com/v1` | API base URL             |\n| `timeout` | `number`  | `10000`                      | Request timeout in ms    |\n| `retries` | `number`  | `2`                          | Number of retry attempts |\n| `debug`   | `boolean` | `false`                      | Enable debug logging     |\n\n## Environment-Specific Configuration\n\n### Development\n\n```javascript\nconst client = new Client({\n  apiKey: process.env.EXAMPLE_API_KEY,\n  baseUrl: 'https://sandbox.example.com/v1',\n  debug: true,\n});\n```\n\n### Production\n\n```javascript\nconst client = new Client({\n  apiKey: process.env.EXAMPLE_API_KEY,\n  timeout: 5000,\n  retries: 5,\n});\n```\n\n## Logging\n\nEnable detailed logging by setting `debug: true`:\n\n```javascript\nconst client = new Client({\n  apiKey: 'your-api-key',\n  debug: true,\n});\n```\n\nThis will log all requests and responses to the console.\n\n## Next Steps\n\nWith configuration complete, check out the [API Reference](/docs/api/authentication) to start making requests.\n",
     "headings": [
       {
         "level": 2,
         "text": "Basic Configuration",
         "id": "basic-configuration",
         "startOffset": 51,
-        "endOffset": 236
+        "endOffset": 246
       },
       {
         "level": 2,
         "text": "Advanced Options",
         "id": "advanced-options",
-        "startOffset": 236,
-        "endOffset": 1092
+        "startOffset": 246,
+        "endOffset": 1112
       },
       {
         "level": 3,
         "text": "Option Reference",
         "id": "option-reference",
-        "startOffset": 481,
-        "endOffset": 1092
+        "startOffset": 501,
+        "endOffset": 1112
       },
       {
         "level": 2,
         "text": "Environment-Specific Configuration",
         "id": "environment-specific-configuration",
-        "startOffset": 1092,
-        "endOffset": 1415
+        "startOffset": 1112,
+        "endOffset": 1455
       },
       {
         "level": 3,
         "text": "Development",
         "id": "development",
-        "startOffset": 1131,
-        "endOffset": 1288
+        "startOffset": 1151,
+        "endOffset": 1318
       },
       {
         "level": 3,
         "text": "Production",
         "id": "production",
-        "startOffset": 1288,
-        "endOffset": 1415
+        "startOffset": 1318,
+        "endOffset": 1455
       },
       {
         "level": 2,
         "text": "Logging",
         "id": "logging",
-        "startOffset": 1415,
-        "endOffset": 1618
+        "startOffset": 1455,
+        "endOffset": 1668
       },
       {
         "level": 2,
         "text": "Next Steps",
         "id": "next-steps",
-        "startOffset": 1618,
-        "endOffset": 1744
+        "startOffset": 1668,
+        "endOffset": 1794
       }
     ]
   },
@@ -244,7 +244,7 @@
     "route": "/docs/getting-started/installation",
     "title": "Installation",
     "description": "This guide will walk you through installing our SDK in your project.",
-    "markdown": "This guide will walk you through installing our SDK in your project.\n\n## Prerequisites\n\nBefore you begin, make sure you have:\n\n- Node.js 18 or higher\n- npm or yarn package manager\n- A basic understanding of JavaScript/TypeScript\n\n## Installing the SDK\n\nInstall the package using npm:\n\n```\nnpm install @example/sdk\n```\n\nOr using yarn:\n\n```\nyarn add @example/sdk\n```\n\n## Verifying Installation\n\nAfter installation, verify it works by importing the SDK:\n\n```\nimport { Client } from '@example/sdk';\n\nconst client = new Client({\n  apiKey: 'your-api-key',\n});\n\nconsole.log('SDK version:', client.version);\n```\n\n## Environment Variables\n\nWe recommend storing your API key in an environment variable:\n\n```\nexport EXAMPLE_API_KEY=your-api-key\n```\n\nThen access it in your code:\n\n```\nconst client = new Client({\n  apiKey: process.env.EXAMPLE_API_KEY,\n});\n```\n\n## Next Steps\n\nNow that you have the SDK installed, proceed to [Configuration](/docs/getting-started/configuration) to set up your client.\n",
+    "markdown": "This guide will walk you through installing our SDK in your project.\n\n## Prerequisites\n\nBefore you begin, make sure you have:\n\n- Node.js 18 or higher\n- npm or yarn package manager\n- A basic understanding of JavaScript/TypeScript\n\n## Installing the SDK\n\nInstall the package using npm:\n\n```bash\nnpm install @example/sdk\n```\n\nOr using yarn:\n\n```bash\nyarn add @example/sdk\n```\n\n## Verifying Installation\n\nAfter installation, verify it works by importing the SDK:\n\n```javascript\nimport { Client } from '@example/sdk';\n\nconst client = new Client({\n  apiKey: 'your-api-key',\n});\n\nconsole.log('SDK version:', client.version);\n```\n\n## Environment Variables\n\nWe recommend storing your API key in an environment variable:\n\n```bash\nexport EXAMPLE_API_KEY=your-api-key\n```\n\nThen access it in your code:\n\n```javascript\nconst client = new Client({\n  apiKey: process.env.EXAMPLE_API_KEY,\n});\n```\n\n## Next Steps\n\nNow that you have the SDK installed, proceed to [Configuration](/docs/getting-started/configuration) to set up your client.\n",
     "headings": [
       {
         "level": 2,
@@ -258,28 +258,28 @@
         "text": "Installing the SDK",
         "id": "installing-the-sdk",
         "startOffset": 230,
-        "endOffset": 366
+        "endOffset": 374
       },
       {
         "level": 2,
         "text": "Verifying Installation",
         "id": "verifying-installation",
-        "startOffset": 366,
-        "endOffset": 605
+        "startOffset": 374,
+        "endOffset": 623
       },
       {
         "level": 2,
         "text": "Environment Variables",
         "id": "environment-variables",
-        "startOffset": 605,
-        "endOffset": 849
+        "startOffset": 623,
+        "endOffset": 881
       },
       {
         "level": 2,
         "text": "Next Steps",
         "id": "next-steps",
-        "startOffset": 849,
-        "endOffset": 988
+        "startOffset": 881,
+        "endOffset": 1020
       }
     ]
   },
@@ -287,7 +287,7 @@
     "route": "/docs/intro",
     "title": "Introduction",
     "description": "Welcome to our Example Documentation! This site demonstrates how to use the docusaurus-plugin-mcp-server to expose your documentation to AI agents.",
-    "markdown": "Welcome to our Example Documentation! This site demonstrates how to use the `docusaurus-plugin-mcp-server` to expose your documentation to AI agents.\n\n## What is MCP?\n\nThe Model Context Protocol (MCP) is an open standard that allows AI assistants to connect to external data sources. This plugin creates an MCP server from your Docusaurus documentation, allowing AI tools like Claude and Cursor to search and read your docs.\n\n## Features\n\n- **Full-text search** - AI agents can search across all your documentation\n- **Page retrieval** - Get complete page content as clean markdown\n- **Section extraction** - Extract specific sections by heading ID\n- **Build-time processing** - All indexing happens during build, making runtime fast\n\n## Quick Example\n\nOnce configured, AI agents can query your documentation like this:\n\n```\nSearch for \"authentication\" in the docs\nGet the page at /docs/api/authentication\nGet the \"oauth-configuration\" section from the authentication page\n```\n\n## Next Steps\n\nHead to [Installation](/docs/getting-started/installation) to get started!\n",
+    "markdown": "Welcome to our Example Documentation! This site demonstrates how to use the `docusaurus-plugin-mcp-server` to expose your documentation to AI agents.\n\n## What is MCP?\n\nThe Model Context Protocol (MCP) is an open standard that allows AI assistants to connect to external data sources. This plugin creates an MCP server from your Docusaurus documentation, allowing AI tools like Claude and Cursor to search and read your docs.\n\n## Features\n\n- **Full-text search** - AI agents can search across all your documentation\n- **Page retrieval** - Get complete page content as clean markdown\n- **Section extraction** - Extract specific sections by heading ID\n- **Build-time processing** - All indexing happens during build, making runtime fast\n\n## Quick Example\n\nOnce configured, AI agents can query your documentation like this:\n\n```text\nSearch for \"authentication\" in the docs\nGet the page at /docs/api/authentication\nGet the \"oauth-configuration\" section from the authentication page\n```\n\n## Next Steps\n\nHead to [Installation](/docs/getting-started/installation) to get started!\n",
     "headings": [
       {
         "level": 2,
@@ -308,14 +308,14 @@
         "text": "Quick Example",
         "id": "quick-example",
         "startOffset": 735,
-        "endOffset": 978
+        "endOffset": 982
       },
       {
         "level": 2,
         "text": "Next Steps",
         "id": "next-steps",
-        "startOffset": 978,
-        "endOffset": 1068
+        "startOffset": 982,
+        "endOffset": 1072
       }
     ]
   },
@@ -338,7 +338,7 @@
     "route": "/docs/rich",
     "title": "Rich Content",
     "description": "A page exercising many Docusaurus rendering features.",
-    "markdown": "This page exercises **bold text**, *italic text*, ***bold italic***, and `inline code` so the extractor can be tested against real Docusaurus output. See the [installation guide](/docs/getting-started/installation) or the [Docusaurus website](https://docusaurus.io/docs).\n\n![Example diagram alt text](https://example.com/images/diagram.png)\n\n## Setup\n\nFirst setup section. Install the dependencies before continuing.\n\n### Prerequisites\n\nYou need Node.js 18 or newer.\n\n#### Optional tools\n\nA text editor with MDX support is helpful.\n\n## Setup\n\nSecond setup section with the same heading text, so Docusaurus assigns a `-1` suffix to its id.\n\n## Custom\n\nThis heading uses an explicit custom id.\n\n## Admonitions\n\nnote\n\nThis is a note admonition with the default title.\n\ntip\n\nThis is a tip with a `code` reference inside.\n\nCareful Now\n\nThis warning has a custom title.\n\n## Tabs\n\n- npm\n- Yarn\n\n```\nnpm install example-package\n```\n\n```\nyarn add example-package\n```\n\n## Details\n\nClick to expand\n\nHidden content inside a details block, with a [link](/docs/intro).\n\n## Table\n\n| Option    | Type      | Default | Description            |\n| --------- | --------- | ------- | ---------------------- |\n| `name`    | `string`  | `\"x\"`   | The server name.       |\n| `enabled` | `boolean` | `true`  | Whether it is **on**.  |\n| `limit`   | `number`  | `10`    | Max results per query. |\n\n## Task list\n\n- <!-- -->\n  Write the docs\n- <!-- -->\n  Review the docs\n- <!-- -->\n  Publish the docs\n\n## Footnotes\n\nThis sentence has a footnote.[1](#user-content-fn-1)\n\n## Code blocks\n\ninstall.sh\n\n```\n# Install it\n## not a heading\nnpm install example-package\n```\n\n```\nconst greeting = 'hello';\nconsole.log(greeting);\n```\n\n## Diagram\n\n<!-- -->\n\n## Entities and breaks\n\nTom & Jerry use 1 < 2 comparisons with a non-breaking space.\\\nThis text follows a line break.\n\n> This is a blockquote with **emphasis** inside.\n>\n> It spans two paragraphs.\n\n<!-- -->\n\n## Footnotes\n\n1. This is the footnote text. [↩](#user-content-fnref-1)\n",
+    "markdown": "This page exercises **bold text**, *italic text*, ***bold italic***, and `inline code` so the extractor can be tested against real Docusaurus output. See the [installation guide](/docs/getting-started/installation) or the [Docusaurus website](https://docusaurus.io/docs).\n\n![Example diagram alt text](https://example.com/images/diagram.png)\n\n## Setup\n\nFirst setup section. Install the dependencies before continuing.\n\n### Prerequisites\n\nYou need Node.js 18 or newer.\n\n#### Optional tools\n\nA text editor with MDX support is helpful.\n\n## Setup\n\nSecond setup section with the same heading text, so Docusaurus assigns a `-1` suffix to its id.\n\n## Custom\n\nThis heading uses an explicit custom id.\n\n## Admonitions\n\nnote\n\nThis is a note admonition with the default title.\n\ntip\n\nThis is a tip with a `code` reference inside.\n\nCareful Now\n\nThis warning has a custom title.\n\n## Tabs\n\n- npm\n- Yarn\n\n```bash\nnpm install example-package\n```\n\n```bash\nyarn add example-package\n```\n\n## Details\n\nClick to expand\n\nHidden content inside a details block, with a [link](/docs/intro).\n\n## Table\n\n| Option    | Type      | Default | Description            |\n| --------- | --------- | ------- | ---------------------- |\n| `name`    | `string`  | `\"x\"`   | The server name.       |\n| `enabled` | `boolean` | `true`  | Whether it is **on**.  |\n| `limit`   | `number`  | `10`    | Max results per query. |\n\n## Task list\n\n- <!-- -->\n  Write the docs\n- <!-- -->\n  Review the docs\n- <!-- -->\n  Publish the docs\n\n## Footnotes\n\nThis sentence has a footnote.[1](#user-content-fn-1)\n\n## Code blocks\n\ninstall.sh\n\n```bash\n# Install it\n## not a heading\nnpm install example-package\n```\n\n```js\nconst greeting = 'hello';\nconsole.log(greeting);\n```\n\n## Diagram\n\n<!-- -->\n\n## Entities and breaks\n\nTom & Jerry use 1 < 2 comparisons with a non-breaking space.\\\nThis text follows a line break.\n\n> This is a blockquote with **emphasis** inside.\n>\n> It spans two paragraphs.\n\n<!-- -->\n\n## Footnotes\n\n1. This is the footnote text. [↩](#user-content-fnref-1)\n",
     "headings": [
       {
         "level": 2,
@@ -387,63 +387,63 @@
         "text": "Tabs",
         "id": "tabs",
         "startOffset": 865,
-        "endOffset": 959
+        "endOffset": 967
       },
       {
         "level": 2,
         "text": "Details",
         "id": "details",
-        "startOffset": 959,
-        "endOffset": 1056
+        "startOffset": 967,
+        "endOffset": 1064
       },
       {
         "level": 2,
         "text": "Table",
         "id": "table",
-        "startOffset": 1056,
-        "endOffset": 1372
+        "startOffset": 1064,
+        "endOffset": 1380
       },
       {
         "level": 2,
         "text": "Task list",
         "id": "task-list",
-        "startOffset": 1372,
-        "endOffset": 1474
+        "startOffset": 1380,
+        "endOffset": 1482
       },
       {
         "level": 2,
         "text": "Footnotes",
         "id": "footnotes",
-        "startOffset": 1474,
-        "endOffset": 1542
+        "startOffset": 1482,
+        "endOffset": 1550
       },
       {
         "level": 2,
         "text": "Code blocks",
         "id": "code-blocks",
-        "startOffset": 1542,
-        "endOffset": 1695
+        "startOffset": 1550,
+        "endOffset": 1709
       },
       {
         "level": 2,
         "text": "Diagram",
         "id": "diagram",
-        "startOffset": 1695,
-        "endOffset": 1717
+        "startOffset": 1709,
+        "endOffset": 1731
       },
       {
         "level": 2,
         "text": "Entities and breaks",
         "id": "entities-and-breaks",
-        "startOffset": 1717,
-        "endOffset": 1925
+        "startOffset": 1731,
+        "endOffset": 1939
       },
       {
         "level": 2,
         "text": "Footnotes",
         "id": "footnote-label",
-        "startOffset": 1925,
-        "endOffset": 1996
+        "startOffset": 1939,
+        "endOffset": 2010
       }
     ]
   },
