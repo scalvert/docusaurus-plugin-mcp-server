@@ -70,6 +70,8 @@ export interface BuildArtifactBundleInput {
   /** Indexers that ran, in order */
   indexers: IndexerOutput[];
   skills?: SkillsArtifact;
+  /** Agent guides compiled into skills, and the build's warnings about them */
+  guides?: { count: number; warnings: string[] };
   /** Defaults to now */
   buildTime?: string;
 }
@@ -210,6 +212,8 @@ export function buildArtifactBundle(input: BuildArtifactBundleInput): ArtifactBu
     baseUrl: input.baseUrl,
     indexers: input.indexers.map((indexer) => indexer.name),
     ...(input.skills ? { skillCount: input.skills.skills.length } : {}),
+    ...(input.guides?.count ? { guideCount: input.guides.count } : {}),
+    ...(input.guides?.warnings.length ? { guideWarnings: input.guides.warnings } : {}),
     ...(Object.keys(indexerData).length > 0 ? { indexerData } : {}),
   };
 

@@ -8,6 +8,7 @@ import mcpServerPluginDefault, {
   docsFetchInputSchema,
   buildSkillsArtifact,
   SkillValidationError,
+  GuideValidationError,
   ConfigurationError,
   evaluateSearch,
   McpDocsServer,
@@ -171,6 +172,31 @@ describe('public API surface', () => {
       ).rejects.toBeInstanceOf(SkillValidationError);
     } finally {
       await fs.rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('GuideValidationError lists every problem and links the guide docs', () => {
+    const error = new GuideValidationError(['/a: one', '/b: two']);
+    expect(error).toBeInstanceOf(Error);
+    expect(error.name).toBe('GuideValidationError');
+    expect(error.problems).toEqual(['/a: one', '/b: two']);
+    expect(error.message).toContain('  - /a: one\n  - /b: two');
+  });
+
+  it('the theme entry exports the guide and audience components', async () => {
+    const theme = await import('docusaurus-plugin-mcp-server/theme');
+    for (const name of [
+      'AgentGuide',
+      'DoneWhen',
+      'Prerequisites',
+      'Step',
+      'Check',
+      'Symptom',
+      'ForAgents',
+      'ForHumans',
+      'McpInstallButton',
+    ]) {
+      expect(typeof (theme as Record<string, unknown>)[name]).toBe('function');
     }
   });
 

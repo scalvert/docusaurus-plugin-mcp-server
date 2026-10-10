@@ -4,6 +4,8 @@ description: Fixes for the errors you're most likely to hit when deploying the M
 sidebar_label: Troubleshooting
 ---
 
+import { Check, Symptom } from 'docusaurus-plugin-mcp-server/theme';
+
 # Troubleshooting deployments
 
 Start with the status check, `curl https://docs.example.com/mcp`. What it returns tells you which section below applies.
@@ -45,6 +47,8 @@ import bundle from '../build/mcp/bundle.json' with { type: 'json' };
 
 The function file is being run as CommonJS. Name it `.mjs`, or set `"type": "module"` in `package.json`.
 
+<Symptom id="status-500" guide="setup-docusaurus-mcp">
+
 ## The status check returns 500 with an `error` message
 
 The server started but couldn't load the bundle. The message says why and how to fix it. Common ones:
@@ -54,6 +58,14 @@ The server started but couldn't load the bundle. The message says why and how to
 
 Other failures return `Internal server error`, and the details go to the platform's function logs.
 
+<Check>
+
+The status check returns 200 with `"initialized": true`.
+
+</Check>
+
+</Symptom>
+
 ## Tool calls return 406 Not Acceptable
 
 The request's `Accept` header must include both `application/json` and `text/event-stream`. MCP clients send it. Add `-H "Accept: application/json, text/event-stream"` to `curl` requests.
@@ -62,17 +74,31 @@ The request's `Accept` header must include both `application/json` and `text/eve
 
 MCP requests are `POST`. `GET` is the status check, and other methods get 405.
 
+<Symptom id="wrong-domain" guide="setup-docusaurus-mcp">
+
 ## Results link to `localhost`, `example.com`, or the wrong domain
 
 Page URLs come from `url` in `docusaurus.config.js` at build time. Fix `url`, rebuild, and redeploy. The `baseUrl` server option changes only what the status check reports.
+
+<Check>
+
+`docs_search` results link to pages on the production domain.
+
+</Check>
+
+</Symptom>
 
 ## The install button shows the wrong URL
 
 The button advertises `{url}/{outputDir}`, which is `/mcp` by default. If the endpoint is somewhere else, set [`server.url`](../reference/plugin-options.md), or set `server.urlBase: 'site'` if the endpoint is under your `baseUrl`.
 
+<Symptom id="old-content" guide="setup-docusaurus-mcp">
+
 ## The endpoint serves old content
 
 The bundle is baked into the function at deploy time. Redeploy after rebuilding. With the Node adapter, restart the process. Clients may cache list and read results for up to 5 minutes.
+
+</Symptom>
 
 ## A browser-based client is blocked by CORS
 

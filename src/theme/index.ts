@@ -1,6 +1,18 @@
 export { McpInstallButton, type McpInstallButtonProps } from './McpInstallButton.js';
 export { ForAgents, ForHumans, type AudienceProps } from './Audience.js';
 export {
+  AgentGuide,
+  DoneWhen,
+  Prerequisites,
+  Step,
+  Check,
+  Symptom,
+  type AgentGuideProps,
+  type GuidePartProps,
+  type StepProps,
+  type SymptomProps,
+} from './Guide.js';
+export {
   useMcpRegistry,
   createDocsRegistry,
   createDocsRegistryOptions,

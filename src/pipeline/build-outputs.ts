@@ -20,7 +20,8 @@ import { extractDocs } from '../processing/extract-docs.js';
 import { loadIndexer, removedBuiltinError } from '../providers/loader.js';
 import type { ProviderContext } from '../providers/types.js';
 import { MIGRATION_GUIDE } from '../errors.js';
-import { buildSkillsArtifact } from '../skills/packager.js';
+import { packageSkills, readSkillSources, type SkillSource } from '../skills/packager.js';
+import { compileGuides, GuideValidationError } from '../guides/compile.js';
 import {
   buildArtifactBundle,
   type ArtifactBundle,
@@ -98,7 +99,11 @@ export async function buildOutputs({ outDir, options, site }: BuildInput): Promi
     return { kind: 'skipped', reason: 'indexing-disabled' };
   }
 
-  const { docs, pageCount } = await extractDocs(outDir, {
+  const {
+    docs,
+    pageCount,
+    guides: pageGuides,
+  } = await extractDocs(outDir, {
     contentSelectors: options.contentSelectors,
     excludeSelectors: options.excludeSelectors,
     excludeRoutes: options.excludeRoutes,
@@ -126,8 +131,17 @@ export async function buildOutputs({ outDir, options, site }: BuildInput): Promi
     outputDir,
   };
 
+  // Fail on guide errors before the slower indexing, and report every one.
+  const guides = compileGuides({ pages: pageGuides, baseUrl });
+  if (guides.errors.length > 0) {
+    throw new GuideValidationError(guides.errors);
+  }
+  for (const warning of guides.warnings) {
+    console.warn(`[MCP] Agent guide: ${warning}`);
+  }
+
   const indexers = await runIndexers(options, site, providerContext, docs);
-  const skills = await packageSkills(options, site, baseUrl, docs);
+  const skills = await buildSkills(options, site, baseUrl, docs, guides.sources);
 
   const bundle = buildArtifactBundle({
     docs,
@@ -135,6 +149,7 @@ export async function buildOutputs({ outDir, options, site }: BuildInput): Promi
     server: { name: options.server.name, version: options.server.version },
     indexers,
     skills,
+    guides: { count: skills ? guides.sources.length : 0, warnings: guides.warnings },
   });
   return { kind: 'built', bundle, outputDir };
 }
@@ -172,16 +187,27 @@ async function runIndexers(
   return outputs;
 }
 
-/** Skills served via the MCP skills extension, or undefined when `skills: false`. */
-async function packageSkills(
+/**
+ * Skills served via the MCP skills extension: the built-in and author skills
+ * plus one per agent guide. Undefined when `skills: false`.
+ */
+async function buildSkills(
   options: ResolvedPluginOptions,
   site: SiteInfo,
   baseUrl: string,
-  docs: ProcessedDoc[]
+  docs: ProcessedDoc[],
+  guideSources: SkillSource[]
 ): Promise<SkillsArtifact | undefined> {
-  if (options.skills === false) return undefined;
+  if (options.skills === false) {
+    if (guideSources.length > 0) {
+      console.warn(
+        `[MCP] Found ${guideSources.length} agent guide(s), but skills are disabled (skills: false), so they aren't served`
+      );
+    }
+    return undefined;
+  }
   const skillsOptions = options.skills ?? {};
-  const skills = await buildSkillsArtifact({
+  const sources = await readSkillSources({
     builtin: skillsOptions.builtin ?? true,
     dir: skillsOptions.dir ? path.resolve(site.siteDir, skillsOptions.dir) : undefined,
     siteTitle: site.title,
@@ -189,6 +215,11 @@ async function packageSkills(
     siteTagline: site.tagline,
     docs,
   });
-  console.log(`[MCP] Packaged ${skills.skills.length} skill(s)`);
+  const skills = packageSkills([...sources, ...guideSources]);
+  console.log(
+    guideSources.length > 0
+      ? `[MCP] Packaged ${skills.skills.length} skill(s), including ${guideSources.length} agent guide(s)`
+      : `[MCP] Packaged ${skills.skills.length} skill(s)`
+  );
   return skills;
 }

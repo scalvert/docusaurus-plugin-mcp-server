@@ -100,14 +100,17 @@ The components only render HTML with `data-mcp-*` attributes, and the build read
 | `Prerequisites` | `data-mcp-prerequisites` | a setup guide | |
 | `Step` | `data-mcp-step="<id>"` | a setup guide | `id` (required), `title`, `needs="user"`, `confirm`, `symptoms` |
 | `Check` | `data-mcp-check` | a step or a symptom | |
-| `Symptom` | `data-mcp-symptom="<id>"` | a guide, or anywhere with `guide` set | `id` (required), `title` (required), `guide` |
+| `Symptom` | `data-mcp-symptom="<id>"` | a guide, or anywhere with `guide` set | `id` (required), `title`, `guide` |
 | `ForAgents` | `data-mcp-audience="agents"` and `hidden` | anywhere, as a block (not inside a sentence) | |
 | `ForHumans` | `data-mcp-audience="humans"` | anywhere, as a block (not inside a sentence) | |
 
 Props map to attributes of the same name: `kind` renders `data-mcp-guide-kind`, a step's `title` renders `data-mcp-step-title`, and so on. Inside a symptom, the build reads **Cause:**, **Fix:**, and **Escalate if:** from paragraphs that start with those bold labels.
 
+Our components also show readers a few labels: a step's `title`, a symptom's `title`, "Done when:", and "Check:". They mark each one with `data-mcp-guide-label`. Labels stay on the page and in the page's document, and compiled guides leave them out, since the compiler writes its own. A site's own components only need the label attribute if they add labels like these.
+
 - **Guide title:** the `title` prop, else the page's `h1`.
-- **Step title:** the `title` prop, else the first heading inside the step. Wrapping an existing `### Open the MCP Configurator` heading in a `<Step>` keeps it in the page's table of contents.
+- **Step title:** the `title` prop, else the first heading inside the step, without a leading step number (`1. Install the plugin` becomes `Install the plugin`; the compiled guide numbers steps itself). Wrapping an existing `### Open the MCP Configurator` heading in a `<Step>` keeps it in the page's table of contents.
+- **Symptom title:** the `title` prop, else the first heading inside the symptom, so an existing troubleshooting section can be wrapped as it is. The compiled guide links back to the heading's anchor, or to the symptom's `id` when it has a `title` prop.
 - **`needs="user"`:** a person has to do this step, for example signing in, approving access, or changing an admin-only setting. The agent tells the user what to do and waits for them to confirm.
 - **`confirm`:** the step changes or deletes something the user may want to keep. The agent asks before running it.
 - **`symptoms`:** space-separated symptom IDs to offer when this step's check fails. Without it, the step points at the whole troubleshooting list.
@@ -129,13 +132,16 @@ The build fails with a `GuideValidationError` when:
 - a guide has no `DoneWhen`, or has more than one
 - a setup guide has no steps, or a troubleshooting guide has steps
 - a step or symptom has no `id`, or two steps or two symptoms in the same guide share one
+- a symptom has no `title` and no heading
 - a symptom names a guide that doesn't exist, or a step's `symptoms` names a symptom the guide doesn't have
 - a `Step`, `Check`, or `Symptom` sits somewhere the table above doesn't allow, or guides are nested
 
 The build warns when:
 
 - a step has no `Check`
+- a step has no `title` and no heading (the compiled guide uses its `id`)
 - a guide has no symptoms
+- the site has guides but the plugin's `skills` option is `false`, so they aren't served
 - `data-mcp-*` attributes appear outside the page's content element (set by the plugin's `contentSelectors`). They're ignored.
 
 `docusaurus-mcp-verify` reports the same warnings for an existing build.
@@ -212,7 +218,7 @@ If the user isn't a Glean admin, stop here and tell them an admin has to do this
 Generated from https://developers.glean.com/guides/mcp/setup. If a step doesn't match what the user sees, tell them, and point them to that page.
 ```
 
-The sections always come in this order. "Before you start" and "Troubleshooting" are left out when they'd be empty. The "How to use this guide" text is fixed by the format version, not written by the author. Step IDs use the `{#id}` heading syntax Docusaurus already uses for explicit heading IDs.
+The sections always come in this order. "Before you start" and "Troubleshooting" are left out when they'd be empty, and a step without a check has no "If the check fails" line. The "How to use this guide" text is fixed by the format version, not written by the author. Step IDs use the `{#id}` heading syntax Docusaurus already uses for explicit heading IDs.
 
 ### `SKILL.md` for a troubleshooting guide
 

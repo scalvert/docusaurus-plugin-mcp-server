@@ -15,6 +15,7 @@ const sidebars = {
         'guides/testing',
         'guides/agent-skills',
         'guides/writing-for-agents',
+        'guides/agent-guides',
         'guides/search',
         'guides/custom-providers',
       ],
