@@ -120,6 +120,11 @@ export async function verifyBuild(options: VerifyOptions): Promise<VerifyResult>
     result.warnings.push('The artifact bundle contains no documents');
   }
 
+  // The build's warnings about agent guides, recorded when it ran.
+  for (const warning of bundle.manifest.guideWarnings ?? []) {
+    result.warnings.push(`Agent guide: ${warning}`);
+  }
+
   if (!bundle.searchIndex) {
     fail(
       "The artifact bundle has no search index, which the built-in local search needs. Keep the 'local' " +

@@ -3,15 +3,47 @@ title: Getting started
 description: Add the plugin to a Docusaurus site, build the artifact bundle, and run the MCP server locally.
 ---
 
+import { AgentGuide, Check, DoneWhen, ForAgents, Prerequisites, Step } from 'docusaurus-plugin-mcp-server/theme';
+
 # Getting started
 
 This page takes you from an existing Docusaurus 3 site to an MCP server running on your machine. Deploying it is covered in [Deploy](./deploy/index.md).
+
+<AgentGuide
+  name="setup-docusaurus-mcp"
+  kind="setup"
+  description="Add docusaurus-plugin-mcp-server to a Docusaurus 3 site, build its artifact bundle, and run the MCP server locally. Use when the user wants to set up, install, or try an MCP server for their Docusaurus docs.">
+
+<DoneWhen>
+
+`curl http://localhost:3456` returns the server status with `"initialized": true` and a `docCount` above 0.
+
+</DoneWhen>
+
+<Prerequisites>
+
+- A Docusaurus 3 site. Check: `npm ls @docusaurus/core` shows a 3.x version.
+- Node.js 22 or later. Check: `node --version`.
+
+</Prerequisites>
+
+<Step id="install">
 
 ## 1. Install the plugin
 
 ```bash
 npm install docusaurus-plugin-mcp-server
 ```
+
+<Check>
+
+`npm ls docusaurus-plugin-mcp-server` lists the package.
+
+</Check>
+
+</Step>
+
+<Step id="configure" symptoms="wrong-domain">
 
 ## 2. Add it to your config
 
@@ -39,6 +71,22 @@ module.exports = {
 Every page URL the server returns is built from `url` in `docusaurus.config.js` **at build time**. If it still says `https://your-docusaurus-site.example.com`, agents get links to that. Set it to your production domain before you build for production.
 
 :::
+
+<ForAgents>
+
+If `url` is still the Docusaurus default, ask the user for their production domain. Don't guess it.
+
+</ForAgents>
+
+<Check>
+
+`docusaurus.config.js` lists `'docusaurus-plugin-mcp-server'` under `plugins`, and `url` is the site's production domain.
+
+</Check>
+
+</Step>
+
+<Step id="build">
 
 ## 3. Build and verify
 
@@ -70,6 +118,16 @@ To run the check on every build, add it as a `postbuild` script:
   }
 }
 ```
+
+<Check>
+
+`npx docusaurus-mcp-verify` ends with `✅ All checks passed!`
+
+</Check>
+
+</Step>
+
+<Step id="run-locally" symptoms="status-500 old-content">
 
 ## 4. Run the server locally
 
@@ -109,6 +167,16 @@ curl http://localhost:3456
 }
 ```
 
+<Check>
+
+`curl http://localhost:3456` returns JSON with `"initialized": true`.
+
+</Check>
+
+</Step>
+
+<Step id="connect">
+
 ## 5. Connect an agent
 
 Point an MCP client at the local server. For Claude Code:
@@ -120,6 +188,22 @@ claude mcp add --transport http my-docs http://localhost:3456
 Then ask it something your docs answer. [Connecting AI tools](./guides/connect-clients.md) covers Cursor, VS Code, and other clients, and [Testing the endpoint](./guides/testing.md) shows how to call the tools directly.
 
 The local server reads the bundle once at startup. After you rebuild, restart it.
+
+<ForAgents>
+
+If you can't run `claude mcp add` yourself, tell the user how to add the server in their client, using [Connecting AI tools](./guides/connect-clients.md).
+
+</ForAgents>
+
+<Check>
+
+The client lists `my-docs` among its MCP servers, and asking it about the docs returns an answer that cites a docs page.
+
+</Check>
+
+</Step>
+
+</AgentGuide>
 
 ## Next steps
 

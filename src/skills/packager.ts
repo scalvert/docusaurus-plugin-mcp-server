@@ -22,12 +22,9 @@ import {
   findBuiltinSkillsDir,
   renderSkillTemplate,
 } from './builtin.js';
-import { FRONTMATTER_PATTERN } from './frontmatter.js';
+import { FRONTMATTER_PATTERN, MAX_SKILL_NAME_LENGTH, isValidSkillName } from './frontmatter.js';
 import type { SiteMapDoc } from './site-map.js';
 
-/** Agent Skills naming rule: lowercase alphanumerics separated by single hyphens */
-const SKILL_NAME_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const MAX_NAME_LENGTH = 64;
 const MAX_DESCRIPTION_LENGTH = 1024;
 
 /** Per-skill limits every conforming host must accept (SEP-2640 "Limits") */
@@ -100,10 +97,10 @@ export function parseSkillFrontmatter(
   const frontmatter = JSON.parse(JSON.stringify(parsed)) as Record<string, unknown>;
   const { name, description } = frontmatter;
 
-  if (typeof name !== 'string' || !SKILL_NAME_PATTERN.test(name) || name.length > MAX_NAME_LENGTH) {
+  if (typeof name !== 'string' || !isValidSkillName(name)) {
     throw new SkillValidationError(
       source,
-      `frontmatter "name" must be 1-${MAX_NAME_LENGTH} lowercase letters, digits, and single hyphens`
+      `frontmatter "name" must be 1-${MAX_SKILL_NAME_LENGTH} lowercase letters, digits, and single hyphens`
     );
   }
   if (
@@ -181,8 +178,11 @@ export interface SkillSource {
   name: string;
   /** Where it came from, for error messages, e.g. the skill's directory */
   origin: string;
-  /** Decides name collisions: an author skill replaces a built-in one of the same name */
-  kind: 'builtin' | 'author';
+  /**
+   * Decides name collisions: an author skill replaces a built-in one of the
+   * same name. `guide` is a skill compiled from an agent guide in the pages.
+   */
+  kind: 'builtin' | 'author' | 'guide';
   /** Every file, with `SKILL.md` among them, paths relative to the skill root */
   files: RawSkillFile[];
 }
@@ -333,7 +333,8 @@ export function withSkillMd(
 /**
  * Package every source into the `skills.json` artifact, deciding name
  * collisions in one place: an author skill replaces a built-in skill of the
- * same name (keeping its position); any other repeated name is an error.
+ * same name (keeping its position); any other repeated name, including a
+ * guide sharing a name with any skill, is an error.
  */
 export function packageSkills(sources: SkillSource[]): SkillsArtifact {
   const byName = new Map<
@@ -346,7 +347,7 @@ export function packageSkills(sources: SkillSource[]): SkillsArtifact {
     const name = skill.frontmatter.name;
     const existing = byName.get(name);
     if (existing) {
-      if (existing.kind !== 'builtin' || source.kind === 'builtin') {
+      if (existing.kind !== 'builtin' || source.kind !== 'author') {
         throw new SkillValidationError(
           source.origin,
           `skill name "${name}" is already used by ${existing.origin}`
@@ -394,6 +395,14 @@ export interface BuildSkillsOptions {
  * @experimental May change in a 2.x minor release; pin a version if you depend on it.
  */
 export async function buildSkillsArtifact(options: BuildSkillsOptions): Promise<SkillsArtifact> {
+  return packageSkills(await readSkillSources(options));
+}
+
+/**
+ * The built-in and author skills as sources, not yet packaged, so the build
+ * can package them together with skills from other sources (agent guides).
+ */
+export async function readSkillSources(options: BuildSkillsOptions): Promise<SkillSource[]> {
   const sources: SkillSource[] = [];
 
   if (options.builtin) {
@@ -414,5 +423,5 @@ export async function buildSkillsArtifact(options: BuildSkillsOptions): Promise<
     sources.push(...(await readSkillsDir(options.dir, 'author')));
   }
 
-  return packageSkills(sources);
+  return sources;
 }

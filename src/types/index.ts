@@ -256,6 +256,10 @@ export interface McpManifest {
   indexers?: string[];
   /** Number of skills written to skills.json */
   skillCount?: number;
+  /** Number of those skills compiled from agent guides */
+  guideCount?: number;
+  /** The build's warnings about agent guides, for docusaurus-mcp-verify to report */
+  guideWarnings?: string[];
   /** What each indexer's `getManifestData()` returned, keyed by indexer name */
   indexerData?: Record<string, Record<string, unknown>>;
 }

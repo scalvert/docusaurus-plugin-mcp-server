@@ -61,6 +61,7 @@ export {
   type BuildSkillsOptions,
 } from './skills/packager.js';
 export type { SiteMapDoc } from './skills/site-map.js';
+export { GuideValidationError } from './guides/compile.js';
 
 export { ConfigurationError } from './errors.js';
 

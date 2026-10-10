@@ -53,6 +53,7 @@ import {
 ```
 
 - `evaluateSearch` is documented in [Measuring search quality](../guides/search.md#measuring-search-quality).
+- `GuideValidationError` (experimental) is what the build throws when [agent guides](../guides/agent-guides.md) fail the format's checks. Its `problems` array lists each one, naming its page.
 - `ContentIndexer`, `SearchRanker`, and `SearchProvider` are documented in [Custom providers](../guides/custom-providers.md).
 
 ### `resolveServerUrl`
@@ -119,6 +120,12 @@ import {
   ForAgents,
   ForHumans,
   type AudienceProps,
+  AgentGuide,
+  DoneWhen,
+  Prerequisites,
+  Step,
+  Check,
+  Symptom,
   useMcpRegistry,
   createDocsRegistry,
   createDocsRegistryOptions,
@@ -128,6 +135,7 @@ import {
 
 - **`McpInstallButton`** is the dropdown readers use to install the server in their AI tool. See [Install button](../guides/install-button.md).
 - **`ForAgents`** and **`ForHumans`** mark page content for one audience: agents get `ForAgents` content and not `ForHumans` content, and people see the opposite. See [Writing for agents](../guides/writing-for-agents.md).
+- **`AgentGuide`**, **`DoneWhen`**, **`Prerequisites`**, **`Step`**, **`Check`**, and **`Symptom`** mark up a setup or troubleshooting procedure that the build compiles into an Agent Skill. Their props types (`AgentGuideProps`, `StepProps`, `SymptomProps`, `GuidePartProps`) are exported too. See [Agent guides](../guides/agent-guides.md).
 - **`useMcpRegistry()`** is a React hook that returns the MCP config registry from the plugin's global data, or `undefined` if the plugin isn't installed.
 - **`createDocsRegistry(config)`** creates a preconfigured `MCPConfigRegistry` for a docs server.
 - **`createDocsRegistryOptions(config)`** returns the registry options without creating the registry.

@@ -19,6 +19,7 @@ import { discoverPages } from './pages.js';
 import { hastToMarkdown } from './markdown.js';
 import { extractHeadings, htmlHeadings } from './headings.js';
 import { toAgentView } from '../agent-view/tree.js';
+import { extractGuides, type PageGuides } from '../guides/extract.js';
 
 export interface PageOptions {
   /** CSS selectors for the content container, in priority order */
@@ -42,6 +43,8 @@ export interface ExtractDocsResult {
   docs: ProcessedDoc[];
   /** How many pages were found (before skipping) */
   pageCount: number;
+  /** Agent guide markup, for each kept page that has any */
+  guides: PageGuides[];
 }
 
 const htmlParser = unified().use(rehypeParse);
@@ -63,7 +66,7 @@ export async function extractDocs(
   console.log(`[MCP] Found ${pages.length} routes to process`);
   if (pages.length === 0) {
     console.warn('[MCP] No routes found to process');
-    return { docs: [], pageCount: 0 };
+    return { docs: [], pageCount: 0, guides: [] };
   }
 
   const results = await pMap(
@@ -80,7 +83,7 @@ export async function extractDocs(
           );
           return null;
         }
-        return result.doc;
+        return result;
       } catch (error) {
         console.error(`[MCP] Error processing ${htmlPath}:`, error);
         return null;
@@ -89,9 +92,11 @@ export async function extractDocs(
     { concurrency: 10 }
   );
 
+  const kept = results.filter((result) => result !== null);
   return {
-    docs: results.filter((doc): doc is ProcessedDoc => doc !== null),
+    docs: kept.map((result) => result.doc),
     pageCount: pages.length,
+    guides: kept.flatMap((result) => (result.guides ? [result.guides] : [])),
   };
 }
 
@@ -128,7 +133,7 @@ export async function extractPage(
   route: string,
   options: PageOptions,
   onInvalidSelector: InvalidSelectorHandler = warnOnce()
-): Promise<{ doc: ProcessedDoc } | { skipped: SkipReason }> {
+): Promise<{ doc: ProcessedDoc; guides?: PageGuides } | { skipped: SkipReason }> {
   const tree = htmlParser.parse(html);
   // A selector's errors can depend on the page (hast-util-select only
   // evaluates a pseudo-class once the rest of the compound matches), so
@@ -182,14 +187,17 @@ export async function extractPage(
     return { skipped: 'too-short' };
   }
 
+  const title = extractTitle(tree);
+  const guides = await extractGuides({ route, pageTitle: title, tree, content, view: cleaned });
   return {
     doc: {
       route,
-      title: extractTitle(tree),
+      title,
       description: extractDescription(tree),
       markdown,
       headings: extractHeadings(markdown, htmlHeadings(cleaned)),
     },
+    ...(guides ? { guides } : {}),
   };
 }
 
