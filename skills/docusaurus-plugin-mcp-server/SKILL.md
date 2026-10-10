@@ -21,6 +21,21 @@ Load this skill when the task involves:
 
 Trigger imports: `docusaurus-plugin-mcp-server`, `docusaurus-plugin-mcp-server/adapters`, `docusaurus-plugin-mcp-server/adapters/node`, `docusaurus-plugin-mcp-server/theme`.
 
+## Step-by-step skills
+
+For a whole procedure, use the guide skill made for it. Each is compiled from a page of the docs site, with a check for every step and troubleshooting for what fails. This skill is the reference they lean on.
+
+| Task | Skill |
+| --- | --- |
+| Add the plugin to a site, build, and run the server locally | `setup-docusaurus-mcp` |
+| Deploy the site and endpoint to Vercel | `deploy-docusaurus-mcp-vercel` |
+| Deploy to Netlify | `deploy-docusaurus-mcp-netlify` |
+| Deploy to Cloudflare Workers | `deploy-docusaurus-mcp-cloudflare` |
+| Keep the site on GitHub Pages or another static host, endpoint on a Worker | `deploy-docusaurus-mcp-static-host` |
+| Write or fix an agent guide in a page (`AgentGuide`, `Step`, `Check`, `Symptom`) | `write-docusaurus-agent-guide` |
+
+They're installed with this one (`npx skills add scalvert/docusaurus-plugin-mcp-server`), and the docs site's MCP endpoint serves them too (`skill://<name>/SKILL.md`). Deno, Bun, and Node have no guide; use the deploy patterns below.
+
 ## Install & import
 
 ```bash

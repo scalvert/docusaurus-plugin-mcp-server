@@ -13,6 +13,26 @@ GitHub Pages, S3, and other static hosts serve files but can't run code, so they
 
 The example below uses GitHub Pages for the site and a Cloudflare Worker for the endpoint. Any platform in the [deploy guides](./index.md) works for the endpoint.
 
+<AgentGuide
+  name="deploy-docusaurus-mcp-static-host"
+  kind="setup"
+  description="Keep a Docusaurus site on GitHub Pages or another static host, and run its docusaurus-plugin-mcp-server endpoint on a Cloudflare Worker deployed from the same build. Use when the user's docs are on a static host that can't run functions and they want an MCP server for them.">
+
+<DoneWhen>
+
+The endpoint's status check returns `"initialized": true` with `baseUrl` on the static site's URL, and the site's install button shows the endpoint URL.
+
+</DoneWhen>
+
+<Prerequisites>
+
+- The plugin is set up: `npm run build` writes `build/mcp/bundle.json`. If not, follow [Getting started](../getting-started.md) first.
+- The site is in a GitHub repository, and you have a Cloudflare account.
+
+</Prerequisites>
+
+<Step id="server-url" symptoms="install-button-url wrong-domain">
+
 ## 1. Point the plugin at the endpoint
 
 ```javascript title="docusaurus.config.js"
@@ -35,6 +55,16 @@ export default {
 
 Page URLs in tool results still come from `url` and `baseUrl`, so they link to GitHub Pages.
 
+<Check>
+
+`server.url` in `docusaurus.config.js` is the Worker's `/mcp` URL, and `url` and `baseUrl` are the static site's.
+
+</Check>
+
+</Step>
+
+<Step id="worker">
+
 ## 2. Add an endpoint-only Worker
 
 The handler answers on every path, so the Worker doesn't need routing:
@@ -55,6 +85,16 @@ export default {
   "compatibility_date": "2026-10-01"
 }
 ```
+
+<Check>
+
+`mcp-worker.js` and `wrangler.jsonc` are next to `docusaurus.config.js`, and `wrangler.jsonc`'s `main` is `mcp-worker.js`.
+
+</Check>
+
+</Step>
+
+<Step id="workflow" needs="user" confirm symptoms="bundle-not-found cloudflare-limits">
 
 ## 3. Deploy both from one workflow
 
@@ -105,6 +145,22 @@ Before the first run:
 - Create a Cloudflare API token with the **Edit Cloudflare Workers** template, and add it and your account ID as the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` secrets.
 - Add `wrangler` to your `devDependencies`.
 
+<ForAgents>
+
+The repository settings, the Cloudflare API token, and the secrets are the user's to set. Tell the user exactly which to add, and wait for them to confirm before pushing: the workflow deploys on every push to `main`.
+
+</ForAgents>
+
+<Check>
+
+The workflow run on the Actions tab succeeds, with both the Pages deploy and `wrangler deploy` steps green.
+
+</Check>
+
+</Step>
+
+<Step id="check" symptoms="status-500 wrong-domain install-button-url old-content">
+
 ## 4. Check it
 
 ```bash
@@ -112,6 +168,16 @@ curl https://my-docs-mcp.my-subdomain.workers.dev/mcp
 ```
 
 The status JSON's `baseUrl` should be your GitHub Pages URL. Open the site and check that the install button shows the Worker URL.
+
+<Check>
+
+The status JSON has `"initialized": true` and `baseUrl` is the GitHub Pages URL.
+
+</Check>
+
+</Step>
+
+</AgentGuide>
 
 ## Other combinations
 

@@ -150,3 +150,5 @@ npx skills add scalvert/docusaurus-plugin-mcp-server      # or scoped to the cur
 ```
 
 <!-- configure-agents:skills end -->
+
+Besides `docusaurus-plugin-mcp-server` (the API reference), `skills/` has a step-by-step skill for each procedure on the docs site: setting up the plugin, deploying to Vercel, Netlify, Cloudflare Workers, or a static host, and writing agent guides. They're [compiled from the site's pages](https://docusaurus-plugin-mcp-server.vercel.app/docs/guides/agent-guides#this-sites-guides), so edit the page, not the skill.
