@@ -91,3 +91,26 @@ describe('hastToMarkdown', () => {
     expect(result).toContain('> This is a quote.');
   });
 });
+
+describe('Docusaurus code blocks', () => {
+  const prism = (lineTag: string) =>
+    '<div class="language-bash codeBlockContainer_x"><div class="codeBlockContent_x">' +
+    '<pre tabindex="0" class="prism-code language-bash codeBlock_x"><code class="codeBlockLines_x">' +
+    `<${lineTag} class="token-line"><span class="token function">npm</span><span class="token plain"> install</span><br></${lineTag}>` +
+    `<${lineTag} class="token-line"><span class="token plain">npm run build</span><br></${lineTag}>` +
+    '</code></pre></div></div>';
+
+  it.each([
+    ['span lines (before Docusaurus 3.8)', 'span'],
+    ['div lines (Docusaurus 3.8 and later)', 'div'],
+  ])('keeps one line per line and the language, with %s', async (_label, lineTag) => {
+    expect(await htmlToMarkdown(prism(lineTag))).toBe('```bash\nnpm install\nnpm run build\n```\n');
+  });
+
+  it('takes the language from a plain <pre>, and leaves a <pre> without one alone', async () => {
+    expect(await htmlToMarkdown('<pre class="language-json"><code>{}</code></pre>')).toBe(
+      '```json\n{}\n```\n'
+    );
+    expect(await htmlToMarkdown('<pre><code>a\nb</code></pre>')).toBe('```\na\nb\n```\n');
+  });
+});
