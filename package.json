@@ -72,6 +72,7 @@
     "test:coverage": "vitest run --coverage",
     "test:mcp": "playwright test",
     "test:site": "playwright test -c playwright.site.config.ts",
+    "evals": "node tests/evals/run.mjs",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },

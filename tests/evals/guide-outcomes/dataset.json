@@ -1,0 +1,144 @@
+{
+  "name": "guide-outcomes",
+  "description": "Tasks an agent does in a real Docusaurus site by following this site's guides. A trial passes when the site it leaves works: graded by commands and files (docs/judge/workspace), not by the agent's answer.",
+  "cases": [
+    {
+      "id": "setup",
+      "description": "setup-docusaurus-mcp, from a fresh create-docusaurus site",
+      "tags": ["setup"],
+      "input": "This is a Docusaurus 3 site. Set up an MCP server for its docs so AI agents can search them, and check that it works locally.",
+      "clientOptions": {
+        "site": "fresh",
+        "after": [
+          "npm run build",
+          "npx docusaurus-mcp-verify",
+          "bash \"$EVALS_DIR/guide-outcomes/check-local-server.sh\""
+        ]
+      },
+      "judges": [
+        {
+          "type": "docs/judge/workspace",
+          "checks": [
+            {
+              "label": "the plugin is a dependency",
+              "file": "package.json",
+              "matches": ["\"docusaurus-plugin-mcp-server\""]
+            },
+            {
+              "label": "the plugin is in the config",
+              "file": "docusaurus.config.js",
+              "matches": ["docusaurus-plugin-mcp-server"]
+            },
+            { "label": "the site builds", "after": 0 },
+            {
+              "label": "docusaurus-mcp-verify passes",
+              "after": 1,
+              "outputMatches": "All checks passed"
+            },
+            { "label": "the local server answers docs_search", "after": 2 }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "deploy-vercel",
+      "description": "deploy-docusaurus-mcp-vercel: adds the function and config, leaves the deploy to the user",
+      "tags": ["deploy"],
+      "input": "Deploy this site's docs MCP endpoint to Vercel.",
+      "clientOptions": {
+        "site": "set-up",
+        "after": [
+          "node --input-type=module -e \"const { default: h } = await import('./api/mcp.mjs'); const r = await h.fetch(new Request('https://my-docs.vercel.app/mcp')); const s = await r.json(); console.log(JSON.stringify(s)); process.exit(r.ok && s.initialized ? 0 : 1);\""
+        ]
+      },
+      "judges": [
+        {
+          "type": "docs/judge/workspace",
+          "checks": [
+            { "label": "api/mcp.mjs serves the bundle", "after": 0 },
+            {
+              "label": "vercel.json routes /mcp to the function",
+              "file": "vercel.json",
+              "matches": ["\"source\":\\s*\"/mcp\"", "\"destination\":\\s*\"/api/mcp\""]
+            },
+            {
+              "label": "leaves the deploy to the user",
+              "noCommand": "(^|[\\s;&|(])(npx\\s+)?vercel(\\s+(--prod|deploy|--yes|-y)\\b|\\s*($|[;&|)]))"
+            },
+            {
+              "label": "tells the user how to deploy",
+              "answerMatches": "vercel( --prod|\\s+deploy|\\s+login)|npx vercel|log in"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "troubleshoot-404",
+      "description": "The troubleshooting symptom for /mcp returning 404 on Vercel: the rewrite is missing",
+      "tags": ["troubleshoot"],
+      "input": "I deployed this site to Vercel. The docs pages work, but https://my-docs.vercel.app/mcp shows the site's 404 page. Find and fix the problem in this project.",
+      "clientOptions": {
+        "site": "set-up",
+        "files": {
+          "api/mcp.mjs": "import { createWebRequestHandler } from 'docusaurus-plugin-mcp-server/adapters';\nimport bundle from '../build/mcp/bundle.json' with { type: 'json' };\n\nexport default {\n  fetch: createWebRequestHandler({ artifacts: bundle }),\n};\n",
+          "vercel.json": "{\n  \"$schema\": \"https://openapi.vercel.sh/vercel.json\",\n  \"framework\": \"docusaurus-2\",\n  \"buildCommand\": \"npm run build\",\n  \"outputDirectory\": \"build\",\n  \"cleanUrls\": true\n}\n"
+        },
+        "after": [
+          "node --input-type=module -e \"const { default: h } = await import('./api/mcp.mjs'); const r = await h.fetch(new Request('https://my-docs.vercel.app/mcp')); process.exit(r.ok ? 0 : 1);\""
+        ]
+      },
+      "judges": [
+        {
+          "type": "docs/judge/workspace",
+          "checks": [
+            {
+              "label": "vercel.json routes /mcp to the function",
+              "file": "vercel.json",
+              "matches": [
+                "\"source\":\\s*\"/mcp\"",
+                "\"destination\":\\s*\"/api/mcp\"",
+                "\"cleanUrls\":\\s*true"
+              ]
+            },
+            { "label": "api/mcp.mjs still works", "after": 0 },
+            {
+              "label": "leaves the deploy to the user",
+              "noCommand": "(^|[\\s;&|(])(npx\\s+)?vercel(\\s+(--prod|deploy|--yes|-y)\\b|\\s*($|[;&|)]))"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "write-guide",
+      "description": "write-docusaurus-agent-guide: marks up a procedure page and checks it compiles",
+      "tags": ["authoring"],
+      "input": "docs/install-widget.md describes how to install and set up the Widget CLI. Turn that procedure into an agent guide that AI agents can follow, and check that it compiles.",
+      "clientOptions": {
+        "site": "set-up",
+        "files": {
+          "docs/install-widget.md": "---\nsidebar_position: 2\n---\n\n# Install the Widget CLI\n\nThe Widget CLI talks to your Widget account from the terminal. Setting it up takes three steps.\n\n## Install it\n\n```bash\nnpm install -g @widget/cli\n```\n\nRun `widget --version`. It prints `widget 4.` and a minor version.\n\n## Sign in\n\n```bash\nwidget login\n```\n\nThis opens a browser window where you sign in to your Widget account. When it's done, `widget whoami` prints your account's email address.\n\n## Create a project\n\n```bash\nwidget init my-project\n```\n\nAfterwards, `my-project/widget.json` exists.\n\n## If something goes wrong\n\n### `widget: command not found`\n\nnpm's global `bin` directory isn't on your `PATH`. Run `npm prefix -g`, and add the `bin` directory under it to your `PATH`.\n\n### `widget login` says the browser couldn't be opened\n\nRun `widget login --no-browser` and open the URL it prints yourself.\n"
+        },
+        "after": ["npm run build"]
+      },
+      "judges": [
+        {
+          "type": "docs/judge/workspace",
+          "checks": [
+            { "label": "the site builds", "after": 0 },
+            {
+              "label": "it compiles to a guide with every step checked, and no warnings",
+              "guide": { "minSteps": 3 }
+            },
+            {
+              "label": "the sign-in step is marked for the user",
+              "file": "build/mcp/bundle.json",
+              "matches": ["Needs the user"]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

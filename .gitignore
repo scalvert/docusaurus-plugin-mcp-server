@@ -37,3 +37,6 @@ npm-debug.log*
 # Environment
 .env
 .env.local
+
+# Eval runs (tests/evals/run.mjs)
+.mcp-evals/

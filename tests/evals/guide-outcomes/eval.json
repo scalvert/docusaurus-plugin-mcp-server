@@ -1,0 +1,21 @@
+{
+  "name": "guide-outcomes",
+  "plugins": ["../plugin.mjs"],
+  "datasets": ["dataset.json"],
+  "servers": {
+    "docs": {
+      "transport": "http",
+      "serverUrl": "http://localhost:3458/mcp"
+    }
+  },
+  "client": "docs/client/claude-workspace",
+  "model": "sonnet",
+  "timeout": 900000,
+  "trials": 1,
+  "concurrency": 1,
+  "redactStoredResponses": false,
+  "variants": [
+    { "name": "mcp", "clientOptions": { "connect": "mcp" } },
+    { "name": "skills", "clientOptions": { "connect": "skills" } }
+  ]
+}
