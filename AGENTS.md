@@ -100,7 +100,7 @@ npm run build && (cd website && npm ci && npm run build && npm run smoke)
 - The README is a short quick start; detailed docs live in `website/docs/`. When the public API or behavior changes, update the matching page there (reference pages under `website/docs/reference/`, deploy guides under `website/docs/deploy/`).
 - Code blocks with `snippet=readme/...` in the README and `website/docs/` are kept in sync with `snippets/` by `markdown-code` (`npm run snippets:check` / `snippets:sync`). Edit the snippet file, then sync.
 - `migrations/` is rendered at `/migrations` by a second docs plugin instance, so migration guides must compile as MDX.
-- The site deploys to Vercel only on release tags (`.github/workflows/deploy-website.yml`); `.github/workflows/website.yml` builds and smoke-tests it on every PR. Git-triggered Vercel deployments are off (`git.deploymentEnabled: false`).
+- The site deploys to Vercel only on release tags (`.github/workflows/deploy-website.yml`); `.github/workflows/website.yml` builds and smoke-tests it on every PR. Git-triggered Vercel deployments are off (`git.deploymentEnabled: false`) in both the root `vercel.json` (read by Vercel's Git integration, since the project's Root Directory is the repo root) and `website/vercel.json`.
 - Deploy guides were verified against real platform builds; keep the function files and configs in them exact.
 
 ## Skills

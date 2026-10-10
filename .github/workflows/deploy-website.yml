@@ -2,8 +2,10 @@ name: Deploy website
 
 # The docs site deploys only when a release is tagged (release-it pushes
 # v<version> tags), so the published docs always match the published package.
-# Git-triggered Vercel deployments are turned off in website/vercel.json, and
-# the project isn't connected to the repo.
+# Git-triggered Vercel deployments are turned off in the root vercel.json:
+# the project's Root Directory is the repo root (this workflow runs the CLI
+# from website/), so that's the file Vercel's Git integration reads.
+# website/vercel.json turns them off for deployments run from website/.
 #
 # The site is built here, on the Actions runner (`vercel build`), and uploaded
 # as prebuilt output (`vercel deploy --prebuilt`), so Vercel runs no build.
