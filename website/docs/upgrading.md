@@ -15,6 +15,27 @@ Every major release has a migration guide. Each lists every breaking change with
 
 The guides also ship in the npm package, under `node_modules/docusaurus-plugin-mcp-server/migrations/`.
 
+## 2.3: agent guides and the agent view
+
+2.3 adds features; the only thing to act on is a rebuild. New in 2.3:
+
+- **[`ForAgents` and `ForHumans`](./guides/writing-for-agents.md)** mark content for one audience. `ForAgents` content is hidden from people and included in what agents get; `ForHumans` content is the reverse.
+- **[Agent guides](./guides/agent-guides.md)**: a setup or troubleshooting procedure marked up in a page is compiled into a skill that agents can follow step by step.
+- **`docs_fetch` takes any reference to a page or skill**: a root-relative path, a trailing slash, a `#fragment`, a `.md` or `.html` URL, or a `skill://` URI. When nothing matches, it suggests similar pages.
+- **Pages use the plugin's components without an import.** See [MDX components](./reference/plugin-options.md#mdx-components), and the `mdxComponents` option to turn this off.
+
+**Rebuild and redeploy `build/mcp/`** to get the fix to code blocks. Before 2.3, a code block lost its language and had a blank line between every line. Now it's one fenced block with its language. This changes `docs_fetch` output and moves search scores slightly.
+
+Two setups need a change to use the components without an import. Pages that import them work as before.
+
+- **`@docusaurus/theme-classic` under `themes`**, instead of `preset-classic`, loads after everything in `plugins`, and its `MDXComponents` replaces the plugin's. A page that uses a component without importing it fails the build with ``Expected component `ForAgents` to be defined``. Move the plugin to `themes`, after the classic theme:
+
+  ```js
+  themes: ['@docusaurus/theme-classic', ['docusaurus-plugin-mcp-server', { /* options */ }]],
+  ```
+
+- **A theme with no `MDXComponents`** fails the build with a missing `@theme-init/MDXComponents`. Set `mdxComponents: false` and import the components in each page.
+
 ## 2.2: moving off the deprecated server configs
 
 2.2 changes nothing you have to act on. It adds `build/mcp/bundle.json` and the `artifacts` / `artifactsDir` server options. It deprecates:

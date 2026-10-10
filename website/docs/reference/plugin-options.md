@@ -77,7 +77,12 @@ Setting `excludeSelectors` replaces the defaults, so include the ones you want t
 
 The plugin adds its components to your theme's `MDXComponents`, so any page can use `McpInstallButton`, `ForAgents`, `ForHumans`, and the [agent guide](../guides/agent-guides.md) components (`AgentGuide`, `DoneWhen`, `Prerequisites`, `Step`, `Check`, `Symptom`) without importing them. Pages that import them from `docusaurus-plugin-mcp-server/theme` keep working, and a component a page imports itself takes precedence, so your own `Step` is unaffected.
 
-- **The classic theme** (and `preset-classic`) works as is: the plugin extends the `MDXComponents` of the theme loaded before it.
+- **`preset-classic`** works as is: the plugin extends the `MDXComponents` of the theme loaded before it.
+- **`@docusaurus/theme-classic` under `themes`** loads after everything in `plugins`, so its `MDXComponents` replaces the plugin's, and a page that uses a component without importing it fails the build with ``Expected component `ForAgents` to be defined``. List the plugin under `themes` too, after the classic theme:
+
+  ```js
+  themes: ['@docusaurus/theme-classic', ['docusaurus-plugin-mcp-server', { /* options */ }]],
+  ```
 - **A swizzled `MDXComponents` that wraps the original** (`import MDXComponents from '@theme-original/MDXComponents'`) keeps the plugin's components.
 - **A swizzled `MDXComponents` you ejected** (a full copy) replaces them. Spread them into yours:
 
