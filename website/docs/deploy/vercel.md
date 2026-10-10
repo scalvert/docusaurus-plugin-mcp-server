@@ -20,6 +20,26 @@ my-docs/
 └── vercel.json          ← new: build settings and the /mcp rewrite
 ```
 
+<AgentGuide
+  name="deploy-docusaurus-mcp-vercel"
+  kind="setup"
+  description="Deploy a Docusaurus site and its docusaurus-plugin-mcp-server endpoint to Vercel, with the MCP endpoint at /mcp. Use when the user wants to deploy, host, or publish their docs MCP server on Vercel.">
+
+<DoneWhen>
+
+`curl https://<your-domain>/mcp` returns the status JSON with `"initialized": true`, a `docCount` above 0, and `baseUrl` on your production domain.
+
+</DoneWhen>
+
+<Prerequisites>
+
+- The plugin is set up: `npm run build` writes `build/mcp/bundle.json`. If not, follow [Getting started](../getting-started.md) first.
+- A Vercel account, and either the Vercel CLI (`npx vercel`) or access to the Vercel dashboard.
+
+</Prerequisites>
+
+<Step id="function">
+
 ## 1. Add the function
 
 Create `api/mcp.mjs` in your site's root, next to `docusaurus.config.js`:
@@ -34,6 +54,16 @@ export default {
 ```
 
 Vercel's Node.js runtime runs a default export with a `fetch` method as a web-standard handler. Vercel builds the function after your build command, so `build/mcp/bundle.json` exists when the function is bundled, and its file tracing includes the bundle in the function.
+
+<Check>
+
+`api/mcp.mjs` is next to `docusaurus.config.js` and imports `../build/mcp/bundle.json`.
+
+</Check>
+
+</Step>
+
+<Step id="vercel-json">
 
 ## 2. Add `vercel.json`
 
@@ -52,9 +82,29 @@ Vercel's Node.js runtime runs a default export with a `fetch` method as a web-st
 - `cleanUrls` serves `docs/intro.html` at `/docs/intro`. Docusaurus writes pages that way when `trailingSlash` is `false`. Without `cleanUrls`, every page except the homepage returns 404 on Vercel. It does no harm with the default `docs/intro/index.html` layout, so keep it either way.
 - `framework`, `buildCommand`, and `outputDirectory` match what Vercel detects for Docusaurus. Setting them here keeps the config in the repo rather than in the dashboard.
 
+<Check>
+
+`vercel.json` is next to `docusaurus.config.js`, with the `/mcp` rewrite and `"cleanUrls": true`.
+
+</Check>
+
+</Step>
+
+<Step id="site-url" symptoms="wrong-domain">
+
 ## 3. Set your site URL
 
 In `docusaurus.config.js`, set `url` to the domain you'll serve from, for example `https://my-docs.vercel.app` or your custom domain. Page URLs in tool results are built from it.
+
+<Check>
+
+`url` in `docusaurus.config.js` is the production domain, not `localhost` or `example.com`.
+
+</Check>
+
+</Step>
+
+<Step id="deploy" needs="user" confirm symptoms="bundle-not-found import-attribute esm-syntax">
 
 ## 4. Deploy
 
@@ -67,6 +117,22 @@ npx vercel --prod   # production deployment
 
 Or import the repository in the Vercel dashboard. Then every push to the production branch deploys to production, and every other branch gets a preview. If the site is in a subdirectory of the repo, set **Root Directory** to that directory in the project settings.
 
+<ForAgents>
+
+The first `npx vercel` asks the user to log in and to link a project, in the terminal. Ask the user to run it, or to import the repository in the dashboard, and wait for the deployment URL. `--prod` replaces the live site.
+
+</ForAgents>
+
+<Check>
+
+The deploy prints a deployment URL, and the deployment shows as **Ready** in the Vercel dashboard.
+
+</Check>
+
+</Step>
+
+<Step id="check" symptoms="mcp-404 status-500 wrong-domain old-content">
+
 ## 5. Check it
 
 ```bash
@@ -78,6 +144,16 @@ You should get the [status JSON](./index.md#check-a-deployment) with your docume
 ```bash
 claude mcp add --transport http my-docs https://my-docs.vercel.app/mcp
 ```
+
+<Check>
+
+`curl https://my-docs.vercel.app/mcp` (with your domain) returns JSON with `"initialized": true` and a `docCount` above 0.
+
+</Check>
+
+</Step>
+
+</AgentGuide>
 
 ## Deploy only when you release
 

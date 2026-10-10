@@ -59,6 +59,12 @@ If you copy the built-in skill, replace its placeholders (`{{siteDocs}}`, `{{sit
 | `skills: { builtin: false, dir: 'mcp-skills' }` | Only your skills |
 | `skills: false` | No skills |
 
+## Skills from your pages
+
+A setup or troubleshooting procedure can be a skill without a separate `SKILL.md`: mark it up in the page with `AgentGuide`, `Step`, `Check`, and `Symptom`, and the build compiles it into a skill named after the guide, served next to these. See [Agent guides](./agent-guides.md). A guide can't share a name with a skill in `dir`.
+
+To ship the same guides in your repository for `npx skills add`, copy them out of `build/mcp/bundle.json` after the build. This site does that with [`website/scripts/sync-skills.mjs`](https://github.com/scalvert/docusaurus-plugin-mcp-server/blob/main/website/scripts/sync-skills.mjs), and CI fails if a page changes without a sync.
+
 ## How clients get skills
 
 At runtime the server:

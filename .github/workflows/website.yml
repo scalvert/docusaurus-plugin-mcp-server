@@ -46,3 +46,9 @@ jobs:
       - name: Smoke-test the MCP endpoint
         working-directory: website
         run: npm run smoke
+
+      # skills/guides/<guide>/ are copies of the guides this site compiles from its
+      # pages, for `npx skills add`. Fails if a page changed without a sync.
+      - name: Check the repo's guide skills match the site
+        working-directory: website
+        run: npm run skills:check

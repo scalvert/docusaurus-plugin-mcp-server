@@ -7,6 +7,16 @@ description: Add the plugin to a Docusaurus site, build the artifact bundle, and
 
 This page takes you from an existing Docusaurus 3 site to an MCP server running on your machine. Deploying it is covered in [Deploy](./deploy/index.md).
 
+<ForHumans>
+
+:::tip[Let your AI agent do it]
+
+This page is also an [agent guide](./guides/agent-guides.md). Install this project's skills with `npx skills add scalvert/docusaurus-plugin-mcp-server`, or connect your agent to this site's MCP endpoint (`https://docusaurus-plugin-mcp-server.vercel.app/mcp`), and ask it to set up the plugin. It follows these steps and checks each one.
+
+:::
+
+</ForHumans>
+
 <AgentGuide
   name="setup-docusaurus-mcp"
   kind="setup"

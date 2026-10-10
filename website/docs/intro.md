@@ -15,6 +15,7 @@ The server speaks MCP [2026-07-28](https://modelcontextprotocol.io/specification
 - **`docs_search`** finds pages by relevance and returns URLs, snippets, and matching headings. It uses BM25 ranking with no external service.
 - **`docs_fetch`** returns one page as Markdown, with a table of contents.
 - **Agent Skills.** A built-in `docs-research` skill teaches agents to search, fetch, and cite your docs. You can add skills of your own.
+- **Agent guides.** Mark up a setup or troubleshooting page with `Step`, `Check`, and `Symptom`, and the build compiles it into a skill agents follow step by step, checking each step. The page stays the one source. See [Agent guides](./guides/agent-guides.md).
 
 See [MCP tools](./reference/mcp-tools.md) for the inputs and outputs.
 
@@ -45,7 +46,7 @@ The handler is a web-standard `(Request) => Promise<Response>` function, so it r
 
 :::tip[This site runs on the plugin]
 
-These docs are built with `docusaurus-plugin-mcp-server` and deployed to Vercel exactly as the [Vercel guide](./deploy/vercel.md) describes. Use the **Install MCP** button in the navbar to connect your agent to them.
+These docs are built with `docusaurus-plugin-mcp-server` and deployed to Vercel exactly as the [Vercel guide](./deploy/vercel.md) describes. Use the **Install MCP** button in the navbar to connect your agent to them. Every procedure here, from [Getting started](./getting-started.md) to each deploy guide, is also an agent guide your agent can follow: connect it, or install the skills with `npx skills add scalvert/docusaurus-plugin-mcp-server`.
 
 :::
 

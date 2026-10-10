@@ -10,7 +10,9 @@
     "postbuild": "docusaurus-mcp-verify",
     "serve": "docusaurus serve",
     "clear": "docusaurus clear",
-    "smoke": "node scripts/smoke-mcp.mjs"
+    "smoke": "node scripts/smoke-mcp.mjs",
+    "skills:sync": "node scripts/sync-skills.mjs",
+    "skills:check": "node scripts/sync-skills.mjs --check"
   },
   "dependencies": {
     "@docusaurus/core": "^3.10.2",

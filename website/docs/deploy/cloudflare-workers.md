@@ -17,6 +17,26 @@ my-docs/
 └── wrangler.jsonc       ← new: Worker and assets config
 ```
 
+<AgentGuide
+  name="deploy-docusaurus-mcp-cloudflare"
+  kind="setup"
+  description="Deploy a Docusaurus site and its docusaurus-plugin-mcp-server endpoint to Cloudflare Workers, serving the site as static assets and MCP at /mcp. Use when the user wants to deploy, host, or publish their docs MCP server on Cloudflare.">
+
+<DoneWhen>
+
+`curl https://<your-domain>/mcp` returns the status JSON with `"initialized": true`, a `docCount` above 0, and `baseUrl` on your production domain.
+
+</DoneWhen>
+
+<Prerequisites>
+
+- The plugin is set up: `npm run build` writes `build/mcp/bundle.json`. If not, follow [Getting started](../getting-started.md) first.
+- A Cloudflare account.
+
+</Prerequisites>
+
+<Step id="worker">
+
 ## 1. Add the Worker
 
 ```javascript title="worker.js"
@@ -36,6 +56,16 @@ export default {
 ```
 
 The `env.ASSETS.fetch` fallback only runs if you add more paths to `run_worker_first`. The adapter entry point imports no Node.js built-ins, so you don't need the `nodejs_compat` flag.
+
+<Check>
+
+`worker.js` is next to `docusaurus.config.js` and imports `./build/mcp/bundle.json`.
+
+</Check>
+
+</Step>
+
+<Step id="wrangler">
 
 ## 2. Add `wrangler.jsonc`
 
@@ -57,9 +87,29 @@ The `env.ASSETS.fetch` fallback only runs if you add more paths to `run_worker_f
 - `not_found_handling: "404-page"` serves Docusaurus's `404.html` for unknown paths.
 - Set `compatibility_date` to the day you create the Worker.
 
+<Check>
+
+`wrangler.jsonc` is next to `docusaurus.config.js`, with `assets.directory` set to `./build` and `run_worker_first` set to `["/mcp"]`.
+
+</Check>
+
+</Step>
+
+<Step id="site-url" symptoms="wrong-domain">
+
 ## 3. Set your site URL
 
 Set `url` in `docusaurus.config.js` to the Worker's domain (`https://my-docs.<your-subdomain>.workers.dev`) or the custom domain you'll attach.
+
+<Check>
+
+`url` in `docusaurus.config.js` is the production domain, not `localhost` or `example.com`.
+
+</Check>
+
+</Step>
+
+<Step id="deploy" needs="user" confirm symptoms="bundle-not-found cloudflare-limits">
 
 ## 4. Deploy
 
@@ -72,6 +122,22 @@ npx wrangler deploy
 Wrangler bundles `worker.js` with esbuild, which inlines `bundle.json`, and uploads `build/` as assets. Always run `npm run build` first. Wrangler bundles whatever `build/mcp/bundle.json` is on disk.
 
 To build and deploy from Git instead, connect the repository in **Workers & Pages → Create → Import a repository**. Set the build command to `npm run build` and the deploy command to `npx wrangler deploy`.
+
+<ForAgents>
+
+The first `npx wrangler deploy` opens a browser for the user to log in to Cloudflare. Ask the user to run it, or to connect the repository in the dashboard, and wait for the Worker URL. Deploying replaces the live Worker.
+
+</ForAgents>
+
+<Check>
+
+`npx wrangler deploy` prints the Worker's `workers.dev` URL.
+
+</Check>
+
+</Step>
+
+<Step id="check" symptoms="mcp-404 status-500 wrong-domain old-content">
 
 ## 5. Check it
 
@@ -86,6 +152,16 @@ claude mcp add --transport http my-docs https://my-docs.<your-subdomain>.workers
 ```
 
 To try it locally first, run `npx wrangler dev` and use `http://localhost:8787/mcp`.
+
+<Check>
+
+`curl https://my-docs.<your-subdomain>.workers.dev/mcp` (with your domain) returns JSON with `"initialized": true` and a `docCount` above 0.
+
+</Check>
+
+</Step>
+
+</AgentGuide>
 
 ## Notes
 
