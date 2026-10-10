@@ -1,3 +1,38 @@
+
+## v2.3.0 (2026-10-10)
+
+#### :rocket: Enhancement
+
+* [#179](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/179) feat(guides): share symptoms across guides; absolute links in compiled guides ([@scalvert](https://github.com/scalvert))
+* [#177](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/177) feat(theme): use the plugin's components in MDX without an import ([@scalvert](https://github.com/scalvert))
+* [#175](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/175) feat(guides): compile agent guides written in pages into skills ([@scalvert](https://github.com/scalvert))
+* [#173](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/173) feat(theme): ForAgents and ForHumans; one agent view module ([@scalvert](https://github.com/scalvert))
+* [#170](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/170) feat(docs_fetch): resolve any page or skill reference ([@scalvert](https://github.com/scalvert))
+
+#### :bug: Bug Fix
+
+* [#176](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/176) fix(processing): keep Docusaurus code blocks one line per line, with their language ([@scalvert](https://github.com/scalvert))
+
+#### :memo: Documentation
+
+* [#181](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/181) docs: 2.3 upgrade notes; plugin under themes when theme-classic is ([@scalvert](https://github.com/scalvert))
+* [#180](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/180) docs: every procedure on the site is an agent guide; ship them as repo skills ([@scalvert](https://github.com/scalvert))
+* [#174](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/174) docs: agent guide format v1 and ADR 0002 ([@scalvert](https://github.com/scalvert))
+* [#169](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/169) docs: add a documentation site served over its own MCP endpoint ([@scalvert](https://github.com/scalvert))
+
+#### :house: Internal
+
+* [#182](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/182) chore(deps): clear npm audit advisories that have a fix ([@scalvert](https://github.com/scalvert))
+* [#178](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/178) chore(website): turn off Vercel Git deployments at the repo root ([@scalvert](https://github.com/scalvert))
+* [#172](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/172) refactor(skills): package in-memory skill sources; one collision policy ([@scalvert](https://github.com/scalvert))
+* [#171](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/171) refactor(plugin): move the build pipeline out of the postBuild hook ([@scalvert](https://github.com/scalvert))
+* [#163](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/163) docs: trim leading blank lines in CHANGELOG.md ([@scalvert](https://github.com/scalvert))
+
+#### Committers: 1
+* Steve Calvert ([@scalvert](https://github.com/scalvert))
+
+
+
 ## v2.2.0 (2026-10-03)
 
 #### :rocket: Enhancement
