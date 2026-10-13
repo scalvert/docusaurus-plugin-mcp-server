@@ -92,6 +92,27 @@ describe('hastToMarkdown', () => {
   });
 });
 
+describe('HTML comments', () => {
+  it('drops the text separators React adds between adjacent text when it renders on the server', async () => {
+    // Docusaurus renders pages with React on the server, which writes `<!-- -->`
+    // between adjacent text nodes, as in `<strong>Check:</strong> {children}`.
+    expect(
+      await htmlToMarkdown('<div><strong>Check:</strong> <!-- -->The host is connected.</div>')
+    ).toBe('**Check:** The host is connected.\n');
+    expect(await htmlToMarkdown('<p>Version <!-- -->2<!-- -->.<!-- -->3</p>')).toBe(
+      'Version 2.3\n'
+    );
+  });
+
+  it('drops other comments, at any depth', async () => {
+    expect(
+      await htmlToMarkdown(
+        '<!-- page --><ul><li>One<!-- note --></li><li><em>Two</em><!-- x --></li></ul>'
+      )
+    ).toBe('- One\n- *Two*\n');
+  });
+});
+
 describe('Docusaurus code blocks', () => {
   const prism = (lineTag: string) =>
     '<div class="language-bash codeBlockContainer_x"><div class="codeBlockContent_x">' +

@@ -8,7 +8,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import type { ReactElement } from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
+import { renderToString } from 'react-dom/server';
 import { AgentGuide, Check, DoneWhen, Step, Symptom } from '../src/theme/index.js';
 import {
   buildOutputs,
@@ -44,7 +44,9 @@ afterEach(async () => {
 async function writePage(route: string, title: string, body: ReactElement) {
   const dir = path.join(outDir, ...route.split('/').filter(Boolean));
   await fs.mkdir(dir, { recursive: true });
-  const html = `<!doctype html><html><head><title>${title}</title></head><body><article><h1>${title}</h1><p>Some introduction to this page, long enough to keep it.</p>${renderToStaticMarkup(body)}</article></body></html>`;
+  // renderToString, like Docusaurus's server rendering: it writes `<!-- -->`
+  // between adjacent text nodes.
+  const html = `<!doctype html><html><head><title>${title}</title></head><body><article><h1>${title}</h1><p>Some introduction to this page, long enough to keep it.</p>${renderToString(body)}</article></body></html>`;
   await fs.writeFile(path.join(dir, 'index.html'), html);
 }
 

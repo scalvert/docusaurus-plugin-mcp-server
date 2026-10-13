@@ -373,14 +373,14 @@
     "route": "/docs/rich",
     "title": "Rich Content",
     "description": "A page exercising many Docusaurus rendering features.",
-    "markdown": "# Rich Content\n\nThis page exercises **bold text**, *italic text*, ***bold italic***, and `inline code` so the extractor can be tested against real Docusaurus output. See the [installation guide](/docs/getting-started/installation) or the [Docusaurus website](https://docusaurus.io/docs).\n\n![Example diagram alt text](https://example.com/images/diagram.png)\n\n## Setup\n\nFirst setup section. Install the dependencies before continuing.\n\n### Prerequisites\n\nYou need Node.js 18 or newer.\n\n#### Optional tools\n\nA text editor with MDX support is helpful.\n\n## Setup\n\nSecond setup section with the same heading text, so Docusaurus assigns a `-1` suffix to its id.\n\n## Custom\n\nThis heading uses an explicit custom id.\n\n## Admonitions\n\n## Tabs\n\n## Details\n\n## Table\n\n## Task list\n\n- <!-- -->\n  Write the docs\n- <!-- -->\n  Review the docs\n- <!-- -->\n  Publish the docs\n\n## Footnotes\n\nThis sentence has a footnote.[1](#user-content-fn-1)\n\n## Code blocks\n\ninstall.sh\n\n```bash\n# Install it\n## not a heading\nnpm install example-package\n```\n\n```js\nconst greeting = 'hello';\nconsole.log(greeting);\n```\n\n## Diagram\n\n<!-- -->\n\n## Entities and breaks\n\nTom & Jerry use 1 < 2 comparisons with a non-breaking space.\\\nThis text follows a line break.\n\n> This is a blockquote with **emphasis** inside.\n>\n> It spans two paragraphs.\n\n<!-- -->\n\n## Footnotes\n\n1. This is the footnote text.\n",
+    "markdown": "# Rich Content\n\nThis page exercises **bold text**, *italic text*, ***bold italic***, and `inline code` so the extractor can be tested against real Docusaurus output. See the [installation guide](/docs/getting-started/installation) or the [Docusaurus website](https://docusaurus.io/docs).\n\n![Example diagram alt text](https://example.com/images/diagram.png)\n\n## Setup\n\nFirst setup section. Install the dependencies before continuing.\n\n### Prerequisites\n\nYou need Node.js 18 or newer.\n\n#### Optional tools\n\nA text editor with MDX support is helpful.\n\n## Setup\n\nSecond setup section with the same heading text, so Docusaurus assigns a `-1` suffix to its id.\n\n## Custom\n\nThis heading uses an explicit custom id.\n\n## Admonitions\n\n## Tabs\n\n## Details\n\n## Table\n\n## Task list\n\n- [x] Write the docs\n- [ ] Review the docs\n- [ ] Publish the docs\n\n## Footnotes\n\nThis sentence has a footnote.[1](#user-content-fn-1)\n\n## Code blocks\n\ninstall.sh\n\n```bash\n# Install it\n## not a heading\nnpm install example-package\n```\n\n```js\nconst greeting = 'hello';\nconsole.log(greeting);\n```\n\n## Diagram\n\n## Entities and breaks\n\nTom & Jerry use 1 < 2 comparisons with a non-breaking space.\\\nThis text follows a line break.\n\n> This is a blockquote with **emphasis** inside.\n>\n> It spans two paragraphs.\n\n## Footnotes\n\n1. This is the footnote text.\n",
     "headings": [
       {
         "level": 1,
         "text": "Rich Content",
         "id": "rich-content",
         "startOffset": 0,
-        "endOffset": 1359
+        "endOffset": 1318
       },
       {
         "level": 2,
@@ -450,42 +450,42 @@
         "text": "Task list",
         "id": "task-list",
         "startOffset": 756,
-        "endOffset": 858
+        "endOffset": 837
       },
       {
         "level": 2,
         "text": "Footnotes",
         "id": "footnotes",
-        "startOffset": 858,
-        "endOffset": 926
+        "startOffset": 837,
+        "endOffset": 905
       },
       {
         "level": 2,
         "text": "Code blocks",
         "id": "code-blocks",
-        "startOffset": 926,
-        "endOffset": 1085
+        "startOffset": 905,
+        "endOffset": 1064
       },
       {
         "level": 2,
         "text": "Diagram",
         "id": "diagram",
-        "startOffset": 1085,
-        "endOffset": 1107
+        "startOffset": 1064,
+        "endOffset": 1076
       },
       {
         "level": 2,
         "text": "Entities and breaks",
         "id": "entities-and-breaks",
-        "startOffset": 1107,
-        "endOffset": 1315
+        "startOffset": 1076,
+        "endOffset": 1274
       },
       {
         "level": 2,
         "text": "Footnotes",
         "id": "footnote-label",
-        "startOffset": 1315,
-        "endOffset": 1359
+        "startOffset": 1274,
+        "endOffset": 1318
       }
     ]
   },
