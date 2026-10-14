@@ -1,4 +1,26 @@
 
+
+## v2.4.0 (2026-10-14)
+
+#### :rocket: Enhancement
+
+* [#193](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/193) test: keep test output to test results ([@scalvert](https://github.com/scalvert))
+
+#### :bug: Bug Fix
+
+* [#190](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/190) fix(theme): close the install dropdown on Escape, focus out, and touch ([@scalvert](https://github.com/scalvert))
+* [#189](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/189) fix(processing): drop the <!-- --> text separators React adds when rendering on the server ([@scalvert](https://github.com/scalvert))
+
+#### :house: Internal
+
+* [#192](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/192) chore(lint): skip git worktrees; fail lint on any ESLint warning ([@scalvert](https://github.com/scalvert))
+* [#191](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/191) test: MST 2.0 beta on both protocol eras, site contract tests, and guide evals ([@scalvert](https://github.com/scalvert))
+
+#### Committers: 1
+* Steve Calvert ([@scalvert](https://github.com/scalvert))
+
+
+
 ## v2.3.0 (2026-10-10)
 
 #### :rocket: Enhancement
