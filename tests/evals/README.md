@@ -40,7 +40,7 @@ Each run is saved in `.mcp-evals/<name>/runs/<run-id>/` in MST's `mst.run/v1` fo
 
 - **Claude Code, signed in.** The agent is `claude -p` on your account, with your Claude Code settings (`isolate: false` in `guide-discovery`; the outcome client always uses them). `--strict-mcp-config` limits it to the docs server, so your other MCP servers aren't used, but your installed skills and plugins load.
 - **Not in CI.** The evals use your login, and an outcome trial takes several minutes. A full `guide-discovery` run is 24 Claude Code sessions; `guide-outcomes` is 8 longer ones.
-- **An empty directory.** Claude Code runs with `bypassPermissions`, so the runner starts it from an empty temporary directory (discovery) or the trial's own site (outcomes), never this repository: it learns only what the MCP server or the installed skills tell it.
+- **An empty directory.** Claude Code runs with `bypassPermissions`, so it never runs in this repository. The `claude-code` client starts it in an empty temporary directory of its own (discovery), and the plugin starts it in the trial's own site (outcomes). It learns only what the MCP server or the installed skills tell it.
 
 ## The outcome evals
 

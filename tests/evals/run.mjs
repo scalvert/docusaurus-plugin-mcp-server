@@ -9,12 +9,13 @@
 // run build)). The site's MCP function (website/api/mcp.mjs) is served on
 // localhost:3458 for the run. --keep leaves the trials' sites in place.
 //
-// Outcome evals (guide-outcomes) give each trial its own Docusaurus site; see
-// plugin.mjs.
+// Outcome evals (guide-outcomes) give each trial its own Docusaurus site, under
+// a temporary directory the runner removes afterwards; see plugin.mjs.
 //
-// The client runs Claude Code with bypassPermissions in the current directory,
-// so the eval runs from an empty temporary directory: the agent can't read or
-// change this repo, and only learns what the MCP server tells it.
+// Claude Code runs with bypassPermissions, so it never runs in this repo: the
+// claude-code client (discovery) starts it in an empty directory of its own,
+// and plugin.mjs (outcomes) in the trial's site. It can't read or change this
+// repo, and only learns what the MCP server or the installed skills tell it.
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -101,10 +102,8 @@ function describeTrial(trace) {
 const outputDir = path.join(repo, '.mcp-evals', name);
 const workdir = fs.mkdtempSync(path.join(os.tmpdir(), `mcp-eval-${name}-`));
 const server = values['dry-run'] ? undefined : await startSiteServer();
-const cwd = process.cwd();
 process.env.MCP_EVAL_WORKROOT = workdir;
 try {
-  process.chdir(workdir);
   const result = await runEval({
     configPath,
     outputDir,
@@ -150,7 +149,6 @@ try {
     process.exitCode = failed > 0 ? 1 : 0;
   }
 } finally {
-  process.chdir(cwd);
   server?.kill();
   if (values.keep) console.log(`Kept the trials' sites in ${workdir}`);
   else fs.rmSync(workdir, { recursive: true, force: true });
