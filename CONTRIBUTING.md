@@ -19,7 +19,7 @@ npm run build
 |---------|-------------|
 | `npm run dev` | Watch mode — rebuilds on file changes |
 | `npm run build` | Build with tsup (ESM-only output) |
-| `npm run lint` | Run ESLint and Prettier check |
+| `npm run lint` | Run ESLint (fails on any warning) and Prettier check |
 | `npm run lint:fix` | Auto-fix lint issues |
 | `npm run typecheck` | TypeScript type checking |
 | `npm test` | Run unit tests with Vitest |

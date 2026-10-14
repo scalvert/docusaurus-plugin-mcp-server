@@ -8,7 +8,8 @@ export default tseslint.config(
 
   // Global ignores
   {
-    ignores: ['dist/', 'node_modules/', '**/*.d.ts', 'examples/'],
+    // .worktrees/: git worktrees, each a full checkout of the repo
+    ignores: ['dist/', 'node_modules/', '**/*.d.ts', 'examples/', '.worktrees/'],
   },
 
   // Main source and test files
