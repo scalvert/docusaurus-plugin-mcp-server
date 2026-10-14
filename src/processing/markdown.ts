@@ -16,7 +16,7 @@ const processor = unified()
  * tree (no second HTML parse). If conversion fails, falls back to plain text.
  */
 export async function hastToMarkdown(element: Element): Promise<string> {
-  const root: Root = { type: 'root', children: [normalizeCodeBlocks(element)] };
+  const root: Root = { type: 'root', children: [prepareForMarkdown(element)] };
   try {
     const mdast = await processor.run(root);
     return cleanMarkdown(String(processor.stringify(mdast)));
@@ -46,14 +46,21 @@ function tokenLines(node: Element): Element[] {
 }
 
 /**
- * Docusaurus (Prism) code blocks put each line in its own `.token-line`
- * element ending in `<br>` (a `span` before Docusaurus 3.8, a `div` since),
- * and the language in a `language-*` class on the `<pre>`. Rebuild each as
- * `<pre><code class="language-*">` plain text, so the Markdown keeps one line
- * per line (a `div` per line would otherwise become blank-line-separated
- * blocks) and the fence gets its language. Other `<pre>`s are left alone.
+ * Prepare a page's tree for Markdown:
+ *
+ * - Drop comments. React's server rendering, which Docusaurus uses, writes
+ *   `<!-- -->` between adjacent text nodes (`<strong>Check:</strong>
+ *   {children}`), and rehype-remark would keep each as raw HTML in its own
+ *   paragraph. A built page has no other comments a reader sees.
+ * - Docusaurus (Prism) code blocks put each line in its own `.token-line`
+ *   element ending in `<br>` (a `span` before Docusaurus 3.8, a `div` since),
+ *   and the language in a `language-*` class on the `<pre>`. Rebuild each as
+ *   `<pre><code class="language-*">` plain text, so the Markdown keeps one
+ *   line per line (a `div` per line would otherwise become
+ *   blank-line-separated blocks) and the fence gets its language. Other
+ *   `<pre>`s are left alone.
  */
-function normalizeCodeBlocks(node: Element): Element {
+function prepareForMarkdown(node: Element): Element {
   if (node.tagName === 'pre') {
     const language = classesOf(node).find((name) => name.startsWith('language-'));
     const lines = tokenLines(node);
@@ -75,9 +82,9 @@ function normalizeCodeBlocks(node: Element): Element {
   }
   return {
     ...node,
-    children: node.children.map((child) =>
-      child.type === 'element' ? normalizeCodeBlocks(child) : child
-    ),
+    children: node.children
+      .filter((child) => child.type !== 'comment')
+      .map((child) => (child.type === 'element' ? prepareForMarkdown(child) : child)),
   };
 }
 

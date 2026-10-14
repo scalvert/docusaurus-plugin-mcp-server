@@ -6,7 +6,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import type { ReactElement } from 'react';
-import { renderToStaticMarkup } from 'react-dom/server';
+import { renderToStaticMarkup, renderToString } from 'react-dom/server';
 import {
   AgentGuide,
   Check,
@@ -35,7 +35,9 @@ function html(title: string, body: string, outside = '') {
 }
 
 async function pageGuides(route: string, title: string, body: ReactElement | string, outside = '') {
-  const markup = typeof body === 'string' ? body : renderToStaticMarkup(body);
+  // renderToString, not renderToStaticMarkup: like Docusaurus's server
+  // rendering, it writes `<!-- -->` between adjacent text nodes.
+  const markup = typeof body === 'string' ? body : renderToString(body);
   const result = await extractPage(html(title, markup, outside), route, options, () => {});
   if (!('doc' in result)) throw new Error(`page skipped: ${result.skipped}`);
   return { doc: result.doc, guides: result.guides };

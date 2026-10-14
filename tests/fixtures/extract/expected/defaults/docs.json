@@ -338,7 +338,7 @@
     "route": "/docs/rich",
     "title": "Rich Content",
     "description": "A page exercising many Docusaurus rendering features.",
-    "markdown": "This page exercises **bold text**, *italic text*, ***bold italic***, and `inline code` so the extractor can be tested against real Docusaurus output. See the [installation guide](/docs/getting-started/installation) or the [Docusaurus website](https://docusaurus.io/docs).\n\n![Example diagram alt text](https://example.com/images/diagram.png)\n\n## Setup\n\nFirst setup section. Install the dependencies before continuing.\n\n### Prerequisites\n\nYou need Node.js 18 or newer.\n\n#### Optional tools\n\nA text editor with MDX support is helpful.\n\n## Setup\n\nSecond setup section with the same heading text, so Docusaurus assigns a `-1` suffix to its id.\n\n## Custom\n\nThis heading uses an explicit custom id.\n\n## Admonitions\n\nnote\n\nThis is a note admonition with the default title.\n\ntip\n\nThis is a tip with a `code` reference inside.\n\nCareful Now\n\nThis warning has a custom title.\n\n## Tabs\n\n- npm\n- Yarn\n\n```bash\nnpm install example-package\n```\n\n```bash\nyarn add example-package\n```\n\n## Details\n\nClick to expand\n\nHidden content inside a details block, with a [link](/docs/intro).\n\n## Table\n\n| Option    | Type      | Default | Description            |\n| --------- | --------- | ------- | ---------------------- |\n| `name`    | `string`  | `\"x\"`   | The server name.       |\n| `enabled` | `boolean` | `true`  | Whether it is **on**.  |\n| `limit`   | `number`  | `10`    | Max results per query. |\n\n## Task list\n\n- <!-- -->\n  Write the docs\n- <!-- -->\n  Review the docs\n- <!-- -->\n  Publish the docs\n\n## Footnotes\n\nThis sentence has a footnote.[1](#user-content-fn-1)\n\n## Code blocks\n\ninstall.sh\n\n```bash\n# Install it\n## not a heading\nnpm install example-package\n```\n\n```js\nconst greeting = 'hello';\nconsole.log(greeting);\n```\n\n## Diagram\n\n<!-- -->\n\n## Entities and breaks\n\nTom & Jerry use 1 < 2 comparisons with a non-breaking space.\\\nThis text follows a line break.\n\n> This is a blockquote with **emphasis** inside.\n>\n> It spans two paragraphs.\n\n<!-- -->\n\n## Footnotes\n\n1. This is the footnote text. [↩](#user-content-fnref-1)\n",
+    "markdown": "This page exercises **bold text**, *italic text*, ***bold italic***, and `inline code` so the extractor can be tested against real Docusaurus output. See the [installation guide](/docs/getting-started/installation) or the [Docusaurus website](https://docusaurus.io/docs).\n\n![Example diagram alt text](https://example.com/images/diagram.png)\n\n## Setup\n\nFirst setup section. Install the dependencies before continuing.\n\n### Prerequisites\n\nYou need Node.js 18 or newer.\n\n#### Optional tools\n\nA text editor with MDX support is helpful.\n\n## Setup\n\nSecond setup section with the same heading text, so Docusaurus assigns a `-1` suffix to its id.\n\n## Custom\n\nThis heading uses an explicit custom id.\n\n## Admonitions\n\nnote\n\nThis is a note admonition with the default title.\n\ntip\n\nThis is a tip with a `code` reference inside.\n\nCareful Now\n\nThis warning has a custom title.\n\n## Tabs\n\n- npm\n- Yarn\n\n```bash\nnpm install example-package\n```\n\n```bash\nyarn add example-package\n```\n\n## Details\n\nClick to expand\n\nHidden content inside a details block, with a [link](/docs/intro).\n\n## Table\n\n| Option    | Type      | Default | Description            |\n| --------- | --------- | ------- | ---------------------- |\n| `name`    | `string`  | `\"x\"`   | The server name.       |\n| `enabled` | `boolean` | `true`  | Whether it is **on**.  |\n| `limit`   | `number`  | `10`    | Max results per query. |\n\n## Task list\n\n- [x] Write the docs\n- [ ] Review the docs\n- [ ] Publish the docs\n\n## Footnotes\n\nThis sentence has a footnote.[1](#user-content-fn-1)\n\n## Code blocks\n\ninstall.sh\n\n```bash\n# Install it\n## not a heading\nnpm install example-package\n```\n\n```js\nconst greeting = 'hello';\nconsole.log(greeting);\n```\n\n## Diagram\n\n## Entities and breaks\n\nTom & Jerry use 1 < 2 comparisons with a non-breaking space.\\\nThis text follows a line break.\n\n> This is a blockquote with **emphasis** inside.\n>\n> It spans two paragraphs.\n\n## Footnotes\n\n1. This is the footnote text. [↩](#user-content-fnref-1)\n",
     "headings": [
       {
         "level": 2,
@@ -408,42 +408,42 @@
         "text": "Task list",
         "id": "task-list",
         "startOffset": 1380,
-        "endOffset": 1482
+        "endOffset": 1461
       },
       {
         "level": 2,
         "text": "Footnotes",
         "id": "footnotes",
-        "startOffset": 1482,
-        "endOffset": 1550
+        "startOffset": 1461,
+        "endOffset": 1529
       },
       {
         "level": 2,
         "text": "Code blocks",
         "id": "code-blocks",
-        "startOffset": 1550,
-        "endOffset": 1709
+        "startOffset": 1529,
+        "endOffset": 1688
       },
       {
         "level": 2,
         "text": "Diagram",
         "id": "diagram",
-        "startOffset": 1709,
-        "endOffset": 1731
+        "startOffset": 1688,
+        "endOffset": 1700
       },
       {
         "level": 2,
         "text": "Entities and breaks",
         "id": "entities-and-breaks",
-        "startOffset": 1731,
-        "endOffset": 1939
+        "startOffset": 1700,
+        "endOffset": 1898
       },
       {
         "level": 2,
         "text": "Footnotes",
         "id": "footnote-label",
-        "startOffset": 1939,
-        "endOffset": 2010
+        "startOffset": 1898,
+        "endOffset": 1969
       }
     ]
   },
