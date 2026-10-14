@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 npm run build          # Build with tsup (ESM-only output)
 npm run dev            # Watch mode for development
-npm run lint           # Run ESLint and Prettier check
+npm run lint           # Run ESLint (fails on any warning) and Prettier check
 npm run lint:fix       # Auto-fix lint issues
 npm run typecheck      # TypeScript type checking
 npm run test           # Run unit tests with Vitest

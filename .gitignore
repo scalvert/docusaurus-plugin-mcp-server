@@ -1,6 +1,10 @@
 # Dependencies
 node_modules/
 
+# Git worktrees (git worktree add .worktrees/<name>): each is a full checkout
+# that Prettier would otherwise check
+.worktrees/
+
 # Build output
 dist/
 build/
