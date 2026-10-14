@@ -30,6 +30,7 @@ import { docsFetch } from './tools/docs-fetch.js';
 import type { DocsToolDeps, DocsToolModule } from './tools/tool.js';
 import { registerSkills, skillsCapabilities, skillsInstructions } from './skills.js';
 import { createResolver, type Resolve } from './resolve.js';
+import { isClientRejection } from './rejections.js';
 // The bridge lives with the adapters but is a dependency of handleHttpRequest,
 // which predates the web handler and stays part of this class's public API.
 import { toWebRequest, writeWebResponse } from '../adapters/node-bridge.js';
@@ -403,7 +404,11 @@ export class McpDocsServer {
       legacy: 'reject',
       // Default 'auto' mode answers with a single JSON body unless a handler
       // emits a notification first; our tools never do.
-      onerror: (error) => console.error('[MCP] Handler error:', error),
+      // Requests the SDK rejects with a 4xx aren't failures here; the client
+      // gets the error in the response.
+      onerror: (error) => {
+        if (!isClientRejection(error)) console.error('[MCP] Handler error:', error);
+      },
     });
 
     this.initialized = true;

@@ -54,7 +54,7 @@ The plugin also has a Docusaurus theme (`getThemePath`, off with `mdxComponents:
 
 ### Key Modules
 
-- `src/mcp/server.ts` - Core MCP server using `@modelcontextprotocol/server` (era dispatch, cache hints)
+- `src/mcp/server.ts` - Core MCP server using `@modelcontextprotocol/server` (era dispatch, cache hints). It logs what the SDK reports through `onerror` except requests the SDK rejected with a 4xx (`src/mcp/rejections.ts`; `tests/server-rejections-test.ts` fails if the SDK changes how it reports them)
 - `src/mcp/tools/` - The MCP tools (`docs_search`, `docs_fetch`). Each tool module owns its schema, description, handler, and error messages, and registers itself; the server supplies search, document lookup, readiness, and the configured description overrides. `tool.ts` (internal, not exported) holds the shared readiness guard (`runTool`) and result helpers. Wire output changes must show up as a reviewed diff in `tests/__golden__/tool-wire/` (regenerate with `npx vitest run tests/tool-wire-golden-test.ts -u`)
 - `src/mcp/skills.ts` - Skills extension runtime (`io.modelcontextprotocol/skills`: `skills/list`, `skills/get`, `skill://` resources); edge-safe
 - `src/mcp/resolve.ts` - Document resolution: turns whatever an agent passes to `docs_fetch` (document ID, trailing slash, `#fragment`, `.md`/`.html`, root-relative path, `skill://` URI) into a document, a skill file, or a miss with similar pages. Every URI rule lives here; tools only format. Provider `getDocument` first, then the bundle. Edge-safe
