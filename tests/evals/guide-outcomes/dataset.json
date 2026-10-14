@@ -134,7 +134,7 @@
             {
               "label": "the sign-in step is marked for the user",
               "file": "build/mcp/bundle.json",
-              "matches": ["Needs the user"]
+              "matches": ["\\*\\*Needs the user\\.\\*\\*"]
             }
           ]
         }

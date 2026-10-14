@@ -25,7 +25,9 @@ npm run build
 | `npm test` | Run unit tests with Vitest |
 | `npm run test:watch` | Run tests in watch mode |
 | `npm run test:mcp` | Run Playwright MCP integration tests |
-| `npm run test:all` | Run lint, typecheck, and all tests |
+| `npm run test:site` | Run the docs site's contract tests (build the site first) |
+| `npm run evals -- <name>` | Run an agent eval in `tests/evals/` (local only, uses your Claude Code login) |
+| `npm run test:all` | Run lint, typecheck, unit and MCP tests, and the snippets check |
 
 Run a single test file:
 

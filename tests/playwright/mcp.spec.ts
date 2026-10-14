@@ -17,6 +17,7 @@ import {
   runConformanceChecks,
   runCrossEraChecks,
   validateSkillEntry,
+  type ProtocolMatrixProject,
 } from '@gleanwork/mcp-server-tester';
 
 test.describe('MCP Protocol Conformance', () => {
@@ -98,11 +99,9 @@ test.describe('Protocol eras', () => {
   test('legacy and 2026-07-28 clients see the same server', async ({ mcp }, testInfo) => {
     // Connects once per era itself, so one project is enough.
     test.skip(mcp.protocol.era !== 'legacy', 'runs once, from the legacy project');
-    const result = await runCrossEraChecks(
-      { transport: 'http', serverUrl: 'http://localhost:3457' },
-      {},
-      testInfo
-    );
+    // The server this project uses (playwright.config.ts).
+    const { mcpConfig } = testInfo.project.use as NonNullable<ProtocolMatrixProject['use']>;
+    const result = await runCrossEraChecks(mcpConfig!, {}, testInfo);
     const failed = result.checks.filter((c) => !c.pass);
     expect(failed, JSON.stringify(failed, null, 2)).toEqual([]);
   });

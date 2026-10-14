@@ -24,8 +24,24 @@ const run = (command, args, cwd, env = {}) =>
     maxBuffer: 64 * 1024 * 1024,
   });
 
+// The trial's own repo, for diffing what the agent changed. Never sign its
+// commits: a global commit.gpgsign would ask the user's signer each trial.
 const git = (cwd, ...args) =>
-  run('git', ['-c', 'user.name=eval', '-c', 'user.email=eval@example.com', ...args], cwd);
+  run(
+    'git',
+    [
+      '-c',
+      'user.name=eval',
+      '-c',
+      'user.email=eval@example.com',
+      '-c',
+      'commit.gpgsign=false',
+      '-c',
+      'tag.gpgsign=false',
+      ...args,
+    ],
+    cwd
+  );
 
 /** Copies a directory tree, cloning files on macOS. */
 export function cloneDir(from, to) {

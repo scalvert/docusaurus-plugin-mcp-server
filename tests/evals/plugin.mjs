@@ -65,30 +65,75 @@ function killGroup(pid) {
   }
 }
 
-/** Runs one shell command in the workspace, in its own process group. */
+/**
+ * Kills every process whose working directory is in `dir`. Claude Code's Bash
+ * tool runs each command in a process group of its own, so killing the agent's
+ * group misses a server the agent started in the background; one left running
+ * would hold its port, and a later check would grade it instead of the server
+ * it starts. Uses lsof, on macOS and Linux.
+ */
+function killProcessesIn(dir) {
+  const root = fs.realpathSync(dir);
+  const listed = spawnSync('lsof', ['-a', '-d', 'cwd', '-F', 'pn'], { encoding: 'utf8' });
+  let pid;
+  for (const line of (listed.stdout ?? '').split('\n')) {
+    if (line.startsWith('p')) pid = Number(line.slice(1));
+    else if (line.startsWith('n') && pid !== process.pid) {
+      const cwd = line.slice(1);
+      if (cwd === root || cwd.startsWith(root + path.sep)) {
+        try {
+          process.kill(pid, 'SIGKILL');
+        } catch {
+          // already gone
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Runs one shell command in the workspace, in its own process group. On a
+ * timeout the whole group is killed, not only bash, so a build or server the
+ * command started can't outlive it and hold a port the next trial needs.
+ */
 function runAfter(command, cwd, timeoutMs) {
   const started = Date.now();
-  const result = spawnSync('bash', ['-c', command], {
-    cwd,
-    encoding: 'utf8',
-    timeout: timeoutMs,
-    killSignal: 'SIGKILL',
-    maxBuffer: 32 * 1024 * 1024,
-    env: {
-      ...process.env,
-      CI: '1',
-      FORCE_COLOR: '0',
-      EVALS_DIR: path.join(repo, 'tests', 'evals'),
-    },
+  return new Promise((resolve) => {
+    const child = spawn('bash', ['-c', command], {
+      cwd,
+      detached: true,
+      stdio: ['ignore', 'pipe', 'pipe'],
+      env: {
+        ...process.env,
+        CI: '1',
+        FORCE_COLOR: '0',
+        EVALS_DIR: path.join(repo, 'tests', 'evals'),
+      },
+    });
+    let output = '';
+    const append = (chunk) => {
+      output = (output + chunk).slice(-32_000);
+    };
+    child.stdout.on('data', append);
+    child.stderr.on('data', append);
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      killGroup(child.pid);
+    }, timeoutMs);
+    child.on('close', (code, signal) => {
+      clearTimeout(timer);
+      // Anything the command left running in the background goes too.
+      killGroup(child.pid);
+      resolve({
+        command,
+        exitCode: code ?? 128,
+        signal: timedOut ? 'SIGKILL' : (signal ?? undefined),
+        durationMs: Date.now() - started,
+        output: output.length > 8000 ? `…${output.slice(-8000)}` : output,
+      });
+    });
   });
-  const output = `${result.stdout ?? ''}${result.stderr ?? ''}`;
-  return {
-    command,
-    exitCode: result.status ?? (result.signal ? 128 : 1),
-    signal: result.signal ?? undefined,
-    durationMs: Date.now() - started,
-    output: output.length > 8000 ? `…${output.slice(-8000)}` : output,
-  };
 }
 
 /** Claude Code's stream-json lines → MST trace events, answer, and usage. */
@@ -319,6 +364,10 @@ function grade(check, { dir, events, text }) {
       : `the answer doesn't match /${check.answerMatches}/`;
   }
   if ('guide' in check) {
+    // Reads the compiled guide format (docs/agent-guide-format.md): numbered
+    // `### N. ` step headings and the `**Check:**` marker, from STEP_MARKERS in
+    // src/guides/contract.ts and src/guides/compile.ts. The judge checks what
+    // the site serves, so it doesn't import them; change both together.
     const bundle = read('build/mcp/bundle.json');
     if (!bundle) return 'build/mcp/bundle.json is missing';
     const skills = JSON.parse(bundle).skills?.skills ?? [];
@@ -378,21 +427,26 @@ export default {
           installRepoSkills(workspace);
         }
 
+        const timeoutMs = config.timeout ?? 900_000;
         const started = Date.now();
         const agent = await runClaude({
           prompt: input.prompt,
           model: config.model ?? 'sonnet',
           cwd: workspace,
           mcpConfig: { mcpServers },
-          timeoutMs: config.timeout ?? 900_000,
+          timeoutMs,
         });
         const parsed = parseStream(agent.stdout);
         const durationMs = Date.now() - started;
 
-        // What the agent left, then the case's own checks on it.
+        // What the agent left, then the case's own checks on it, with nothing
+        // the agent started still running.
+        killProcessesIn(workspace);
         const changes = workspaceChanges(workspace);
         fs.mkdirSync(path.join(workspace, '.eval'), { recursive: true });
-        const after = config.after.map((command) => runAfter(command, workspace, 600_000));
+        const after = [];
+        for (const command of config.after) after.push(await runAfter(command, workspace, 600_000));
+        killProcessesIn(workspace);
         fs.writeFileSync(
           path.join(workspace, '.eval', 'config.json'),
           JSON.stringify(config, null, 2)
@@ -408,7 +462,7 @@ export default {
         fs.writeFileSync(path.join(workspace, '.eval', 'stderr.txt'), agent.stderr.slice(-20_000));
 
         const error = agent.timedOut
-          ? `Timed out after ${Math.round((config.timeout ?? 900_000) / 1000)}s`
+          ? `Timed out after ${Math.round(timeoutMs / 1000)}s`
           : agent.code !== 0 && !parsed.finalText
             ? `claude exited ${agent.code}: ${agent.stderr.slice(-500)}`
             : parsed.error;
