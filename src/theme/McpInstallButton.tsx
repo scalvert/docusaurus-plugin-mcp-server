@@ -166,6 +166,7 @@ export function McpInstallButton({
   const [isOpen, setIsOpen] = useState(false);
   const [copiedClient, setCopiedClient] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
 
   // Get pre-configured registry from plugin
   const pluginMcp = useMcpRegistry();
@@ -187,16 +188,39 @@ export function McpInstallButton({
     };
   }, [serverUrlProp, serverNameProp, pluginMcp]);
 
-  // Close dropdown when clicking outside
+  // Close the dropdown when a press, touch, or focus lands outside it. The
+  // same events as Docusaurus's own navbar dropdown, so keyboard and touch
+  // users can leave the menu too.
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    function handleOutside(event: MouseEvent | TouchEvent | FocusEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('mousedown', handleOutside);
+    document.addEventListener('touchstart', handleOutside);
+    document.addEventListener('focusin', handleOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleOutside);
+      document.removeEventListener('touchstart', handleOutside);
+      document.removeEventListener('focusin', handleOutside);
+    };
   }, []);
+
+  // Close on Escape and return focus to the trigger. Listen on the document,
+  // not the dropdown: Safari doesn't focus a button on click, so after a
+  // mouse open the key event may not come from inside the dropdown.
+  useEffect(() => {
+    if (!isOpen) return;
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+        triggerRef.current?.focus();
+      }
+    }
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen]);
 
   // Validate configuration
   if (!config.serverUrl || !config.serverName) {
@@ -284,6 +308,7 @@ export function McpInstallButton({
     <div ref={dropdownRef} className={dropdownClasses}>
       {/* Infima button classes */}
       <button
+        ref={triggerRef}
         className={`button button--primary mcp-install-dropdown__button${label ? '' : ' mcp-install-dropdown__button--icon-only'}`}
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
