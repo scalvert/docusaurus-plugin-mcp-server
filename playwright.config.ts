@@ -24,7 +24,9 @@ export default defineConfig({
   },
 
   // Every spec runs once per protocol: a 2025-era client (`initialize`) and a
-  // 2026-07-28 client. The server serves both eras on one endpoint.
+  // 2026-07-28 client. The server serves both eras on one endpoint. Tests
+  // tagged @once connect in both eras themselves, so they run only in the
+  // first project instead of showing up as skipped in the second.
   projects: protocolMatrix(
     {
       name: 'mcp',
@@ -36,5 +38,5 @@ export default defineConfig({
       },
     },
     ['legacy', '2026-07-28']
-  ),
+  ).map((project, index) => (index === 0 ? project : { ...project, grepInvert: /@once/ })),
 });

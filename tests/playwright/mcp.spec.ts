@@ -96,9 +96,10 @@ test.describe('Skills', () => {
 });
 
 test.describe('Protocol eras', () => {
-  test('legacy and 2026-07-28 clients see the same server', async ({ mcp }, testInfo) => {
-    // Connects once per era itself, so one project is enough.
-    test.skip(mcp.protocol.era !== 'legacy', 'runs once, from the legacy project');
+  // Connects once per era itself, so it runs in one project only (@once,
+  // playwright.config.ts).
+  test('legacy and 2026-07-28 clients see the same server', { tag: '@once' }, async () => {
+    const testInfo = test.info();
     // The server this project uses (playwright.config.ts).
     const { mcpConfig } = testInfo.project.use as NonNullable<ProtocolMatrixProject['use']>;
     const result = await runCrossEraChecks(mcpConfig!, {}, testInfo);

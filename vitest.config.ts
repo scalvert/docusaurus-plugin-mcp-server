@@ -28,6 +28,9 @@ export default defineConfig({
     include: ['tests/**/*-test.{ts,tsx}', 'tests/**/*.test.{ts,tsx}'],
     environment: 'node',
     globals: true,
+    // Print a test's console output only when it fails. Passing tests that
+    // build an index or trigger an error on purpose stay quiet.
+    silent: 'passed-only',
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
