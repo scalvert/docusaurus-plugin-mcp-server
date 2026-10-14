@@ -83,6 +83,106 @@ describe('McpInstallButton', () => {
     expect(container.querySelector('.dropdown--show')).not.toBeNull();
   });
 
+  function renderOpen() {
+    const utils = render(
+      <div>
+        <McpInstallButton
+          serverUrl="https://docs.example.com/mcp"
+          serverName="my-docs"
+          label="Install MCP"
+        />
+        <a href="#elsewhere">Elsewhere</a>
+      </div>
+    );
+    const trigger = screen.getByRole('button', { name: 'Install MCP' });
+    fireEvent.click(trigger);
+    expect(utils.container.querySelector('.dropdown--show')).not.toBeNull();
+    return { ...utils, trigger };
+  }
+
+  function firstCopyButton(): HTMLElement {
+    const [button] = screen.getAllByRole('button', { name: 'Copy to clipboard' });
+    if (!button) throw new Error('expected a copy button in the open dropdown');
+    return button;
+  }
+
+  it('closes on Escape and returns focus to the trigger', () => {
+    const { container, trigger } = renderOpen();
+    const copyButton = firstCopyButton();
+    copyButton.focus();
+
+    fireEvent.keyDown(copyButton, { key: 'Escape' });
+
+    expect(container.querySelector('.dropdown--show')).toBeNull();
+    expect(trigger.getAttribute('aria-expanded')).toBe('false');
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it('closes on Escape when focus is outside the dropdown', () => {
+    // Safari doesn't focus a button on click, so after a mouse open the key
+    // event comes from the body, not from inside the dropdown.
+    const { container, trigger } = renderOpen();
+    trigger.blur();
+
+    fireEvent.keyDown(document.body, { key: 'Escape' });
+
+    expect(container.querySelector('.dropdown--show')).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+  });
+
+  it('ignores Escape while closed', () => {
+    const { container, trigger } = renderOpen();
+    fireEvent.click(trigger);
+    const outside = screen.getByText('Elsewhere');
+    outside.focus();
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(container.querySelector('.dropdown--show')).toBeNull();
+    expect(document.activeElement).toBe(outside);
+  });
+
+  it('closes when focus moves outside the dropdown', () => {
+    const { container } = renderOpen();
+
+    fireEvent.focusIn(screen.getByText('Elsewhere'));
+
+    expect(container.querySelector('.dropdown--show')).toBeNull();
+  });
+
+  it('stays open when focus moves within the dropdown', () => {
+    const { container } = renderOpen();
+
+    fireEvent.focusIn(firstCopyButton());
+
+    expect(container.querySelector('.dropdown--show')).not.toBeNull();
+  });
+
+  it('stays open when a copy button is pressed or touched', () => {
+    const { container } = renderOpen();
+
+    fireEvent.mouseDown(firstCopyButton());
+    fireEvent.touchStart(firstCopyButton());
+
+    expect(container.querySelector('.dropdown--show')).not.toBeNull();
+  });
+
+  it('closes on a touch outside the dropdown', () => {
+    const { container } = renderOpen();
+
+    fireEvent.touchStart(screen.getByText('Elsewhere'));
+
+    expect(container.querySelector('.dropdown--show')).toBeNull();
+  });
+
+  it('closes on a mouse press outside the dropdown', () => {
+    const { container } = renderOpen();
+
+    fireEvent.mouseDown(screen.getByText('Elsewhere'));
+
+    expect(container.querySelector('.dropdown--show')).toBeNull();
+  });
+
   it('renders nothing when no server is configured via props or plugin', () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const { container } = render(<McpInstallButton />);
