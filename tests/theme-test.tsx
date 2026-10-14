@@ -118,6 +118,18 @@ describe('McpInstallButton', () => {
     expect(document.activeElement).toBe(trigger);
   });
 
+  it('closes on Escape when focus is outside the dropdown', () => {
+    // Safari doesn't focus a button on click, so after a mouse open the key
+    // event comes from the body, not from inside the dropdown.
+    const { container, trigger } = renderOpen();
+    trigger.blur();
+
+    fireEvent.keyDown(document.body, { key: 'Escape' });
+
+    expect(container.querySelector('.dropdown--show')).toBeNull();
+    expect(document.activeElement).toBe(trigger);
+  });
+
   it('ignores Escape while closed', () => {
     const { container, trigger } = renderOpen();
     fireEvent.click(trigger);
@@ -142,6 +154,15 @@ describe('McpInstallButton', () => {
     const { container } = renderOpen();
 
     fireEvent.focusIn(firstCopyButton());
+
+    expect(container.querySelector('.dropdown--show')).not.toBeNull();
+  });
+
+  it('stays open when a copy button is pressed or touched', () => {
+    const { container } = renderOpen();
+
+    fireEvent.mouseDown(firstCopyButton());
+    fireEvent.touchStart(firstCopyButton());
 
     expect(container.querySelector('.dropdown--show')).not.toBeNull();
   });

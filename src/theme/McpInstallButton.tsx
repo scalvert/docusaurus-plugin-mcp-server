@@ -155,6 +155,12 @@ export interface McpInstallButtonProps {
  * />
  * ```
  */
+/**
+ * Events that close the open dropdown when they land outside it: the same
+ * ones Docusaurus's own navbar dropdown (`DropdownNavbarItem/Desktop`) uses.
+ */
+const OUTSIDE_EVENTS = ['mousedown', 'touchstart', 'focusin'] as const;
+
 export function McpInstallButton({
   serverUrl: serverUrlProp,
   serverName: serverNameProp,
@@ -188,24 +194,20 @@ export function McpInstallButton({
     };
   }, [serverUrlProp, serverNameProp, pluginMcp]);
 
-  // Close the dropdown when a press, touch, or focus lands outside it. The
-  // same events as Docusaurus's own navbar dropdown, so keyboard and touch
-  // users can leave the menu too.
+  // Close the dropdown when a press, touch, or focus lands outside it, so
+  // keyboard and touch users can leave the menu too.
   useEffect(() => {
-    function handleOutside(event: MouseEvent | TouchEvent | FocusEvent) {
+    if (!isOpen) return;
+    function handleOutside(event: Event) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     }
-    document.addEventListener('mousedown', handleOutside);
-    document.addEventListener('touchstart', handleOutside);
-    document.addEventListener('focusin', handleOutside);
+    for (const type of OUTSIDE_EVENTS) document.addEventListener(type, handleOutside);
     return () => {
-      document.removeEventListener('mousedown', handleOutside);
-      document.removeEventListener('touchstart', handleOutside);
-      document.removeEventListener('focusin', handleOutside);
+      for (const type of OUTSIDE_EVENTS) document.removeEventListener(type, handleOutside);
     };
-  }, []);
+  }, [isOpen]);
 
   // Close on Escape and return focus to the trigger. Listen on the document,
   // not the dropdown: Safari doesn't focus a button on click, so after a
