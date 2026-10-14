@@ -177,5 +177,10 @@
       "release": true,
       "tokenRef": "GITHUB_AUTH"
     }
+  },
+  "allowScripts": {
+    "core-js@3.48.0": true,
+    "esbuild@0.28.1": true,
+    "fsevents@2.3.3": true
   }
 }
