@@ -30,7 +30,7 @@ npm run evals -- guide-outcomes --case setup --variant mcp
 The runner serves the site's MCP function (`website/api/mcp.mjs`) on `localhost:3458`, runs the eval, and prints each case with what every trial read and ran:
 
 ```text
-✓ deploy-vercel  (3/3 trials)
+✓ deploy-vercel  (10/10 trials)
     ✓ 0: fetch skill://deploy-docusaurus-mcp-vercel/SKILL.md
 ```
 
@@ -40,7 +40,8 @@ Each run is saved in `.mcp-evals/<name>/runs/<run-id>/` in MST's `mst.run/v1` fo
 
 - **Claude Code, signed in.** The agent is `claude -p` on your account, with your Claude Code settings (`isolate: false` in `guide-discovery`; the outcome client always uses them). `--strict-mcp-config` limits it to the docs server, so your other MCP servers aren't used, but your installed skills and plugins load.
 - **macOS or Linux.** The outcome plugin runs commands with `bash` and stops what they leave running by process group, so the evals don't run on Windows.
-- **Not in CI.** The evals use your login, and an outcome trial takes several minutes. A full `guide-discovery` run is 24 Claude Code sessions; `guide-outcomes` is 8 longer ones.
+- **Not in CI.** The evals use your login. Each case runs 10 trials: a full `guide-discovery` run is 80 Claude Code sessions (about 10 minutes, 3 at a time), and `guide-outcomes` is 80 longer ones, one at a time (about an hour). Run them before a release or after changing a guide, not on every change.
+- **10 trials, not fewer.** A case that passes 10 of 10 trials passes at least 69% of the time (95% confidence); 3 of 3 says only 29%, so 3 trials can't tell a dependable guide from a flaky one. Even one trial catches a guide that's broken outright. For a release decision, or to compare the `mcp` and `skills` variants, use `--trials 20`.
 - **An empty directory.** Claude Code runs with `bypassPermissions`, so it never runs in this repository. The `claude-code` client starts it in an empty temporary directory of its own (discovery), and the plugin starts it in the trial's own site (outcomes). It learns only what the MCP server or the installed skills tell it.
 
 ## The outcome evals
@@ -62,4 +63,4 @@ The agent's own `npm install` uses the public registry. Claude Code's Bash tool 
 - **Discovery:** a question someone would ask, and `matchesPattern` for facts only the right guide gives (a file name, a config key), not words any answer would use.
 - **Outcome:** the task, the site it starts from (`site`, and `files` to write over it, such as a page to mark up or a broken config to fix), the `after` commands that prove the result, and the judge's checks. Check what the guide promises, not how the agent got there. For a step a guide marks as needing the user, add a `noCommand` check.
 
-Run a new case a few times (`--trials 3`) before relying on it.
+Try a new case with `--case <id> --trials 3` while you write it, then run it at the full 10 before relying on it.

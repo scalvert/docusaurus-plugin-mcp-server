@@ -11,7 +11,7 @@
   "client": "docs/client/claude-workspace",
   "model": "sonnet",
   "timeout": 900000,
-  "trials": 1,
+  "trials": 10,
   "concurrency": 1,
   "redactStoredResponses": false,
   "variants": [

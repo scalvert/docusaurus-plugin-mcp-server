@@ -13,7 +13,7 @@
     "isolate": false
   },
   "timeout": 300000,
-  "trials": 3,
+  "trials": 10,
   "concurrency": 3,
   "passThreshold": 0.67,
   "redactStoredResponses": false
