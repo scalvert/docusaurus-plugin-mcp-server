@@ -26,6 +26,7 @@ coverage/
 
 # Playwright
 playwright-report/
+playwright-report-site/
 test-results/
 .playwright-mcp/
 
@@ -36,3 +37,6 @@ npm-debug.log*
 # Environment
 .env
 .env.local
+
+# Eval runs (tests/evals/run.mjs)
+.mcp-evals/

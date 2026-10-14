@@ -71,6 +71,8 @@
     "test:all": "npm run lint && npm run typecheck && npm run test && npm run test:mcp && npm run snippets:check",
     "test:coverage": "vitest run --coverage",
     "test:mcp": "playwright test",
+    "test:site": "playwright test -c playwright.site.config.ts",
+    "evals": "node tests/evals/run.mjs",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit"
   },
@@ -98,7 +100,7 @@
     "@docusaurus/types": "^3.9.2",
     "@docusaurus/utils": "^3.10.2",
     "@eslint/js": "^10.0.1",
-    "@gleanwork/mcp-server-tester": "^1.0.0",
+    "@gleanwork/mcp-server-tester": "2.0.0-beta.12",
     "@modelcontextprotocol/client": "^2.1.0",
     "@playwright/test": "^1.63.0",
     "@release-it-plugins/lerna-changelog": "^9.0.0",

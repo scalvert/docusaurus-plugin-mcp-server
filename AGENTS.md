@@ -13,7 +13,9 @@ npm run typecheck      # TypeScript type checking
 npm run test           # Run unit tests with Vitest
 npm run test:watch     # Run tests in watch mode
 npm run test:mcp       # Run Playwright MCP integration tests
-npm run test:all       # Run lint, typecheck, and all tests
+npm run test:site      # Run the docs site's contract tests (build the site first)
+npm run evals -- <name> # Run an agent eval in tests/evals/ (local only, uses your Claude Code login)
+npm run test:all       # Run lint, typecheck, unit and MCP tests, and the snippets check
 ```
 
 Run a single test file:
@@ -83,9 +85,11 @@ Ranking changes must keep `tests/search-ranking-test.ts` passing; its thresholds
 ## Testing
 
 - Unit tests: `tests/*.ts` using Vitest. Build servers in tests with `buildTestBundle` from `tests/helpers/bundle.ts`, not by reading artifact filenames. `tests/protocol-eras-test.ts` drives the v2 client (`@modelcontextprotocol/client`) in both 2026-07-28 and 2025-era modes
-- Integration tests: `tests/playwright/` using `@gleanwork/mcp-server-tester` (a 2025-era client, so it also guards backward compatibility)
-  - `mcp.spec.ts` - conformance checks and protocol behavior
-  - `evals.spec.ts` + `evals/*.json` - direct-mode eval datasets for tool output; update snapshots with `npm run test:mcp -- --update-snapshots`
+- Integration tests: `tests/playwright/` using `@gleanwork/mcp-server-tester` (MST) 2.0 beta, pinned exactly. Every spec runs once per protocol (`protocolMatrix` in `playwright.config.ts`): `mcp@legacy`, a 2025-era client that guards backward compatibility, and `mcp@2026-07-28`
+  - `mcp.spec.ts` - conformance checks (including the SEP-2640 skills checks), skills, and cross-era behavior
+  - `tool-checks.spec.ts` + `tool-checks.json` - one Playwright test per tool call against the fixture docs; update snapshots with `npm run test:mcp -- --update-snapshots`
+- Site contract tests: `tests/site/` (`npm run test:site`, config `playwright.site.config.ts`) run over the docs site's deployed function (`website/api/mcp.mjs`, served by `website/scripts/serve-mcp.mjs`) on the built bundle, in both eras: every guide in `skills/guides/` is served byte-for-byte, readable without the skills extension, links only to pages, sections, and anchors that exist, and is found by searching for what someone would ask. Build the site first; the Website workflow runs them after its build. A new guide needs a query in `GUIDE_QUERIES`
+- Evals: `tests/evals/` (`npm run evals -- <name>`), run locally, not in CI: they drive Claude Code on your login. `guide-discovery` asks an agent connected only to the site's MCP server questions each guide answers; `guide-outcomes` has an agent follow guides in a fresh Docusaurus site and grades the site it leaves (plugin client and judge in `tests/evals/plugin.mjs`). See `tests/evals/README.md`. When a guide changes what it tells agents to do, update its cases
 
 ## Package Format
 

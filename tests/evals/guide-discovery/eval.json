@@ -1,0 +1,20 @@
+{
+  "name": "guide-discovery",
+  "datasets": ["dataset.json"],
+  "servers": {
+    "docs": {
+      "transport": "http",
+      "serverUrl": "http://localhost:3458/mcp"
+    }
+  },
+  "client": "claude-code",
+  "model": "sonnet",
+  "clientOptions": {
+    "isolate": false
+  },
+  "timeout": 300000,
+  "trials": 10,
+  "concurrency": 3,
+  "passThreshold": 0.67,
+  "redactStoredResponses": false
+}

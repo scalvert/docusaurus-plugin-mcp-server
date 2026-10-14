@@ -55,6 +55,17 @@ export default tseslint.config(
     },
   },
 
+  // Eval scripts (tests/evals/): Node CLIs that print their results
+  {
+    files: ['tests/evals/**/*.mjs'],
+    languageOptions: {
+      globals: { ...globals.node },
+    },
+    rules: {
+      'no-console': 'off',
+    },
+  },
+
   // Config files
   {
     files: ['*.cjs', '*.mjs', '*.js', 'scripts/**/*.mjs'],
