@@ -16,7 +16,7 @@ const processor = unified()
  * tree (no second HTML parse). If conversion fails, falls back to plain text.
  */
 export async function hastToMarkdown(element: Element): Promise<string> {
-  const root: Root = { type: 'root', children: [normalize(element)] };
+  const root: Root = { type: 'root', children: [prepareForMarkdown(element)] };
   try {
     const mdast = await processor.run(root);
     return cleanMarkdown(String(processor.stringify(mdast)));
@@ -60,7 +60,7 @@ function tokenLines(node: Element): Element[] {
  *   blank-line-separated blocks) and the fence gets its language. Other
  *   `<pre>`s are left alone.
  */
-function normalize(node: Element): Element {
+function prepareForMarkdown(node: Element): Element {
   if (node.tagName === 'pre') {
     const language = classesOf(node).find((name) => name.startsWith('language-'));
     const lines = tokenLines(node);
@@ -84,7 +84,7 @@ function normalize(node: Element): Element {
     ...node,
     children: node.children
       .filter((child) => child.type !== 'comment')
-      .map((child) => (child.type === 'element' ? normalize(child) : child)),
+      .map((child) => (child.type === 'element' ? prepareForMarkdown(child) : child)),
   };
 }
 
