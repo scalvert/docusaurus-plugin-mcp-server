@@ -22,17 +22,31 @@ import {
   readArtifactBundle,
   type ArtifactBundle,
   type NodeAdapterOptions,
+  type McpDocsEvent as NodeMcpDocsEvent,
+  type McpEventHandler as NodeMcpEventHandler,
 } from 'docusaurus-plugin-mcp-server/adapters/node';
 import type {
   ArtifactBundle as EdgeArtifactBundle,
+  McpDocsEvent as EdgeMcpDocsEvent,
+  McpEventHandler as EdgeMcpEventHandler,
   WebRequestHandlerConfig,
 } from 'docusaurus-plugin-mcp-server/adapters';
 import type {
   ArtifactBundle as MainArtifactBundle,
+  McpClientInfo,
+  McpDocsEvent,
+  McpDocsFetchEvent,
+  McpDocsSearchEvent,
   McpDocsServerConfig,
+  McpEventHandler,
   McpServerBundleConfig,
+  McpToolCallEventBase,
   SearchRanker,
 } from 'docusaurus-plugin-mcp-server';
+import type {
+  McpInstallButtonProps,
+  McpInstallCopyEvent,
+} from 'docusaurus-plugin-mcp-server/theme';
 import type { LoadContext } from '@docusaurus/types';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import fs from 'node:fs/promises';
@@ -74,6 +88,39 @@ describe('public API surface', () => {
     const server = new McpDocsServer({ artifacts: {}, flexsearch: {} } as never);
     await expect(server.initialize()).rejects.toThrow(/'flexsearch' server option was removed/);
     await expect(server.initialize()).rejects.toBeInstanceOf(ConfigurationError);
+  });
+
+  it('exports the onEvent types from the main, adapters, and adapters/node entries', () => {
+    // The three entries export the same types, and onEvent takes them on
+    // every config. Type-level: this fails `npm run typecheck`, not vitest.
+    const handler: McpEventHandler = (event: McpDocsEvent) => {
+      const base: McpToolCallEventBase = event;
+      const client: McpClientInfo | undefined = base.client;
+      if (event.tool === 'docs_search') {
+        const search: McpDocsSearchEvent = event;
+        void search.resultCount;
+      } else {
+        const fetch: McpDocsFetchEvent = event;
+        void fetch.documentId;
+      }
+      void client;
+    };
+    const same = (event: McpDocsEvent): [EdgeMcpDocsEvent, NodeMcpDocsEvent] => [event, event];
+    const handlers: [EdgeMcpEventHandler, NodeMcpEventHandler] = [handler, handler];
+    const configs: [Partial<McpServerBundleConfig>, Partial<WebRequestHandlerConfig>] = [
+      { onEvent: handler },
+      { onEvent: handlers[0] },
+    ];
+    const nodeOptions: Partial<NodeAdapterOptions> = { onEvent: handlers[1] };
+    expect([typeof same, configs.length, typeof nodeOptions]).toEqual(['function', 2, 'object']);
+  });
+
+  it('exports the onCopy event type from the theme entry', () => {
+    const onCopy: NonNullable<McpInstallButtonProps['onCopy']> = (event: McpInstallCopyEvent) => {
+      void event.client;
+      void event.kind;
+    };
+    expect(typeof onCopy).toBe('function');
   });
 
   it('exports the artifact bundle type from every entry, and readArtifactBundle from Node', async () => {

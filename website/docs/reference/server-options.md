@@ -80,7 +80,7 @@ export default {
 };
 ```
 
-The server doesn't wait for `onEvent`, and it logs an error that `onEvent` throws or rejects with instead of returning it to the client. Some serverless platforms stop work once the response is sent. On those, pass async work to the platform's `waitUntil` so it can finish. The event types (`McpDocsEvent`, `McpEventHandler`) are exported from every entry point.
+The server doesn't wait for `onEvent`, and it logs an error that `onEvent` throws or rejects with instead of returning it to the client. Some serverless platforms stop work once the response is sent. On those, pass async work to the platform's `waitUntil` so it can finish. The event types (`McpDocsEvent`, `McpEventHandler`) are exported from the main, `adapters`, and `adapters/node` entry points.
 
 ## HTTP behavior
 
