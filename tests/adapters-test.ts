@@ -8,6 +8,7 @@ import { createNodeServer } from '../src/adapters/node.js';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { writeArtifactBundle } from '../src/artifacts/node.js';
 import { buildSkillsArtifact } from '../src/skills/packager.js';
+import type { McpDocsEvent } from '../src/mcp/events.js';
 import type { ProcessedDoc } from '../src/types/index.js';
 import { buildTestBundle } from './helpers/bundle.js';
 
@@ -228,5 +229,63 @@ describe('createNodeServer (local dev, artifactsDir)', () => {
   it('invalid JSON → 400 parse error', async () => {
     const res = await fetch(baseURL, { method: 'POST', headers: MCP_HEADERS, body: '{not json' });
     expect(res.status).toBe(400);
+  });
+});
+
+describe('onEvent through the adapters', () => {
+  const expected: McpDocsEvent = {
+    type: 'tool_call',
+    tool: 'docs_search',
+    ok: true,
+    durationMs: expect.any(Number),
+    query: 'body',
+    limit: 16,
+    resultCount: 1,
+    client: { name: 'adapter-test', version: '1.0.0' },
+  };
+
+  async function searchOnce(url: string, fetchImpl?: typeof fetch) {
+    const client = new Client(
+      { name: 'adapter-test', version: '1.0.0' },
+      { versionNegotiation: { mode: { pin: '2026-07-28' } } }
+    );
+    await client.connect(
+      new StreamableHTTPClientTransport(new URL(url), fetchImpl ? { fetch: fetchImpl } : {})
+    );
+    await client.callTool({ name: 'docs_search', arguments: { query: 'body' } });
+    await client.close();
+  }
+
+  it('createWebRequestHandler reports tool calls to onEvent', async () => {
+    const events: McpDocsEvent[] = [];
+    const handler = createWebRequestHandler({
+      artifacts: await buildBundle(),
+      onEvent: (event) => void events.push(event),
+    });
+
+    await searchOnce('https://x/mcp', (input, init) => handler(new Request(input, init)));
+
+    expect(events).toEqual([expected]);
+  });
+
+  it('createNodeServer reports tool calls to onEvent', async () => {
+    const events: McpDocsEvent[] = [];
+    const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'mcp-adapter-events-'));
+    await writeArtifactBundle(dir, await buildBundle());
+    const server = createNodeServer({
+      artifactsDir: dir,
+      onEvent: (event) => void events.push(event),
+    });
+    await new Promise<void>((resolve) => server.listen(0, resolve));
+    try {
+      const addr = server.address();
+      const port = typeof addr === 'object' && addr ? addr.port : 0;
+      await searchOnce(`http://127.0.0.1:${port}/mcp`);
+    } finally {
+      await new Promise<void>((resolve) => server.close(() => resolve()));
+      await fs.rm(dir, { recursive: true, force: true });
+    }
+
+    expect(events).toEqual([expected]);
   });
 });
