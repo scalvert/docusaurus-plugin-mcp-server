@@ -1,6 +1,7 @@
 import {
   McpInstallButton,
   type McpInstallButtonProps,
+  type McpInstallCopyEvent,
   ForAgents,
   ForHumans,
   type AudienceProps,

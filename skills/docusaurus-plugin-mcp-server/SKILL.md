@@ -60,7 +60,7 @@ The authoritative API is the published TypeScript types. Read the `.d.ts` files 
 - `./adapters/node` → `dist/adapters-node.d.ts` (`createNodeServer`/`createNodeHandler`, `NodeAdapterOptions`, `McpServerBundleDirConfig`, `readArtifactBundle`)
 - `./theme` → `dist/theme/index.d.ts` (`McpInstallButton` props)
 
-Config shape in particular (`artifacts`/`artifactsDir`, overrides such as `instructions`/`tools`) lives in those types — read them rather than copying field lists. `McpServerFileConfig` (`docsPath`/`indexPath`) and `McpServerDataConfig` (`docs`/`searchIndexData`) are deprecated since 2.2, as are the 2.1 unions `McpServerConfig`, `WebRequestAdapterConfig`, and `NodeServerOptions` (use `McpDocsServerConfig`, `WebRequestHandlerConfig`, `NodeAdapterOptions`); don't write new code against them.
+Config shape in particular (`artifacts`/`artifactsDir`, overrides such as `instructions`/`tools`, the `onEvent` usage hook) lives in those types — read them rather than copying field lists. `McpServerFileConfig` (`docsPath`/`indexPath`) and `McpServerDataConfig` (`docs`/`searchIndexData`) are deprecated since 2.2, as are the 2.1 unions `McpServerConfig`, `WebRequestAdapterConfig`, and `NodeServerOptions` (use `McpDocsServerConfig`, `WebRequestHandlerConfig`, `NodeAdapterOptions`); don't write new code against them.
 
 ## Usage patterns
 
@@ -116,6 +116,7 @@ Use `.mjs` for function files unless the site's `package.json` has `"type": "mod
 - **zod 3.** 2.x requires zod >= 4.2 (MCP SDK v2).
 - **1.x search options.** The built-in search is `'local'` (BM25). `'flexsearch'` in `indexers`/`search`, and the `flexsearch` plugin/server option, now throw. A 1.x `search-index.json` is rejected until the site is rebuilt; the error is returned in MCP responses and the GET status. Tune ranking with the server option `localSearch: { fieldBoosts }`. The plugin's `search` option does not choose the runtime provider (it has done nothing since 2.0, is deprecated since 2.2, and is removed in 3.0); the server config's `search` does.
 - **Very long queries.** `docs_search` accepts up to 500 characters and searches the first 16 distinct terms.
+- **Sending raw `onEvent` inputs to analytics.** Events carry the agent's `query` and `uri` as sent. Send `tool`, `ok`, `resolved`, `resultCount`, `documentId` and `client.name`, not free text. The server doesn't await `onEvent`, so on serverless runtimes wrap async sends in the platform's `waitUntil`.
 - **Guessing whether search is good enough.** Measure it: `evaluateSearch(provider, [{ query, expected: [routes] }])` reports top-k hits and MRR for any provider.
 
 ## Version notes

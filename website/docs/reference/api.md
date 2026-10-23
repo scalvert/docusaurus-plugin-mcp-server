@@ -14,7 +14,7 @@ The package is ESM-only and has four entry points:
 | `docusaurus-plugin-mcp-server/adapters/node` | The Node server and handler, reading the bundle from disk | Node |
 | `docusaurus-plugin-mcp-server/theme` | The install button, `ForAgents`/`ForHumans`, the agent guide components, and registry helpers | The browser (your Docusaurus theme) |
 
-The `ArtifactBundle` type is exported from the main, `adapters`, and `adapters/node` entry points.
+The `ArtifactBundle` type is exported from the main, `adapters`, and `adapters/node` entry points. So are `McpDocsEvent` and `McpEventHandler`, the types of the [`onEvent`](./server-options.md#usage-events) server option. The main entry point also exports the event's parts: `McpDocsSearchEvent`, `McpDocsFetchEvent`, `McpToolCallEventBase`, and `McpClientInfo`.
 
 ## Main exports
 
@@ -117,6 +117,7 @@ All of them take the [server options](./server-options.md).
 import {
   McpInstallButton,
   type McpInstallButtonProps,
+  type McpInstallCopyEvent,
   ForAgents,
   ForHumans,
   type AudienceProps,
@@ -136,7 +137,7 @@ import {
 
 MDX pages don't need to import the components: the plugin adds them to your theme's MDX components ([`mdxComponents` option](./plugin-options.md#mdx-components)). Import them in your own React components, or when the option is off.
 
-- **`McpInstallButton`** is the dropdown readers use to install the server in their AI tool. See [Install button](../guides/install-button.md).
+- **`McpInstallButton`** is the dropdown readers use to install the server in their AI tool. `McpInstallCopyEvent` is what its `onCopy` prop receives. See [Install button](../guides/install-button.md).
 - **`ForAgents`** and **`ForHumans`** mark page content for one audience: agents get `ForAgents` content and not `ForHumans` content, and people see the opposite. See [Writing for agents](../guides/writing-for-agents.md).
 - **`AgentGuide`**, **`DoneWhen`**, **`Prerequisites`**, **`Step`**, **`Check`**, and **`Symptom`** mark up a setup or troubleshooting procedure that the build compiles into an Agent Skill. Their props types (`AgentGuideProps`, `StepProps`, `SymptomProps`, `GuidePartProps`) are exported too. See [Agent guides](../guides/agent-guides.md).
 - **`mdxComponents`** is the object of components the plugin adds to MDX, keyed by name. Spread it into a swizzled `MDXComponents` that you ejected.

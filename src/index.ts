@@ -27,6 +27,15 @@ export { DEFAULT_PLUGIN_OPTIONS } from './types/index.js';
 
 export type { ArtifactBundle } from './artifacts/bundle.js';
 
+export type {
+  McpDocsEvent,
+  McpDocsSearchEvent,
+  McpDocsFetchEvent,
+  McpToolCallEventBase,
+  McpClientInfo,
+  McpEventHandler,
+} from './mcp/events.js';
+
 export { resolveServerUrl } from './plugin/resolve-server-url.js';
 export type { ResolveServerUrlInput, ServerUrlBase } from './plugin/resolve-server-url.js';
 
