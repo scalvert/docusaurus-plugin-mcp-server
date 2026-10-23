@@ -1,5 +1,6 @@
 import type { ArtifactBundle } from '../artifacts/bundle.js';
 import type { SearchProvider, SearchRanker } from '../providers/types.js';
+import type { McpEventHandler } from '../mcp/events.js';
 
 /** Page fields the built-in local search indexes. `slug` is the route path as words. */
 export type LocalSearchField = 'title' | 'slug' | 'headings' | 'description' | 'content';
@@ -333,6 +334,17 @@ export interface McpServerBaseConfig {
   instructions?: string;
   /** Per-tool overrides, such as custom descriptions */
   tools?: McpServerToolsConfig;
+  /**
+   * Called after every tool call with what happened: the tool, its input,
+   * the outcome, the time it took, and the client when the request names it.
+   * Use it to send usage to an analytics or logging backend. The server does
+   * not wait for it, and its errors are logged, never returned to the client.
+   * Inputs come from the agent as sent; redact them before they leave the
+   * server if your backend should not store free text. See {@link McpEventHandler}.
+   *
+   * @since 2.5
+   */
+  onEvent?: McpEventHandler;
 }
 
 /**

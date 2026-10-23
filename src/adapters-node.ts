@@ -15,3 +15,4 @@ export {
 } from './adapters/node.js';
 export { readArtifactBundle } from './artifacts/node.js';
 export type { ArtifactBundle } from './artifacts/bundle.js';
+export type { McpDocsEvent, McpEventHandler } from './mcp/events.js';

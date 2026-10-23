@@ -141,6 +141,21 @@ export interface McpInstallButtonProps {
   clients?: ClientId[];
   /** Header text shown at top of dropdown (default: "Choose your AI tool:") */
   headerText?: string;
+  /**
+   * Called after a reader copies a client's setup to the clipboard, for
+   * analytics. Not called when the copy fails.
+   *
+   * @since 2.5
+   */
+  onCopy?: (event: McpInstallCopyEvent) => void;
+}
+
+/** What `McpInstallButton`'s `onCopy` reports about a copy. */
+export interface McpInstallCopyEvent {
+  /** The client whose setup was copied. */
+  client: ClientId;
+  /** What was copied: a CLI command, or a configuration snippet. */
+  kind: 'command' | 'config';
 }
 
 /**
@@ -168,6 +183,7 @@ export function McpInstallButton({
   className = '',
   clients: clientsProp,
   headerText = 'Choose your AI tool:',
+  onCopy,
 }: McpInstallButtonProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [copiedClient, setCopiedClient] = useState<string | null>(null);
@@ -247,15 +263,20 @@ export function McpInstallButton({
     return clients.sort((a, b) => a.displayName.localeCompare(b.displayName));
   }, [registry, clientsProp]);
 
-  const copyToClipboard = useCallback(async (text: string, clientId: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
+  const copyToClipboard = useCallback(
+    async (text: string, clientId: ClientId, kind: McpInstallCopyEvent['kind']) => {
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch (err) {
+        console.error('Failed to copy:', err);
+        return;
+      }
       setCopiedClient(clientId);
       setTimeout(() => setCopiedClient(null), 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
-    }
-  }, []);
+      onCopy?.({ client: clientId, kind });
+    },
+    [onCopy]
+  );
 
   const getConfigForClient = useCallback(
     (clientId: ClientId): string | null => {
@@ -346,14 +367,14 @@ export function McpInstallButton({
                 <CodeBlock
                   code={command}
                   isCopied={isCopied}
-                  onCopy={() => copyToClipboard(command, client.id)}
+                  onCopy={() => copyToClipboard(command, client.id, 'command')}
                 />
               ) : clientConfig ? (
                 <CodeBlock
                   code={clientConfig}
                   isMultiline
                   isCopied={isCopied}
-                  onCopy={() => copyToClipboard(clientConfig, client.id)}
+                  onCopy={() => copyToClipboard(clientConfig, client.id, 'config')}
                 />
               ) : null}
 

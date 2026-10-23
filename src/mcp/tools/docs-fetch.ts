@@ -3,6 +3,7 @@ import type { ProcessedDoc, SkillFile } from '../../types/index.js';
 import type { Resolved } from '../resolve.js';
 import { SKILL_URI_PREFIX } from '../skills.js';
 import { renderDocument } from '../../agent-view/render.js';
+import type { McpDocsFetchEvent } from '../events.js';
 import { READ_ONLY_ANNOTATIONS, runTool, type DocsToolModule } from './tool.js';
 
 /**
@@ -74,16 +75,46 @@ export const docsFetch: DocsToolModule = {
         inputSchema: tool.inputSchema,
         annotations: READ_ONLY_ANNOTATIONS,
       },
-      ({ url }) =>
-        runTool(
+      ({ url }, ctx) => {
+        let resolved: Resolved | undefined;
+        return runTool(
           deps,
-          '[MCP] Fetch error:',
-          'An error occurred while fetching the page. Please try again.',
-          async () => formatResolved(await deps.resolve(url), deps.servesSkills)
-        )
+          {
+            logLabel: '[MCP] Fetch error:',
+            failure: 'An error occurred while fetching the page. Please try again.',
+            ctx,
+            describe: (base) => ({
+              ...base,
+              tool: 'docs_fetch',
+              uri: url,
+              ...(base.ok && outcome(resolved)),
+            }),
+          },
+          async () => {
+            resolved = await deps.resolve(url);
+            return formatResolved(resolved, deps.servesSkills);
+          }
+        );
+      }
     );
   },
 };
+
+/** What a `docs_fetch` event says the URI named; nothing when the call failed. */
+function outcome(
+  resolved: Resolved | undefined
+): Pick<McpDocsFetchEvent, 'resolved' | 'documentId'> {
+  switch (resolved?.kind) {
+    case undefined:
+      return {};
+    case 'document':
+      return { resolved: 'document', documentId: resolved.id };
+    case 'skill-file':
+      return { resolved: 'skill-file' };
+    case 'not-found':
+      return { resolved: 'not-found' };
+  }
+}
 
 /** What docs_fetch returns for a resolved URI. */
 export function formatResolved(resolved: Resolved, servesSkills: boolean): string {

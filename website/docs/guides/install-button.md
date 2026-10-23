@@ -86,5 +86,17 @@ function NavbarItems() {
 | `headerText` | `string` | `"Choose your AI tool:"` | Text at the top of the dropdown |
 | `className` | `string` | `""` | Extra CSS class |
 | `clients` | `ClientId[]` | every client that supports HTTP | Which clients to list, for example `['claude-code', 'cursor', 'vscode']` |
+| `onCopy` | `(event) => void` | none | Called after a reader copies a client's setup, with `{ client, kind }`: the client ID, and `'command'` for a CLI command or `'config'` for a configuration snippet. Not called when the copy fails |
+
+Use `onCopy` to count installs with your site's analytics:
+
+```tsx
+<McpInstallButton
+  label="Connect"
+  onCopy={({ client, kind }) => analytics.track('mcp_install_copied', { client, kind })}
+/>
+```
+
+Replace `analytics.track` with your analytics library's call.
 
 The client configs come from [`@gleanwork/mcp-config-schema`](https://www.npmjs.com/package/@gleanwork/mcp-config-schema). [Connecting AI tools](./connect-clients.md) shows what they look like.

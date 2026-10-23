@@ -52,13 +52,29 @@ export const docsSearch: DocsToolModule = {
         inputSchema: docsSearchTool.inputSchema,
         annotations: READ_ONLY_ANNOTATIONS,
       },
-      ({ query, limit }) =>
-        runTool(
+      ({ query, limit }, ctx) => {
+        let resultCount: number | undefined;
+        return runTool(
           deps,
-          '[MCP] Search error:',
-          'An error occurred while searching. Please try again.',
-          async () => formatSearchResults(await deps.search(query, { limit }))
-        )
+          {
+            logLabel: '[MCP] Search error:',
+            failure: 'An error occurred while searching. Please try again.',
+            ctx,
+            describe: (base) => ({
+              ...base,
+              tool: 'docs_search',
+              query,
+              limit,
+              ...(base.ok && resultCount !== undefined && { resultCount }),
+            }),
+          },
+          async () => {
+            const results = await deps.search(query, { limit });
+            resultCount = results.length;
+            return formatSearchResults(results);
+          }
+        );
+      }
     );
   },
 };

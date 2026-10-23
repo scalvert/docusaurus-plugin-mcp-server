@@ -2,6 +2,14 @@ import type { CallToolResult, McpServer } from '@modelcontextprotocol/server';
 import type { McpServerToolsConfig, SearchResult } from '../../types/index.js';
 import type { Resolve } from '../resolve.js';
 import type { SearchOptions } from '../../providers/types.js';
+import {
+  clientFrom,
+  emitEvent,
+  type McpDocsEvent,
+  type McpEventHandler,
+  type McpToolCallEventBase,
+  type ToolCallContext,
+} from '../events.js';
 
 /**
  * What a docs tool needs from the server. Internal: not exported from the
@@ -16,6 +24,23 @@ export interface DocsToolDeps {
   isReady(): boolean;
   /** Whether the server serves skills, so `docs_fetch` says it reads `skill://` URIs. */
   servesSkills: boolean;
+  /** The configured `onEvent` handler, told about every tool call. */
+  onEvent?: McpEventHandler;
+}
+
+/** How {@link runTool} logs, answers, and reports one tool call. */
+export interface ToolCall {
+  /** Prefix for the logged error when the body throws. */
+  logLabel: string;
+  /** The error text the agent gets when the body throws. */
+  failure: string;
+  /** The tool handler's context, for the calling client. */
+  ctx?: ToolCallContext;
+  /**
+   * The event for this call, built after the body ran from the shared fields
+   * plus what the tool recorded.
+   */
+  describe(base: McpToolCallEventBase): McpDocsEvent;
 }
 
 /**
@@ -43,12 +68,33 @@ export function toolError(text: string): CallToolResult {
 /**
  * Run a tool body: answer with an error result if the provider is not ready,
  * return the body's text, and turn a thrown error into a logged error result
- * with the given message.
+ * with the call's failure message. Then report the call to `onEvent`.
  */
 export async function runTool(
+  deps: Pick<DocsToolDeps, 'isReady' | 'onEvent'>,
+  call: ToolCall,
+  body: () => Promise<string>
+): Promise<CallToolResult> {
+  const started = performance.now();
+  const result = await answer(deps, call, body);
+  if (deps.onEvent) {
+    const client = clientFrom(call.ctx);
+    emitEvent(
+      deps.onEvent,
+      call.describe({
+        type: 'tool_call',
+        ok: !result.isError,
+        durationMs: performance.now() - started,
+        ...(client && { client }),
+      })
+    );
+  }
+  return result;
+}
+
+async function answer(
   deps: Pick<DocsToolDeps, 'isReady'>,
-  logLabel: string,
-  failure: string,
+  call: ToolCall,
   body: () => Promise<string>
 ): Promise<CallToolResult> {
   if (!deps.isReady()) {
@@ -58,7 +104,7 @@ export async function runTool(
   try {
     return toolText(await body());
   } catch (error) {
-    console.error(logLabel, error);
-    return toolError(failure);
+    console.error(call.logLabel, error);
+    return toolError(call.failure);
   }
 }

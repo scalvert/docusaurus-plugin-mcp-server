@@ -13,7 +13,8 @@ import { z } from 'zod';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { McpDocsServer } from '../src/mcp/server.js';
 import { buildSkillsArtifact } from '../src/skills/packager.js';
-import type { ProcessedDoc, SkillsArtifact } from '../src/types/index.js';
+import type { McpDocsEvent } from '../src/mcp/events.js';
+import type { McpServerBundleConfig, ProcessedDoc, SkillsArtifact } from '../src/types/index.js';
 import { buildTestBundle } from './helpers/bundle.js';
 
 // Indexer and server progress logs are expected here; keep test output readable.
@@ -38,7 +39,10 @@ const docs: ProcessedDoc[] = [
   },
 ];
 
-async function buildServer(skills?: SkillsArtifact) {
+async function buildServer(
+  skills?: SkillsArtifact,
+  config: Omit<McpServerBundleConfig, 'artifacts'> = {}
+) {
   const artifacts = await buildTestBundle(docs, {
     name: 'example-docs',
     version: '2.0.0',
@@ -46,7 +50,7 @@ async function buildServer(skills?: SkillsArtifact) {
     skills,
   });
 
-  return new McpDocsServer({ artifacts, instructions: 'Search first.' });
+  return new McpDocsServer({ artifacts, instructions: 'Search first.', ...config });
 }
 
 interface Wire {
@@ -263,6 +267,125 @@ describe('malformed skills.json', () => {
     await expect(client.readResource({ uri: 'skill://docs-research/SKILL.md' })).rejects.toThrow(
       /no content in skills\.json/
     );
+  });
+});
+
+describe.each(['modern', 'legacy'] as const)('onEvent with a %s client', (mode) => {
+  const client = mode === 'modern' ? { client: { name: 'era-test', version: '1.0.0' } } : {};
+
+  async function connectRecording(config: Omit<McpServerBundleConfig, 'artifacts'> = {}) {
+    const events: McpDocsEvent[] = [];
+    const skills = await buildSkillsArtifact({ builtin: true, siteTitle: 'Example' });
+    const server = await buildServer(skills, {
+      onEvent: (event) => void events.push(event),
+      ...config,
+    });
+    const connection = await connect(server, mode);
+    return { ...connection, events };
+  }
+
+  it('reports each tool call with its outcome, and the client when the request names it', async () => {
+    const { client: mcp, events } = await connectRecording();
+
+    await mcp.callTool({ name: 'docs_search', arguments: { query: 'install', limit: 3 } });
+    await mcp.callTool({
+      name: 'docs_fetch',
+      arguments: { url: '/docs/install#installation' },
+    });
+    await mcp.callTool({
+      name: 'docs_fetch',
+      arguments: { url: 'skill://docs-research/SKILL.md' },
+    });
+    await mcp.callTool({ name: 'docs_fetch', arguments: { url: '/docs/missing' } });
+
+    expect(events).toEqual([
+      {
+        type: 'tool_call',
+        tool: 'docs_search',
+        ok: true,
+        durationMs: expect.any(Number),
+        query: 'install',
+        limit: 3,
+        resultCount: 1,
+        ...client,
+      },
+      {
+        type: 'tool_call',
+        tool: 'docs_fetch',
+        ok: true,
+        durationMs: expect.any(Number),
+        uri: '/docs/install#installation',
+        resolved: 'document',
+        documentId: 'https://docs.example.com/docs/install',
+        ...client,
+      },
+      {
+        type: 'tool_call',
+        tool: 'docs_fetch',
+        ok: true,
+        durationMs: expect.any(Number),
+        uri: 'skill://docs-research/SKILL.md',
+        resolved: 'skill-file',
+        ...client,
+      },
+      {
+        type: 'tool_call',
+        tool: 'docs_fetch',
+        ok: true,
+        durationMs: expect.any(Number),
+        uri: '/docs/missing',
+        resolved: 'not-found',
+        ...client,
+      },
+    ]);
+  });
+
+  it('reports a failed search without a result count', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { client: mcp, events } = await connectRecording({
+      search: {
+        name: 'broken',
+        search: () => Promise.reject(new Error('index offline')),
+      },
+    });
+
+    const result = await mcp.callTool({ name: 'docs_search', arguments: { query: 'install' } });
+
+    expect(result.isError).toBe(true);
+    expect(events).toEqual([
+      {
+        type: 'tool_call',
+        tool: 'docs_search',
+        ok: false,
+        durationMs: expect.any(Number),
+        query: 'install',
+        limit: 16,
+        ...client,
+      },
+    ]);
+    errorSpy.mockRestore();
+  });
+
+  it.each([
+    [
+      'throws',
+      () => {
+        throw new Error('analytics down');
+      },
+    ],
+    ['rejects', () => Promise.reject(new Error('analytics down'))],
+  ])('answers the call and logs the error when onEvent %s', async (_, onEvent) => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const { client: mcp } = await connectRecording({ onEvent });
+
+    const result = await mcp.callTool({ name: 'docs_search', arguments: { query: 'install' } });
+
+    expect(result.isError).toBeFalsy();
+    expect(JSON.stringify(result.content)).toContain('https://docs.example.com/docs/install');
+    await vi.waitFor(() =>
+      expect(errorSpy).toHaveBeenCalledWith('[MCP] onEvent error:', expect.any(Error))
+    );
+    errorSpy.mockRestore();
   });
 });
 

@@ -214,6 +214,7 @@ export class McpDocsServer {
       // Deprecated since 2.2; a provider without it is always ready.
       isReady: () => provider.isReady?.() ?? true,
       servesSkills: skills !== null,
+      onEvent: this.config.onEvent,
     };
     for (const tool of DOCS_TOOLS) {
       tool.register(server, deps, this.config.tools);

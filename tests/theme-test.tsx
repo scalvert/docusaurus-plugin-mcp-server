@@ -183,6 +183,61 @@ describe('McpInstallButton', () => {
     expect(container.querySelector('.dropdown--show')).toBeNull();
   });
 
+  function renderWithOnCopy(onCopy: (event: unknown) => void) {
+    const utils = render(
+      <McpInstallButton
+        serverUrl="https://docs.example.com/mcp"
+        serverName="my-docs"
+        label="Install MCP"
+        clients={['claude-code', 'cursor']}
+        onCopy={onCopy}
+      />
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Install MCP' }));
+    const copyButtonFor = (clientName: string): HTMLElement => {
+      const item = screen.getByText(clientName).closest('li');
+      const button = item?.querySelector<HTMLElement>('.mcp-code-block__copy');
+      if (!button) throw new Error(`expected a copy button for ${clientName}`);
+      return button;
+    };
+    return { ...utils, copyButtonFor };
+  }
+
+  it('reports a copied CLI command or config to onCopy', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal('navigator', { clipboard: { writeText } });
+    const onCopy = vi.fn();
+    const { copyButtonFor } = renderWithOnCopy(onCopy);
+
+    fireEvent.click(copyButtonFor('Claude Code'));
+    await vi.waitFor(() => expect(onCopy).toHaveBeenCalledTimes(1));
+    fireEvent.click(copyButtonFor('Cursor'));
+    await vi.waitFor(() => expect(onCopy).toHaveBeenCalledTimes(2));
+
+    expect(onCopy.mock.calls).toEqual([
+      [{ client: 'claude-code', kind: 'command' }],
+      [{ client: 'cursor', kind: 'config' }],
+    ]);
+    vi.unstubAllGlobals();
+  });
+
+  it('does not report a copy that failed', async () => {
+    const writeText = vi.fn().mockRejectedValue(new Error('denied'));
+    vi.stubGlobal('navigator', { clipboard: { writeText } });
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const onCopy = vi.fn();
+    const { copyButtonFor } = renderWithOnCopy(onCopy);
+
+    fireEvent.click(copyButtonFor('Claude Code'));
+    await vi.waitFor(() =>
+      expect(errorSpy).toHaveBeenCalledWith('Failed to copy:', expect.any(Error))
+    );
+
+    expect(onCopy).not.toHaveBeenCalled();
+    errorSpy.mockRestore();
+    vi.unstubAllGlobals();
+  });
+
   it('renders nothing when no server is configured via props or plugin', () => {
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     const { container } = render(<McpInstallButton />);
