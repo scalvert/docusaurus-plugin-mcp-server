@@ -104,9 +104,11 @@ jobs:
           # Never restore a cache into a build that gets published.
           package-manager-cache: false
 
-      # Trusted publishing needs npm 11.5.1 or later.
+      # Trusted publishing needs npm 11.5.1 or later. npm 12.2.1 fails to
+      # publish with OIDC: it rejects the token that its OIDC step sets as an
+      # unknown CLI flag (EUNKNOWNCONFIG), so stay on npm 11.
       - name: Update npm
-        run: npm install --global npm@latest
+        run: npm install --global npm@11
 
       - name: Install dependencies
         run: npm ci
