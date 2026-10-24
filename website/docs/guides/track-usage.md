@@ -3,6 +3,9 @@ title: Track usage
 description: Send what agents search and read, and which AI tools readers set up, to your own analytics.
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
 # Track usage
 
 The plugin has two hooks for analytics. It sends nothing anywhere itself: you choose the backend and the fields.
@@ -16,40 +19,107 @@ Both are new in 2.5.
 
 ## What agents search and read
 
-Pass `onEvent` to the handler. It gets one event per tool call. This Vercel function sends each one to an analytics endpoint:
+Pass `onEvent` to the adapter you deploy with. It gets one event per tool call. Every adapter takes it: `createWebRequestHandler`, `createNodeHandler`, and `createNodeServer`.
+
+Put the analytics code in its own module, so every platform below can share it:
+
+```javascript title="analytics.mjs"
+// Send one event to your analytics service.
+export async function send(fields) {
+  try {
+    await fetch('https://analytics.example.com/collect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(fields),
+    });
+  } catch (error) {
+    console.error('[analytics]', error);
+  }
+}
+
+// Keep only the fields that are safe to store. See the rules below.
+export function fieldsOf(event) {
+  return {
+    tool: event.tool,
+    ok: event.ok,
+    page: event.tool === 'docs_fetch' ? event.documentId?.split('?')[0] : undefined,
+    results: event.tool === 'docs_search' ? event.resultCount : undefined,
+    client: event.client?.name,
+  };
+}
+```
+
+Replace `send` with your analytics library's call. On a server that keeps running, call it from `onEvent`. On Node:
+
+```javascript title="mcp-server.mjs"
+import { createNodeServer } from 'docusaurus-plugin-mcp-server/adapters/node';
+import { fieldsOf, send } from './analytics.mjs';
+
+createNodeServer({
+  artifactsDir: './build/mcp',
+  onEvent: (event) => send(fieldsOf(event)),
+}).listen(3456);
+```
+
+A Bun or Deno server passes the same `onEvent` to `createWebRequestHandler`.
+
+### On serverless platforms
+
+The server doesn't wait for `onEvent`. A serverless platform can stop the function once the response is sent, and cancel a send that is still running. To keep it running, pass the send to the platform's `waitUntil`.
+
+`onEvent` is set once, when you create the handler, so it needs a `waitUntil` that it can import:
+
+<Tabs groupId="platform">
+<TabItem value="vercel" label="Vercel">
+
+`waitUntil` comes from [`@vercel/functions`](https://www.npmjs.com/package/@vercel/functions):
 
 ```javascript title="api/mcp.mjs"
 import { waitUntil } from '@vercel/functions';
 import { createWebRequestHandler } from 'docusaurus-plugin-mcp-server/adapters';
 import bundle from '../build/mcp/bundle.json' with { type: 'json' };
-
-function send(fields) {
-  return fetch('https://analytics.example.com/collect', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(fields),
-  }).catch((error) => console.error('[analytics]', error));
-}
+import { fieldsOf, send } from '../analytics.mjs';
 
 export default {
   fetch: createWebRequestHandler({
     artifacts: bundle,
-    onEvent(event) {
-      waitUntil(
-        send({
-          tool: event.tool,
-          ok: event.ok,
-          page: event.tool === 'docs_fetch' ? event.documentId?.split('?')[0] : undefined,
-          results: event.tool === 'docs_search' ? event.resultCount : undefined,
-          client: event.client?.name,
-        })
-      );
-    },
+    onEvent: (event) => waitUntil(send(fieldsOf(event))),
   }),
 };
 ```
 
-Replace `send` with your analytics library's call. The events answer these questions:
+</TabItem>
+<TabItem value="netlify" label="Netlify">
+
+`getContext()` from [`@netlify/functions`](https://docs.netlify.com/build/functions/api/) returns the current request's context, which has `waitUntil`:
+
+```javascript title="netlify/functions/mcp.mjs"
+import { getContext } from '@netlify/functions';
+import { createWebRequestHandler } from 'docusaurus-plugin-mcp-server/adapters';
+import bundle from '../../build/mcp/bundle.json' with { type: 'json' };
+import { fieldsOf, send } from '../../analytics.mjs';
+
+const handler = createWebRequestHandler({
+  artifacts: bundle,
+  onEvent: (event) => getContext().waitUntil(send(fieldsOf(event))),
+});
+
+export default (request) => handler(request);
+
+export const config = { path: '/mcp' };
+```
+
+</TabItem>
+<TabItem value="cloudflare" label="Cloudflare Workers">
+
+This doesn't work on Workers yet. There, `waitUntil` is a method of [`ctx`](https://developers.cloudflare.com/workers/runtime-apis/context/), the third argument of each `fetch(request, env, ctx)` call, and `onEvent` can't reach it. A send can still finish, but Workers can cancel it after the response is sent, so some events can be lost.
+
+[Issue #208](https://github.com/scalvert/docusaurus-plugin-mcp-server/issues/208) tracks a way to pass `waitUntil` to the handler.
+
+</TabItem>
+</Tabs>
+
+The events answer these questions:
 
 - **Which pages do agents read?** Count `docs_fetch` events by `documentId`. `resolved` is `'document'` when the fetch found a page, and `'not-found'` when it didn't.
 - **Which searches find nothing?** Count `docs_search` events where `resultCount` is `0`.
@@ -60,7 +130,7 @@ Follow these rules when you write the handler:
 - **Leave out `query` and `uri`.** They're the agent's input, as sent, and can hold anything. Send them only if your analytics may store free text.
 - **Remove the query string from `documentId`.** With a custom search provider, it can keep the one the agent sent.
 - **Check `event.tool` before you read a tool's fields.** `resultCount` is only on search events, and `documentId` only on fetch events.
-- **Hand async work to the platform.** The server doesn't wait for `onEvent`, and it logs an error from it instead of returning one to the client. Serverless platforms can stop work once the response is sent, so pass the send to the platform's `waitUntil`, as the sample does with Vercel's.
+- **Hand async work to the platform.** On a serverless platform, pass the send to `waitUntil`, as in [On serverless platforms](#on-serverless-platforms). The server logs an error from `onEvent` instead of returning it to the client.
 
 Every field, and when it's present, is in [Usage events](../reference/server-options.md#usage-events).
 
