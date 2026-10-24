@@ -33,7 +33,7 @@ module.exports = {
 | `minContentLength` | `number` | `50` | Pages with less extracted text than this are skipped |
 | `excludeRoutes` | `string[]` | `['/404*', '/search*']` | Glob patterns for routes to leave out |
 | `mdxComponents` | `boolean` | `true` | Make the plugin's components available in MDX pages without an import (see [below](#mdx-components)). Set `false` if your theme has no `MDXComponents` |
-| `indexers` | `string[] \| false` | `['local']` | Indexers to run at build time: `'local'` (built-in), a path (relative to the site directory), or an npm package. `false` turns indexing off |
+| `indexers` | `string[] \| false` | `['local']` | Indexers to run at build time: `'local'` (built-in), a path (relative to the site directory), or an npm package. `false` skips all MCP build output: no bundle, skills, or agent guides |
 | `skills` | `{ builtin?: boolean; dir?: string } \| false` | built-in skill only | [Agent Skills](../guides/agent-skills.md) to package. `dir` is relative to the site directory. `false` turns skills off |
 | `search` | `string` | `'local'` | **Deprecated since 2.2, removed in 3.0.** Has had no effect since 2.0. Choose the search provider with the [server's `search` option](./server-options.md). `'flexsearch'` is rejected |
 

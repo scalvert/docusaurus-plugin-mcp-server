@@ -47,7 +47,7 @@ mcp-skills/
 At build time the plugin:
 
 - validates every skill. The frontmatter `name` must match the directory name, and a skill can have at most 512 files and 16 MiB. Invalid skills fail the build with a `SkillValidationError`.
-- skips symlinks, and packages bundled scripts (`.sh`, `.py`, `.js`, …) with a warning.
+- follows a symlinked skill directory in `dir`, skips symlinks inside a skill with a warning, and packages bundled scripts (`.sh`, `.py`, `.js`, …) with a warning.
 - precomputes SHA-256 digests and adds the skills to the artifact bundle, so the handler serves them with no extra config.
 
 If you copy the built-in skill, replace its placeholders (`{{siteDocs}}`, `{{siteSummary}}`, `{{siteMap}}`) with your own wording. They're only filled in for the built-in copy.
@@ -61,7 +61,7 @@ If you copy the built-in skill, replace its placeholders (`{{siteDocs}}`, `{{sit
 
 ## Skills from your pages
 
-A setup or troubleshooting procedure can be a skill without a separate `SKILL.md`: mark it up in the page with `AgentGuide`, `Step`, `Check`, and `Symptom`, and the build compiles it into a skill named after the guide, served next to these. See [Agent guides](./agent-guides.md). A guide can't share a name with a skill in `dir`.
+A setup or troubleshooting procedure can be a skill without a separate `SKILL.md`: mark it up in the page with `AgentGuide`, `Step`, `Check`, and `Symptom`, and the build compiles it into a skill named after the guide, served next to these. See [Agent guides](./agent-guides.md). A guide can't share a name with any other skill, including one in `dir` or the built-in `docs-research`.
 
 To ship the same guides in your repository for `npx skills add`, copy them out of `build/mcp/bundle.json` after the build. This site does that with [`website/scripts/sync-skills.mjs`](https://github.com/scalvert/docusaurus-plugin-mcp-server/blob/main/website/scripts/sync-skills.mjs), and CI fails if a page changes without a sync.
 
@@ -71,7 +71,7 @@ At runtime the server:
 
 - declares the `io.modelcontextprotocol/skills` extension and implements `skills/list` and `skills/get`.
 - serves every skill file as a resource at `skill://<name>/<path>`, for example `skill://docs-research/SKILL.md`.
-- appends the skill URIs to the server `instructions`, so clients that don't support the extension yet can still find the skills.
+- adds a pointer to the skills to the server `instructions`, with each skill's URI and description, so clients that don't support the extension yet can still find the skills. See [Instructions sent to clients](../reference/server-options.md#instructions-sent-to-clients).
 - lets `docs_fetch` read any skill file by its `skill://` URI. Few hosts support the skills extension yet, and many let only the user, not the model, read resources, but every host lets the model call tools. The instructions tell the agent to use `docs_fetch`, or `resources/read` where the client supports it.
 
 Keep skills to Markdown. MCP hosts treat served skills as untrusted input and won't run bundled scripts without the user's explicit approval.

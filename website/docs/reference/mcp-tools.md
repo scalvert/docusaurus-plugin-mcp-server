@@ -71,6 +71,6 @@ The exported `docsFetchTool.inputSchema` and `docsFetchInputSchema` still requir
 | Protocol versions | 2026-07-28 (stateless, `server/discover`), and 2025-era revisions through `initialize`, on the same endpoint |
 | Skills extension | `io.modelcontextprotocol/skills`: `skills/list`, `skills/get`. See [Agent Skills](../guides/agent-skills.md) |
 | Resources | Every skill file at `skill://<name>/<path>`, readable with `resources/read` or `docs_fetch` |
-| Instructions | The `instructions` server option, with skill URIs appended |
-| Caching | List and read results carry cache hints: `ttlMs` 5 minutes, `cacheScope: public` |
+| Instructions | The `instructions` server option, followed by a pointer to the skills when any are served. See [Instructions sent to clients](./server-options.md#instructions-sent-to-clients) |
+| Caching | On protocol 2026-07-28, list and read results carry cache hints: `ttlMs` 5 minutes, `cacheScope: public`. 2025-era responses have none |
 | Errors | Unknown tools return JSON-RPC `-32602` |

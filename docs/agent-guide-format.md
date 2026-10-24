@@ -130,23 +130,28 @@ Agent-only content is still public: it's in the page HTML and in the compiled gu
 The build fails with a `GuideValidationError` when:
 
 - a guide has no `name`, `kind`, or `description`, or its `name` isn't a valid skill name (lowercase letters, digits, and single hyphens, at most 64 characters)
-- two guides share a name, or a guide's name matches a skill in the plugin's skills `dir`
+- two guides share a name
 - a guide has no `DoneWhen`, or has more than one
 - a setup guide has no steps, or a troubleshooting guide has steps
 - a step or symptom has no `id`, or two steps or two symptoms in the same guide share one
 - a symptom has no `title` and no heading
 - a symptom names a guide that doesn't exist, a symptom inside a guide names a different guide, or a step's `symptoms` names a symptom the guide doesn't have
-- a `Step`, `Check`, or `Symptom` sits somewhere the table above doesn't allow, or guides are nested
+- a `Step`, `Check`, or `Symptom` sits somewhere the table above doesn't allow, `Prerequisites` is in a troubleshooting guide, or guides are nested
+
+The build fails with a `SkillValidationError` (`[MCP] Invalid skill at agent guide "<name>" (<route>): skill name "<name>" is already used by …`) when a guide's name matches another skill: a skill in the plugin's skills `dir`, or the built-in `docs-research` while it's on. It also fails this way when a guide's `description` is longer than 1024 characters.
 
 The build warns when:
 
 - a step has no `Check`
 - a step has no `title` and no heading (the compiled guide uses its `id`)
 - a guide has no symptoms
-- the site has guides but the plugin's `skills` option is `false`, so they aren't served
-- `data-mcp-*` attributes appear outside the page's content element (set by the plugin's `contentSelectors`). They're ignored.
+- `data-mcp-*` attributes, including `ForAgents` and `ForHumans`, appear outside the page's content element (set by the plugin's `contentSelectors`). They're ignored.
 
-`docusaurus-mcp-verify` reports the same warnings for an existing build.
+These warnings start with `[MCP] Agent guide:`, and `docusaurus-mcp-verify` reports them again for an existing build.
+
+One more warning has its own text: when the site has guides but the plugin's `skills` option is `false`, the build logs `[MCP] Found N agent guide(s), but skills are disabled (skills: false), so they aren't served`. `docusaurus-mcp-verify` doesn't repeat it.
+
+The build doesn't read guide markup on a page it leaves out (an `excludeRoutes` page, or one shorter than `minContentLength`), or inside an `excludeSelectors` element, and doesn't warn about it.
 
 ## The compiled skill
 

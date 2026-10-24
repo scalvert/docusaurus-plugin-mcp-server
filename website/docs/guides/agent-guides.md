@@ -41,7 +41,7 @@ Their symptoms come from [Troubleshooting deployments](../deploy/troubleshooting
 
 </Prerequisites>
 
-<Step id="wrap" symptoms="invalid-guides">
+<Step id="wrap" symptoms="invalid-guides name-collision">
 
 ## 1. Wrap the procedure
 
@@ -70,11 +70,12 @@ Wrap the procedure in `AgentGuide` and say how to tell it worked with `DoneWhen`
 </AgentGuide>
 ````
 
-- **`name`** becomes the skill's name: lowercase letters, digits, and single hyphens. Make it specific enough to stand out among the other skills an agent has installed.
+- **`name`** becomes the skill's name: up to 64 lowercase letters, digits, and single hyphens. It can't match another skill's name, including the built-in `docs-research`. Make it specific enough to stand out among the other skills an agent has installed.
 - **`kind`** is `setup` for a procedure with steps, or `troubleshooting` for symptoms only, for problems that aren't tied to one setup.
-- **`description`** is what an agent reads to decide whether to use the guide. Say what it does, then "Use when…".
+- **`description`** is what an agent reads to decide whether to use the guide, up to 1024 characters. Say what it does, then "Use when…".
+- **`title`** is optional: the compiled guide's title. Without it, the guide uses the page's `h1`.
 - **`DoneWhen`** says how to tell the whole guide worked. Every guide has exactly one.
-- **`Prerequisites`** is optional: what has to be true before step 1, each with how to check it.
+- **`Prerequisites`** is optional, and only for setup guides: what has to be true before step 1, each with how to check it.
 
 Leave a blank line after each opening tag and before each closing tag, so the Markdown inside is parsed as Markdown.
 
@@ -159,9 +160,9 @@ A `Symptom` is one thing that can go wrong: what the user sees, why, how to fix 
 </Symptom>
 ```
 
-- **Start the title with the exact error text.** Agents match errors by searching for what they saw.
+- **Start the title with the exact error text.** Agents match errors by searching for what they saw. The title is the symptom's `title` prop, or its first heading.
 - **Label the parts.** The build reads **Cause:**, **Fix:**, and **Escalate if:** from paragraphs that start with them.
-- **Share symptoms.** A symptom several guides share, like a deployment error that happens on every platform, names them all: `guide="deploy-vercel deploy-netlify"`. Each guide gets it, and you write it once.
+- **Share symptoms.** A symptom several guides share, like a deployment error that happens on every platform, names them all: `guide="deploy-vercel deploy-netlify"`. Each guide gets it, and you write it once. Put a shared symptom outside the guides. A symptom inside a guide can't name another guide.
 
 <Check>
 
@@ -171,7 +172,7 @@ Each `Symptom` has an `id`, a title or heading that starts with what the user se
 
 </Step>
 
-<Step id="build" symptoms="invalid-guides guide-warnings">
+<Step id="build" symptoms="invalid-guides name-collision guide-warnings skills-off">
 
 ## 4. Build
 
@@ -215,9 +216,25 @@ The compiled `SKILL.md` lists every step in page order, each with its check, and
 
 ### `[MCP] Invalid agent guides:` and the build fails
 
-**Cause:** A guide breaks one of the format's rules. The error lists each problem with its page, for example a guide with no `description`, a step with no `id`, a `symptoms` prop naming a symptom that doesn't exist, or a `Step` outside an `AgentGuide`.
+**Cause:** A guide breaks one of the format's rules. The error lists each problem with its page, for example a guide with no `description`, a step with no `id`, a `symptoms` prop naming a symptom that doesn't exist, a `Step` outside an `AgentGuide`, two guides with the same name, `Prerequisites` in a troubleshooting guide, or a symptom inside a guide that names another guide.
 
-**Fix:** Fix each listed problem on the page it names, then build again. A guide's `name` can't match another skill's (the build reports that as a skill name collision), so rename one.
+**Fix:** Fix each listed problem on the page it names, then build again.
+
+<Check>
+
+`npm run build` completes.
+
+</Check>
+
+</Symptom>
+
+<Symptom id="name-collision">
+
+### `[MCP] Invalid skill at agent guide` with `is already used by`, and the build fails
+
+**Cause:** The guide's `name` matches another skill: a skill in the plugin's skills `dir`, or the built-in `docs-research`. Every skill needs its own name. Two guides with the same name fail with `[MCP] Invalid agent guides:` instead.
+
+**Fix:** Rename the guide, or the other skill, then build again.
 
 <Check>
 
@@ -231,13 +248,29 @@ The compiled `SKILL.md` lists every step in page order, each with its check, and
 
 ### `[MCP] Agent guide:` warnings in the build log
 
-**Cause:** The guide compiles, but something makes it weaker: a step without a `Check`, a guide without symptoms, guide markup outside the page's content element, or guides on a site with skills turned off (`skills: false`), where they aren't served.
+**Cause:** The guide compiles, but something makes it weaker: a step without a `Check`, a step without a title or heading, a guide without symptoms, or guide markup (including `ForAgents` and `ForHumans`) outside the page's content element.
 
 **Fix:** Add what the warning names. For markup outside the content element, move it into the page's content, or adjust [`contentSelectors`](../reference/plugin-options.md).
 
 <Check>
 
 The build log has no `[MCP] Agent guide:` lines.
+
+</Check>
+
+</Symptom>
+
+<Symptom id="skills-off">
+
+### `[MCP] Found N agent guide(s), but skills are disabled`
+
+**Cause:** The site sets `skills: false`, so the build compiles no skills, and its guides aren't served. `docusaurus-mcp-verify` doesn't repeat this warning.
+
+**Fix:** Remove `skills: false` from the plugin options, or set `skills` to an object such as `{ builtin: false }` to turn off only the built-in skill. Then build again.
+
+<Check>
+
+The build log has `[MCP] Packaged N skill(s), including M agent guide(s)`.
 
 </Check>
 
@@ -261,11 +294,11 @@ The rendered page shows the formatting, and so does the compiled `SKILL.md`.
 
 <Symptom id="missing-component">
 
-### `Expected component Step to be defined`
+### ``Expected component `Step` to be defined``
 
-**Cause:** The page uses a guide component that MDX doesn't know. Either the `mdxComponents` plugin option is `false`, or the site has an ejected `MDXComponents` that replaces the plugin's.
+**Cause:** The page uses a guide component that MDX doesn't know. The `mdxComponents` plugin option is `false`, the site has an ejected `MDXComponents` that replaces the plugin's, or the site lists `@docusaurus/theme-classic` under `themes`, which loads after the plugin and replaces its components.
 
-**Fix:** Import the components in the page (`import { AgentGuide, Step, Check } from 'docusaurus-plugin-mcp-server/theme'`), or spread `mdxComponents` into your `MDXComponents` ([MDX components](../reference/plugin-options.md#mdx-components)).
+**Fix:** Import the components in the page (`import { AgentGuide, Step, Check } from 'docusaurus-plugin-mcp-server/theme'`), spread `mdxComponents` into your `MDXComponents`, or list the plugin under `themes` after the classic theme ([MDX components](../reference/plugin-options.md#mdx-components)).
 
 <Check>
 
@@ -279,5 +312,6 @@ The page builds.
 
 ## Reference
 
-- Guides are skills, so they're served only when skills are on (the default).
+- Guides are skills, so they're served only when skills are on (the default). With `indexers: false`, the build skips all MCP output, so it compiles and checks no guides.
+- The build doesn't read guide markup on a page it leaves out: an `excludeRoutes` page, or one shorter than `minContentLength`. It also skips markup inside an `excludeSelectors` element. Neither case gets a warning.
 - The complete format, including the compiled `SKILL.md` layout and every build check, is in [the agent guide format](https://github.com/scalvert/docusaurus-plugin-mcp-server/blob/main/docs/agent-guide-format.md).

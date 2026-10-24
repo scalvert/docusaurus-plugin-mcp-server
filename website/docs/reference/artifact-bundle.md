@@ -12,7 +12,7 @@ The **artifact bundle** is everything the server needs to run, produced by one b
 | Member | Description |
 | --- | --- |
 | `formatVersion` | Layout version of the bundle. The runtime rejects bundles newer than it can read, with a message saying which version to upgrade to |
-| `manifest` | The build that produced it: server name and version, site URL, build time, document and skill counts, and which indexers ran |
+| `manifest` | The build that produced it: server name and version, site URL, build time, document and skill counts, which indexers ran, and how many skills came from [agent guides](../guides/agent-guides.md) (`guideCount`), with the build's guide warnings (`guideWarnings`) for `docusaurus-mcp-verify` to report |
 | `docs` | Every extracted page (title, description, Markdown, headings), keyed by its document ID, the page's full URL |
 | `searchIndex` | The search index, if an indexer produced one. The built-in `local` indexer does by default |
 | `skills` | The packaged [Agent Skills](../guides/agent-skills.md), if any |

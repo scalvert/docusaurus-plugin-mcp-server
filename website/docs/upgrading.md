@@ -17,7 +17,7 @@ The guides also ship in the npm package, under `node_modules/docusaurus-plugin-m
 
 ## 2.3: agent guides and the agent view
 
-2.3 adds features; the only thing to act on is a rebuild. New in 2.3:
+2.3 adds features. Most sites only need to rebuild; two setups need a change to use the components without an import (below). New in 2.3:
 
 - **[`ForAgents` and `ForHumans`](./guides/writing-for-agents.md)** mark content for one audience. `ForAgents` content is hidden from people and included in what agents get; `ForHumans` content is the reverse.
 - **[Agent guides](./guides/agent-guides.md)**: a setup or troubleshooting procedure marked up in a page is compiled into a skill that agents can follow step by step.

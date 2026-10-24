@@ -109,7 +109,7 @@ import {
 
 - **`readArtifactBundle(dir)`** reads and validates the artifact bundle in a build directory (`bundle.json`, or the 2.0/2.1 per-file layout). Pass the result as `artifacts` to `McpDocsServer`, or as `initData.bundle` to a search provider you drive yourself.
 
-All of them take the [server options](./server-options.md).
+`createWebRequestHandler`, `createNodeServer`, and `createNodeHandler` take the [server options](./server-options.md).
 
 ## Theme exports
 

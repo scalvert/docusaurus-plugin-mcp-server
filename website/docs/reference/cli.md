@@ -23,6 +23,8 @@ It checks that:
 - it has a search index for the built-in local search
 - an MCP server can initialize and load the content
 
+It also lists warnings under `⚠️ Warnings:`, such as an empty bundle or a missing search index. That list includes the warnings the build recorded about [agent guides](../guides/agent-guides.md), each starting with `Agent guide:`. Warnings don't change the exit code.
+
 ```bash
 npx docusaurus-mcp-verify
 npx docusaurus-mcp-verify ./custom-build
@@ -42,7 +44,7 @@ MCP directory:   /path/to/your/project/build/mcp
    ✓ Artifact bundle is valid
 
 🚀 Testing MCP server...
-   ✓ Server "my-docs" initialized with 42 documents
+   ✓ Server "my-docs" initialized with 42 documents and 1 skill(s)
 
 ✅ All checks passed!
 ```

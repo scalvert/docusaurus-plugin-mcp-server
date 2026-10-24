@@ -56,17 +56,18 @@ Wrap the procedure in `AgentGuide` and say how to tell it worked with `DoneWhen`
 </AgentGuide>
 ```
 
-- **`name`** becomes the skill's name: lowercase letters, digits, and single hyphens. Make it specific enough to stand out among the other skills an agent has installed.
+- **`name`** becomes the skill's name: up to 64 lowercase letters, digits, and single hyphens. It can't match another skill's name, including the built-in `docs-research`. Make it specific enough to stand out among the other skills an agent has installed.
 - **`kind`** is `setup` for a procedure with steps, or `troubleshooting` for symptoms only, for problems that aren't tied to one setup.
-- **`description`** is what an agent reads to decide whether to use the guide. Say what it does, then "Use when…".
+- **`description`** is what an agent reads to decide whether to use the guide, up to 1024 characters. Say what it does, then "Use when…".
+- **`title`** is optional: the compiled guide's title. Without it, the guide uses the page's `h1`.
 - **`DoneWhen`** says how to tell the whole guide worked. Every guide has exactly one.
-- **`Prerequisites`** is optional: what has to be true before step 1, each with how to check it.
+- **`Prerequisites`** is optional, and only for setup guides: what has to be true before step 1, each with how to check it.
 
 Leave a blank line after each opening tag and before each closing tag, so the Markdown inside is parsed as Markdown.
 
 **Check:** The page has one `AgentGuide` with a `name`, `kind`, and `description`, and one `DoneWhen` inside it.
 
-**If the check fails:** see [`[MCP] Invalid agent guides:` and the build fails](references/troubleshooting.md#invalid-guides).
+**If the check fails:** see [`[MCP] Invalid agent guides:` and the build fails](references/troubleshooting.md#invalid-guides) or [`[MCP] Invalid skill at agent guide` with `is already used by`, and the build fails](references/troubleshooting.md#name-collision).
 
 ### 2. Mark up each step {#steps}
 
@@ -107,7 +108,7 @@ Write steps that work:
 
 **Check:** Every `Step` has an `id`, a title or heading, and a `Check`.
 
-**If the check fails:** see [Markdown inside a component shows as plain text, like `**Fix:**` or a code fence](references/troubleshooting.md#markdown-as-text) or [`Expected component Step to be defined`](references/troubleshooting.md#missing-component).
+**If the check fails:** see [Markdown inside a component shows as plain text, like `**Fix:**` or a code fence](references/troubleshooting.md#markdown-as-text) or [``Expected component `Step` to be defined``](references/troubleshooting.md#missing-component).
 
 ### 3. Add troubleshooting {#symptoms}
 
@@ -133,9 +134,9 @@ A `Symptom` is one thing that can go wrong: what the user sees, why, how to fix 
 </Symptom>
 ```
 
-- **Start the title with the exact error text.** Agents match errors by searching for what they saw.
+- **Start the title with the exact error text.** Agents match errors by searching for what they saw. The title is the symptom's `title` prop, or its first heading.
 - **Label the parts.** The build reads **Cause:**, **Fix:**, and **Escalate if:** from paragraphs that start with them.
-- **Share symptoms.** A symptom several guides share, like a deployment error that happens on every platform, names them all: `guide="deploy-vercel deploy-netlify"`. Each guide gets it, and you write it once.
+- **Share symptoms.** A symptom several guides share, like a deployment error that happens on every platform, names them all: `guide="deploy-vercel deploy-netlify"`. Each guide gets it, and you write it once. Put a shared symptom outside the guides. A symptom inside a guide can't name another guide.
 
 **Check:** Each `Symptom` has an `id`, a title or heading that starts with what the user sees, and a `guide` naming the guides it belongs to (or sits inside its guide).
 
@@ -151,7 +152,7 @@ The build reads guides from the built HTML and compiles each into a skill named 
 
 **Check:** The build log has `[MCP] Packaged N skill(s), including M agent guide(s)`, with your guide counted, and no `[MCP] Agent guide:` warnings.
 
-**If the check fails:** see [`[MCP] Invalid agent guides:` and the build fails](references/troubleshooting.md#invalid-guides) or [`[MCP] Agent guide:` warnings in the build log](references/troubleshooting.md#guide-warnings).
+**If the check fails:** see [`[MCP] Invalid agent guides:` and the build fails](references/troubleshooting.md#invalid-guides), [`[MCP] Invalid skill at agent guide` with `is already used by`, and the build fails](references/troubleshooting.md#name-collision), [`[MCP] Agent guide:` warnings in the build log](references/troubleshooting.md#guide-warnings) or [`[MCP] Found N agent guide(s), but skills are disabled`](references/troubleshooting.md#skills-off).
 
 ### 5. Read it as an agent {#read}
 
@@ -170,9 +171,11 @@ Or run the server locally ([Getting started](https://docusaurus-plugin-mcp-serve
 ## Troubleshooting
 
 - [`[MCP] Invalid agent guides:` and the build fails](references/troubleshooting.md#invalid-guides)
+- [`[MCP] Invalid skill at agent guide` with `is already used by`, and the build fails](references/troubleshooting.md#name-collision)
 - [`[MCP] Agent guide:` warnings in the build log](references/troubleshooting.md#guide-warnings)
+- [`[MCP] Found N agent guide(s), but skills are disabled`](references/troubleshooting.md#skills-off)
 - [Markdown inside a component shows as plain text, like `**Fix:**` or a code fence](references/troubleshooting.md#markdown-as-text)
-- [`Expected component Step to be defined`](references/troubleshooting.md#missing-component)
+- [``Expected component `Step` to be defined``](references/troubleshooting.md#missing-component)
 
 ## Source
 

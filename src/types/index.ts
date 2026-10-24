@@ -335,8 +335,10 @@ export interface McpServerBaseConfig {
   /** Per-tool overrides, such as custom descriptions */
   tools?: McpServerToolsConfig;
   /**
-   * Called after every tool call with what happened: the tool, its input,
-   * the outcome, the time it took, and the client when the request names it.
+   * Called after each `docs_search` and `docs_fetch` call that reaches the
+   * tool, with what happened: the tool, its input, the outcome, the time it
+   * took, and the client when the request names it. A call the MCP SDK
+   * rejects first (invalid arguments, unknown tool) has no event.
    * Use it to send usage to an analytics or logging backend. The server does
    * not wait for it, and its errors are logged, never returned to the client.
    * Inputs come from the agent as sent; redact them before they leave the
