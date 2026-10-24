@@ -1,0 +1,140 @@
+name: Release
+
+# Releases run here rather than on a laptop. npm trusted publishing (OIDC)
+# lets this workflow publish without an npm token or a one-time password: the
+# package's trusted publisher on npmjs.com names this file and the `npm`
+# environment, and the environment only deploys from main. See RELEASE.md.
+#
+#   gh workflow run release.yml -f increment=minor
+#   gh workflow run release.yml -f increment=minor -f dry_run=true
+#
+# A pull request that changes the release setup gets a dry run.
+on:
+  workflow_dispatch:
+    inputs:
+      increment:
+        description: Version increment
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      dry_run:
+        description: Print what the release would do, and change nothing
+        type: boolean
+        default: false
+  pull_request:
+    paths:
+      - .github/workflows/release.yml
+      - .release-it.js
+
+permissions:
+  contents: read
+
+jobs:
+  dry-run:
+    name: Dry run
+    # Pull requests from forks can't check out their branch from this repo.
+    if: >-
+      (github.event_name == 'workflow_dispatch' && inputs.dry_run) ||
+      (github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read # lerna-changelog reads the merged pull requests
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          # The changelog is built from the history since the last tag.
+          fetch-depth: 0
+          # A branch with an upstream, not the pull request's merge commit:
+          # release-it requires one.
+          ref: ${{ github.head_ref || github.ref_name }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Dry run
+        run: npx release-it "$INCREMENT" --ci --dry-run
+        env:
+          INCREMENT: ${{ inputs.increment || 'minor' }}
+          GITHUB_AUTH: ${{ github.token }}
+
+  release:
+    name: Release
+    if: github.event_name == 'workflow_dispatch' && !inputs.dry_run
+    runs-on: ubuntu-latest
+    # npm's trusted publisher accepts only this environment, and the
+    # environment only deploys from main.
+    environment: npm
+    concurrency:
+      group: release
+      cancel-in-progress: false
+    permissions:
+      contents: write # push the release commit and tag, create the GitHub release
+      id-token: write # npm trusted publishing (OIDC)
+      issues: write # release-it comments on the issues a release resolves
+      pull-requests: write # and on the pull requests it includes
+      actions: write # start the docs deploy
+    steps:
+      - name: Require main
+        if: github.ref != 'refs/heads/main'
+        run: |
+          echo "::error::Releases run from main, not $GITHUB_REF."
+          exit 1
+
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+          # Never restore a cache into a build that gets published.
+          package-manager-cache: false
+
+      # Trusted publishing needs npm 11.5.1 or later.
+      - name: Update npm
+        run: npm install --global npm@latest
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Configure git
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+
+      # Bumps the version, publishes to npm (prepublishOnly builds and tests
+      # first), then commits, tags, pushes, and creates the GitHub release.
+      - name: Release
+        run: npx release-it "$INCREMENT" --ci
+        env:
+          INCREMENT: ${{ inputs.increment }}
+          GITHUB_AUTH: ${{ github.token }}
+
+      # A tag pushed with GITHUB_TOKEN doesn't trigger other workflows, so
+      # deploy-website.yml's tag trigger won't run. Start it by hand.
+      - name: Deploy the docs
+        run: gh workflow run deploy-website.yml --ref main -f ref="v$(jq -r .version package.json)"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Summary
+        run: |
+          version="$(jq -r .version package.json)"
+          {
+            echo "Released [v$version](https://github.com/$GITHUB_REPOSITORY/releases/tag/v$version)."
+            echo "npm: https://www.npmjs.com/package/docusaurus-plugin-mcp-server/v/$version"
+          } >> "$GITHUB_STEP_SUMMARY"
