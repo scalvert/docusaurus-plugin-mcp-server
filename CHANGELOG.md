@@ -1,6 +1,22 @@
 
 
 
+
+## v2.6.0 (2026-10-24)
+
+#### :rocket: Enhancement
+* [#210](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/210) feat: pass onEvent promises to the platform's per-request waitUntil ([@scalvert](https://github.com/scalvert))
+
+#### :memo: Documentation
+* [#209](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/209) docs: make the Track usage sample platform-neutral ([@scalvert](https://github.com/scalvert))
+
+#### :house: Internal
+* [#212](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/212) ci: pin npm 11 in the Release workflow ([@scalvert](https://github.com/scalvert))
+* [#211](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/211) ci: release from GitHub Actions with npm trusted publishing ([@scalvert](https://github.com/scalvert))
+
+#### Committers: 1
+- Steve Calvert ([@scalvert](https://github.com/scalvert))
+
 ## v2.5.0 (2026-10-24)
 
 #### :rocket: Enhancement
