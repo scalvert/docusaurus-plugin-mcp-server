@@ -8,6 +8,7 @@
  */
 
 import type { McpDocsServer } from '../mcp/server.js';
+import type { WaitUntil } from '../mcp/events.js';
 import { ConfigurationError, internalErrorBody } from '../errors.js';
 
 export interface HttpPolicyOptions {
@@ -39,10 +40,31 @@ export function jsonRpcErrorBody(code: number, message: string): string {
   return JSON.stringify({ jsonrpc: '2.0', id: null, error: { code, message } });
 }
 
+/**
+ * The `waitUntil` of a platform's per-request context, bound to it. Workers'
+ * `ctx.waitUntil` throws when it's called without `ctx` as `this`.
+ */
+export function waitUntilOf(context: unknown): WaitUntil | undefined {
+  if (typeof context !== 'object' || context === null) return undefined;
+  const holder = context as { waitUntil?: unknown };
+  const { waitUntil } = holder;
+  if (typeof waitUntil !== 'function') return undefined;
+  return (promise) => waitUntil.call(holder, promise);
+}
+
 export function createHttpPolicy(options: HttpPolicyOptions) {
   const { getServer, corsHeaders, statusIndent } = options;
 
-  return async function handle(request: Request): Promise<Response> {
+  /**
+   * `context` and `executionContext` are what the platform passes after the
+   * request: Netlify's context, or Workers' `env` and `ctx`. The first one
+   * with a `waitUntil` method keeps `onEvent` work running after the response.
+   */
+  return async function handle(
+    request: Request,
+    context?: unknown,
+    executionContext?: unknown
+  ): Promise<Response> {
     if (request.method === 'OPTIONS') {
       return new Response(null, { status: 204, headers: corsHeaders });
     }
@@ -73,7 +95,8 @@ export function createHttpPolicy(options: HttpPolicyOptions) {
 
     try {
       const server = await getServer();
-      const response = await server.handleWebRequest(request);
+      const waitUntil = waitUntilOf(context) ?? waitUntilOf(executionContext);
+      const response = await server.handleWebRequest(request, waitUntil && { waitUntil });
       const headers = new Headers(response.headers);
       for (const [key, value] of Object.entries(corsHeaders)) {
         headers.set(key, value);

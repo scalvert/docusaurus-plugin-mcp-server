@@ -15,4 +15,4 @@ export {
   type WebRequestAdapterConfig,
 } from './adapters/web-request.js';
 export type { ArtifactBundle } from './artifacts/bundle.js';
-export type { McpDocsEvent, McpEventHandler } from './mcp/events.js';
+export type { McpDocsEvent, McpEventHandler, WaitUntil } from './mcp/events.js';

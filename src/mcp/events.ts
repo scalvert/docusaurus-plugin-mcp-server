@@ -71,21 +71,48 @@ export type McpDocsEvent = McpDocsSearchEvent | McpDocsFetchEvent;
 /**
  * Receives server events. The server does not wait for it, and a throw or a
  * rejected promise is logged, never returned to the client. On serverless
- * runtimes that stop work when the response is sent, keep async work alive
- * with the platform's `waitUntil`.
+ * runtimes that stop work when the response is sent, return the promise and
+ * give the handler the request's `waitUntil`: the server passes the promise
+ * to it.
  */
 export type McpEventHandler = (event: McpDocsEvent) => void | Promise<void>;
 
-/** Report an event without letting the handler affect the response. */
-export function emitEvent(onEvent: McpEventHandler | undefined, event: McpDocsEvent): void {
+/**
+ * Keeps a promise running after the response is sent, like the
+ * `waitUntil` that Cloudflare Workers, Netlify, and Vercel provide for each
+ * request.
+ *
+ * @since 2.6
+ */
+export type WaitUntil = (promise: Promise<unknown>) => void;
+
+/**
+ * Report an event without letting the handler affect the response. A promise
+ * the handler returns goes to `waitUntil`, after its rejection is logged.
+ */
+export function emitEvent(
+  onEvent: McpEventHandler | undefined,
+  event: McpDocsEvent,
+  waitUntil?: WaitUntil
+): void {
   if (!onEvent) return;
+  let result: void | Promise<void>;
   try {
-    const result = onEvent(event);
-    if (result && typeof result.then === 'function') {
-      result.then(undefined, (error: unknown) => console.error('[MCP] onEvent error:', error));
-    }
+    result = onEvent(event);
   } catch (error) {
     console.error('[MCP] onEvent error:', error);
+    return;
+  }
+  if (!result || typeof result.then !== 'function') return;
+
+  const settled = result.then(undefined, (error: unknown) => {
+    console.error('[MCP] onEvent error:', error);
+  });
+  if (!waitUntil) return;
+  try {
+    waitUntil(settled);
+  } catch (error) {
+    console.error('[MCP] waitUntil error:', error);
   }
 }
 

@@ -65,14 +65,14 @@ A Bun or Deno server passes the same `onEvent` to `createWebRequestHandler`.
 
 ### On serverless platforms
 
-The server doesn't wait for `onEvent`. A serverless platform can stop the function once the response is sent, and cancel a send that is still running. To keep it running, pass the send to the platform's `waitUntil`.
+The server doesn't wait for `onEvent`. A serverless platform can stop the function once the response is sent, and cancel a send that is still running.
 
-`onEvent` is set once, when you create the handler, so it needs a `waitUntil` that it can import:
+To keep it running, keep `onEvent` as it is, so it returns the send's promise. Then pass the platform's per-request context to the handler after the request. The handler uses the first argument that has a `waitUntil` method, and the server passes it the promise. This needs version 2.6 or later.
 
 <Tabs groupId="platform">
 <TabItem value="vercel" label="Vercel">
 
-`waitUntil` comes from [`@vercel/functions`](https://www.npmjs.com/package/@vercel/functions):
+Import `waitUntil` from [`@vercel/functions`](https://www.npmjs.com/package/@vercel/functions), and pass it in an object:
 
 ```javascript title="api/mcp.mjs"
 import { waitUntil } from '@vercel/functions';
@@ -80,31 +80,32 @@ import { createWebRequestHandler } from 'docusaurus-plugin-mcp-server/adapters';
 import bundle from '../build/mcp/bundle.json' with { type: 'json' };
 import { fieldsOf, send } from '../analytics.mjs';
 
+const mcp = createWebRequestHandler({
+  artifacts: bundle,
+  onEvent: (event) => send(fieldsOf(event)),
+});
+
 export default {
-  fetch: createWebRequestHandler({
-    artifacts: bundle,
-    onEvent: (event) => waitUntil(send(fieldsOf(event))),
-  }),
+  fetch: (request) => mcp(request, { waitUntil }),
 };
 ```
 
 </TabItem>
 <TabItem value="netlify" label="Netlify">
 
-`getContext()` from [`@netlify/functions`](https://docs.netlify.com/build/functions/api/) returns the current request's context, which has `waitUntil`:
+Netlify passes its [context](https://docs.netlify.com/build/functions/api/), which has `waitUntil`, after the request. Pass it on:
 
 ```javascript title="netlify/functions/mcp.mjs"
-import { getContext } from '@netlify/functions';
 import { createWebRequestHandler } from 'docusaurus-plugin-mcp-server/adapters';
 import bundle from '../../build/mcp/bundle.json' with { type: 'json' };
 import { fieldsOf, send } from '../../analytics.mjs';
 
 const handler = createWebRequestHandler({
   artifacts: bundle,
-  onEvent: (event) => getContext().waitUntil(send(fieldsOf(event))),
+  onEvent: (event) => send(fieldsOf(event)),
 });
 
-export default (request) => handler(request);
+export default (request, context) => handler(request, context);
 
 export const config = { path: '/mcp' };
 ```
@@ -112,9 +113,29 @@ export const config = { path: '/mcp' };
 </TabItem>
 <TabItem value="cloudflare" label="Cloudflare Workers">
 
-This doesn't work on Workers yet. There, `waitUntil` is a method of [`ctx`](https://developers.cloudflare.com/workers/runtime-apis/context/), the third argument of each `fetch(request, env, ctx)` call, and `onEvent` can't reach it. A send can still finish, but Workers can cancel it after the response is sent, so some events can be lost.
+Workers pass `env` and then [`ctx`](https://developers.cloudflare.com/workers/runtime-apis/context/), which has `waitUntil`, after the request. Pass both on:
 
-[Issue #208](https://github.com/scalvert/docusaurus-plugin-mcp-server/issues/208) tracks a way to pass `waitUntil` to the handler.
+```javascript title="worker.js"
+import { createWebRequestHandler } from 'docusaurus-plugin-mcp-server/adapters';
+import bundle from './build/mcp/bundle.json' with { type: 'json' };
+import { fieldsOf, send } from './analytics.mjs';
+
+const mcp = createWebRequestHandler({
+  artifacts: bundle,
+  onEvent: (event) => send(fieldsOf(event)),
+});
+
+export default {
+  fetch(request, env, ctx) {
+    if (new URL(request.url).pathname === '/mcp') {
+      return mcp(request, env, ctx);
+    }
+    return env.ASSETS.fetch(request);
+  },
+};
+```
+
+A Worker that exports the handler as `fetch` directly, such as `export default { fetch: mcp }`, gets this without changes, because Workers call it with `env` and `ctx`.
 
 </TabItem>
 </Tabs>
@@ -130,7 +151,7 @@ Follow these rules when you write the handler:
 - **Leave out `query` and `uri`.** They're the agent's input, as sent, and can hold anything. Send them only if your analytics may store free text.
 - **Remove the query string from `documentId`.** With a custom search provider, it can keep the one the agent sent.
 - **Check `event.tool` before you read a tool's fields.** `resultCount` is only on search events, and `documentId` only on fetch events.
-- **Hand async work to the platform.** On a serverless platform, pass the send to `waitUntil`, as in [On serverless platforms](#on-serverless-platforms). The server logs an error from `onEvent` instead of returning it to the client.
+- **Return the send's promise.** On a serverless platform, also pass the request's context to the handler, as in [On serverless platforms](#on-serverless-platforms). The server logs an error from `onEvent` instead of returning it to the client.
 
 Every field, and when it's present, is in [Usage events](../reference/server-options.md#usage-events).
 

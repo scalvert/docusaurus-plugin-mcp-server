@@ -14,7 +14,7 @@ The package is ESM-only and has four entry points:
 | `docusaurus-plugin-mcp-server/adapters/node` | The Node server and handler, reading the bundle from disk | Node |
 | `docusaurus-plugin-mcp-server/theme` | The install button, `ForAgents`/`ForHumans`, the agent guide components, and registry helpers | The browser (your Docusaurus theme) |
 
-The `ArtifactBundle` type is exported from the main, `adapters`, and `adapters/node` entry points. So are `McpDocsEvent` and `McpEventHandler`, the types of the [`onEvent`](./server-options.md#usage-events) server option. The main entry point also exports the event's parts: `McpDocsSearchEvent`, `McpDocsFetchEvent`, `McpToolCallEventBase`, and `McpClientInfo`.
+The `ArtifactBundle` type is exported from the main, `adapters`, and `adapters/node` entry points. So are `McpDocsEvent` and `McpEventHandler`, the types of the [`onEvent`](./server-options.md#usage-events) server option. The main and `adapters` entry points also export `WaitUntil`, the type of a platform's per-request `waitUntil`. The main entry point also exports the event's parts: `McpDocsSearchEvent`, `McpDocsFetchEvent`, `McpToolCallEventBase`, and `McpClientInfo`.
 
 ## Main exports
 
@@ -93,7 +93,7 @@ import {
 } from 'docusaurus-plugin-mcp-server/adapters/node';
 ```
 
-- **`createWebRequestHandler(options)`** returns a web-standard `(request: Request) => Promise<Response>` handler. Pass `{ artifacts }`. See the [deployment guides](../deploy/index.md).
+- **`createWebRequestHandler(options)`** returns a web-standard `(request, context?, executionContext?) => Promise<Response>` handler. Pass `{ artifacts }`. See the [deployment guides](../deploy/index.md). After the request, the handler takes the platform's per-request context, as the platform passes it: Netlify's `context`, Workers' `env` and `ctx`, or `{ waitUntil }`. The first argument with a `waitUntil` method gets the promise that [`onEvent`](./server-options.md#usage-events) returns. Since 2.6.
 - **`createNodeServer(options)`** returns an `http.Server` ready to `.listen()`, for local development and simple hosting.
 - **`createNodeHandler(options)`** returns an `(req, res)` handler for `http.createServer()` and Connect-style frameworks such as Express. Mount it for all methods: `GET` is the status check and `OPTIONS` is the CORS preflight. If a body parser such as `express.json()` has already read the request, the handler uses its `req.body`:
 

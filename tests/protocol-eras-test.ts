@@ -58,7 +58,11 @@ interface Wire {
   responses: Array<{ status: number; body: unknown }>;
 }
 
-async function connect(server: McpDocsServer, mode: 'legacy' | 'modern') {
+async function connect(
+  server: McpDocsServer,
+  mode: 'legacy' | 'modern',
+  requestOptions?: Parameters<McpDocsServer['handleWebRequest']>[1]
+) {
   const wire: Wire = { requests: [], responses: [] };
 
   const fetch = async (input: string | URL | Request, init?: RequestInit) => {
@@ -67,7 +71,7 @@ async function connect(server: McpDocsServer, mode: 'legacy' | 'modern') {
     const body = bodyText ? JSON.parse(bodyText) : undefined;
     wire.requests.push({ method: body?.method, headers: request.headers, body });
 
-    const response = await server.handleWebRequest(request);
+    const response = await server.handleWebRequest(request, requestOptions);
     const text = await response.clone().text();
     let parsed: unknown = text;
     try {
@@ -386,6 +390,78 @@ describe.each(['modern', 'legacy'] as const)('onEvent with a %s client', (mode) 
       expect(errorSpy).toHaveBeenCalledWith('[MCP] onEvent error:', expect.any(Error))
     );
     errorSpy.mockRestore();
+  });
+
+  describe('with a per-request waitUntil', () => {
+    async function connectWaiting(onEvent: McpServerBundleConfig['onEvent']) {
+      const waited: Promise<unknown>[] = [];
+      const server = await buildServer(undefined, { onEvent });
+      const connection = await connect(server, mode, {
+        waitUntil: (promise) => void waited.push(promise),
+      });
+      return { ...connection, waited };
+    }
+
+    it('hands the promise onEvent returns to waitUntil, without waiting for it', async () => {
+      let finish!: () => void;
+      const sent = new Promise<void>((resolve) => (finish = resolve));
+      let settled = false;
+      const { client: mcp, waited } = await connectWaiting(() =>
+        sent.then(() => {
+          settled = true;
+        })
+      );
+
+      const result = await mcp.callTool({ name: 'docs_search', arguments: { query: 'install' } });
+
+      // The response arrived while the send is still pending.
+      expect(result.isError).toBeFalsy();
+      expect(settled).toBe(false);
+      expect(waited).toHaveLength(1);
+
+      finish();
+      await waited[0];
+      expect(settled).toBe(true);
+    });
+
+    it('does not call waitUntil when onEvent returns nothing', async () => {
+      const { client: mcp, waited } = await connectWaiting(() => {});
+
+      await mcp.callTool({ name: 'docs_search', arguments: { query: 'install' } });
+
+      expect(waited).toEqual([]);
+    });
+
+    it('hands waitUntil a promise that settles when onEvent rejects, and logs the error', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const { client: mcp, waited } = await connectWaiting(() =>
+        Promise.reject(new Error('analytics down'))
+      );
+
+      const result = await mcp.callTool({ name: 'docs_search', arguments: { query: 'install' } });
+
+      expect(result.isError).toBeFalsy();
+      expect(waited).toHaveLength(1);
+      await expect(waited[0]).resolves.toBeUndefined();
+      expect(errorSpy).toHaveBeenCalledWith('[MCP] onEvent error:', expect.any(Error));
+      errorSpy.mockRestore();
+    });
+
+    it('answers the call and logs the error when waitUntil throws', async () => {
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+      const server = await buildServer(undefined, { onEvent: () => Promise.resolve() });
+      const { client: mcp } = await connect(server, mode, {
+        waitUntil: () => {
+          throw new Error('no context');
+        },
+      });
+
+      const result = await mcp.callTool({ name: 'docs_search', arguments: { query: 'install' } });
+
+      expect(result.isError).toBeFalsy();
+      expect(errorSpy).toHaveBeenCalledWith('[MCP] waitUntil error:', expect.any(Error));
+      errorSpy.mockRestore();
+    });
   });
 });
 
