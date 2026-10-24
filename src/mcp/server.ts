@@ -28,6 +28,7 @@ import type { SearchRanker, ProviderContext, SearchProviderInitData } from '../p
 import { docsSearch } from './tools/docs-search.js';
 import { docsFetch } from './tools/docs-fetch.js';
 import type { DocsToolDeps, DocsToolModule } from './tools/tool.js';
+import type { WaitUntil } from './events.js';
 import { registerSkills, skillsCapabilities, skillsInstructions } from './skills.js';
 import { createResolver, type Resolve } from './resolve.js';
 import { isClientRejection } from './rejections.js';
@@ -153,6 +154,12 @@ export class McpDocsServer {
   private initialized = false;
   private initPromise: Promise<void> | null = null;
   private initError: Error | null = null;
+  /**
+   * Each in-flight 2026-07-28 request's `waitUntil`. The SDK hands the
+   * server factory the request it's serving, so the factory looks it up
+   * there; a field would leak between concurrent requests.
+   */
+  private waitUntils = new WeakMap<Request, WaitUntil>();
 
   constructor(config: McpDocsServerConfig) {
     this.config = config;
@@ -160,9 +167,9 @@ export class McpDocsServer {
 
   /**
    * Create a fresh McpServer instance with tools (and skills) registered.
-   * Called by the SDK once per HTTP request.
+   * Called once per HTTP request, with that request's `waitUntil` if it has one.
    */
-  private createMcpServer(): McpServer {
+  private createMcpServer(waitUntil?: WaitUntil): McpServer {
     const skills = this.skillsArtifact?.skills.length ? this.skillsArtifact : null;
 
     const instructions = [this.config.instructions, skills && skillsInstructions(skills.skills)]
@@ -188,7 +195,7 @@ export class McpDocsServer {
       }
     );
 
-    this.registerTools(server, skills);
+    this.registerTools(server, skills, waitUntil);
     if (skills) {
       registerSkills(server, skills, { cacheHint: CACHE_HINT });
     }
@@ -200,7 +207,11 @@ export class McpDocsServer {
    * and handler; the server supplies search, URI resolution, readiness, and
    * whether skills are served.
    */
-  private registerTools(server: McpServer, skills: SkillsArtifact | null): void {
+  private registerTools(
+    server: McpServer,
+    skills: SkillsArtifact | null,
+    waitUntil: WaitUntil | undefined
+  ): void {
     const provider = this.searchProvider;
     const resolve = this.resolve;
     if (!provider || !resolve) {
@@ -215,6 +226,7 @@ export class McpDocsServer {
       isReady: () => provider.isReady?.() ?? true,
       servesSkills: skills !== null,
       onEvent: this.config.onEvent,
+      waitUntil,
     };
     for (const tool of DOCS_TOOLS) {
       tool.register(server, deps, this.config.tools);
@@ -400,17 +412,20 @@ export class McpDocsServer {
       skills: bundle.skills?.skills.length ? bundle.skills : null,
     });
 
-    this.handler = createMcpHandler(() => this.createMcpServer(), {
-      // Legacy traffic is routed separately (see dispatch) to keep v1's JSON responses.
-      legacy: 'reject',
-      // Default 'auto' mode answers with a single JSON body unless a handler
-      // emits a notification first; our tools never do.
-      // Requests the SDK rejects with a 4xx aren't failures here; the client
-      // gets the error in the response.
-      onerror: (error) => {
-        if (!isClientRejection(error)) console.error('[MCP] Handler error:', error);
-      },
-    });
+    this.handler = createMcpHandler(
+      ({ requestInfo }) => this.createMcpServer(requestInfo && this.waitUntils.get(requestInfo)),
+      {
+        // Legacy traffic is routed separately (see dispatch) to keep v1's JSON responses.
+        legacy: 'reject',
+        // Default 'auto' mode answers with a single JSON body unless a handler
+        // emits a notification first; our tools never do.
+        // Requests the SDK rejects with a 4xx aren't failures here; the client
+        // gets the error in the response.
+        onerror: (error) => {
+          if (!isClientRejection(error)) console.error('[MCP] Handler error:', error);
+        },
+      }
+    );
 
     this.initialized = true;
   }
@@ -421,17 +436,27 @@ export class McpDocsServer {
    * envelope) get a fresh stateless server over a JSON-response transport,
    * matching the wire behavior of v1 of this package.
    */
-  private async dispatch(request: Request, options?: McpHandlerRequestOptions): Promise<Response> {
+  private async dispatch(
+    request: Request,
+    options?: McpHandlerRequestOptions,
+    waitUntil?: WaitUntil
+  ): Promise<Response> {
     await this.initialize();
     if (!this.handler) {
       throw new Error('MCP handler not initialized');
     }
 
     if (!(await isLegacyRequest(request, options?.parsedBody))) {
-      return this.handler.fetch(request, options);
+      if (!waitUntil) return this.handler.fetch(request, options);
+      this.waitUntils.set(request, waitUntil);
+      try {
+        return await this.handler.fetch(request, options);
+      } finally {
+        this.waitUntils.delete(request);
+      }
     }
 
-    const server = this.createMcpServer();
+    const server = this.createMcpServer(waitUntil);
     const transport = new WebStandardStreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
       enableJsonResponse: true,
@@ -477,10 +502,13 @@ export class McpDocsServer {
    * Handle a Web Standard Request (Cloudflare Workers, Deno, Bun)
    *
    * @param request - Web Standard Request object
+   * @param options - `waitUntil`: the platform's per-request `waitUntil`.
+   *   The server passes it the promise `onEvent` returns, so the platform
+   *   keeps the work running after the response is sent. Since 2.6.
    * @returns Web Standard Response object
    */
-  async handleWebRequest(request: Request): Promise<Response> {
-    return this.dispatch(request);
+  async handleWebRequest(request: Request, options?: { waitUntil?: WaitUntil }): Promise<Response> {
+    return this.dispatch(request, undefined, options?.waitUntil);
   }
 
   /**

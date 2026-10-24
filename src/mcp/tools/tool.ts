@@ -9,6 +9,7 @@ import {
   type McpEventHandler,
   type McpToolCallEventBase,
   type ToolCallContext,
+  type WaitUntil,
 } from '../events.js';
 
 /**
@@ -26,6 +27,8 @@ export interface DocsToolDeps {
   servesSkills: boolean;
   /** The configured `onEvent` handler, told about every tool call. */
   onEvent?: McpEventHandler;
+  /** The request's `waitUntil`, given the promise `onEvent` returns. */
+  waitUntil?: WaitUntil;
 }
 
 /** How {@link runTool} logs, answers, and reports one tool call. */
@@ -71,7 +74,7 @@ export function toolError(text: string): CallToolResult {
  * with the call's failure message. Then report the call to `onEvent`.
  */
 export async function runTool(
-  deps: Pick<DocsToolDeps, 'isReady' | 'onEvent'>,
+  deps: Pick<DocsToolDeps, 'isReady' | 'onEvent' | 'waitUntil'>,
   call: ToolCall,
   body: () => Promise<string>
 ): Promise<CallToolResult> {
@@ -86,7 +89,8 @@ export async function runTool(
         ok: !result.isError,
         durationMs: performance.now() - started,
         ...(client && { client }),
-      })
+      }),
+      deps.waitUntil
     );
   }
   return result;

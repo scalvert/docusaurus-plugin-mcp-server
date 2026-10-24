@@ -34,6 +34,7 @@ export type {
   McpToolCallEventBase,
   McpClientInfo,
   McpEventHandler,
+  WaitUntil,
 } from './mcp/events.js';
 
 export { resolveServerUrl } from './plugin/resolve-server-url.js';

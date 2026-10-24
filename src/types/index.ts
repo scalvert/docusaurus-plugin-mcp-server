@@ -341,6 +341,8 @@ export interface McpServerBaseConfig {
    * rejects first (invalid arguments, unknown tool) has no event.
    * Use it to send usage to an analytics or logging backend. The server does
    * not wait for it, and its errors are logged, never returned to the client.
+   * On serverless runtimes, return the promise and pass the request's
+   * platform context to the web handler: the promise goes to its `waitUntil`.
    * Inputs come from the agent as sent; redact them before they leave the
    * server if your backend should not store free text. See {@link McpEventHandler}.
    *

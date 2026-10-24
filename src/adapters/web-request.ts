@@ -56,10 +56,16 @@ export type WebRequestHandlerConfig =
  *
  * `OPTIONS` answers the CORS preflight, `GET` initializes and returns the
  * server status, `POST` carries MCP, and anything else gets a 405.
+ *
+ * Pass the platform's per-request context after the request, as the platform
+ * passes it: `(request, context)` on Netlify, `(request, env, ctx)` on
+ * Cloudflare Workers, or `(request, { waitUntil })` anywhere. The first
+ * argument with a `waitUntil` method gets the promise `onEvent` returns, so the
+ * platform keeps the work running after the response is sent (since 2.6).
  */
 export function createWebRequestHandler(
   config: WebRequestHandlerConfig
-): (request: Request) => Promise<Response> {
+): (request: Request, context?: unknown, executionContext?: unknown) => Promise<Response> {
   const { corsOrigin, ...serverConfig } = config;
   let server: McpDocsServer | null = null;
 

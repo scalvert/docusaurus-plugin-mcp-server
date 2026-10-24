@@ -98,7 +98,9 @@ export default {
 };
 ```
 
-The server doesn't wait for `onEvent`, and it logs an error that `onEvent` throws or rejects with instead of returning it to the client. Some serverless platforms stop work once the response is sent. On those, pass async work to the platform's `waitUntil` so it can finish. The event types (`McpDocsEvent`, `McpEventHandler`) are exported from the main, `adapters`, and `adapters/node` entry points.
+The server doesn't wait for `onEvent`, and it logs an error that `onEvent` throws or rejects with instead of returning it to the client. Some serverless platforms stop work once the response is sent. On those, return the promise from `onEvent`, and pass the platform's per-request context to the handler after the request. The server gives the promise to the context's `waitUntil` (since 2.6). [On serverless platforms](../guides/track-usage.md#on-serverless-platforms) shows it for Vercel, Netlify, and Cloudflare Workers.
+
+The event types (`McpDocsEvent`, `McpEventHandler`) are exported from the main, `adapters`, and `adapters/node` entry points. `WaitUntil` is exported from the main and `adapters` entry points.
 
 ## HTTP behavior
 

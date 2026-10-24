@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
@@ -266,6 +266,85 @@ describe('onEvent through the adapters', () => {
     await searchOnce('https://x/mcp', (input, init) => handler(new Request(input, init)));
 
     expect(events).toEqual([expected]);
+  });
+
+  describe('createWebRequestHandler hands onEvent promises to the platform waitUntil', () => {
+    async function handlerSending() {
+      const sends: McpDocsEvent[] = [];
+      const handler = createWebRequestHandler({
+        artifacts: await buildBundle(),
+        onEvent: async (event) => {
+          sends.push(event);
+        },
+      });
+      return { handler, sends };
+    }
+
+    it('from the second argument, as Netlify passes its context', async () => {
+      const { handler, sends } = await handlerSending();
+      const waited: Promise<unknown>[] = [];
+      const context = { waitUntil: (promise: Promise<unknown>) => void waited.push(promise) };
+
+      await searchOnce('https://x/mcp', (input, init) =>
+        handler(new Request(input, init), context)
+      );
+
+      expect(waited).toHaveLength(1);
+      await Promise.all(waited);
+      expect(sends).toEqual([expected]);
+    });
+
+    it('from the third argument, as Workers pass ctx after env, keeping its this', async () => {
+      const { handler, sends } = await handlerSending();
+      const env = { ASSETS: {} };
+      // Workers' ExecutionContext methods must be called on ctx.
+      const ctx = {
+        waited: [] as Promise<unknown>[],
+        waitUntil(promise: Promise<unknown>) {
+          this.waited.push(promise);
+        },
+      };
+
+      await searchOnce('https://x/mcp', (input, init) =>
+        handler(new Request(input, init), env, ctx)
+      );
+
+      expect(ctx.waited).toHaveLength(1);
+      await Promise.all(ctx.waited);
+      expect(sends).toEqual([expected]);
+    });
+
+    it('per request, when requests overlap', async () => {
+      const { handler } = await handlerSending();
+      const first: Promise<unknown>[] = [];
+      const second: Promise<unknown>[] = [];
+
+      await Promise.all([
+        searchOnce('https://x/mcp', (input, init) =>
+          handler(new Request(input, init), {
+            waitUntil: (p: Promise<unknown>) => void first.push(p),
+          })
+        ),
+        searchOnce('https://x/mcp', (input, init) =>
+          handler(new Request(input, init), {
+            waitUntil: (p: Promise<unknown>) => void second.push(p),
+          })
+        ),
+      ]);
+
+      expect(first).toHaveLength(1);
+      expect(second).toHaveLength(1);
+    });
+
+    it('and still reports events without one', async () => {
+      const { handler, sends } = await handlerSending();
+
+      await searchOnce('https://x/mcp', (input, init) =>
+        handler(new Request(input, init), { remoteAddr: {} })
+      );
+
+      await vi.waitFor(() => expect(sends).toEqual([expected]));
+    });
   });
 
   it('createNodeServer reports tool calls to onEvent', async () => {

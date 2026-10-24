@@ -25,11 +25,13 @@ import {
   type McpDocsEvent as NodeMcpDocsEvent,
   type McpEventHandler as NodeMcpEventHandler,
 } from 'docusaurus-plugin-mcp-server/adapters/node';
-import type {
-  ArtifactBundle as EdgeArtifactBundle,
-  McpDocsEvent as EdgeMcpDocsEvent,
-  McpEventHandler as EdgeMcpEventHandler,
-  WebRequestHandlerConfig,
+import {
+  createWebRequestHandler,
+  type ArtifactBundle as EdgeArtifactBundle,
+  type McpDocsEvent as EdgeMcpDocsEvent,
+  type McpEventHandler as EdgeMcpEventHandler,
+  type WaitUntil as EdgeWaitUntil,
+  type WebRequestHandlerConfig,
 } from 'docusaurus-plugin-mcp-server/adapters';
 import type {
   ArtifactBundle as MainArtifactBundle,
@@ -42,6 +44,7 @@ import type {
   McpServerBundleConfig,
   McpToolCallEventBase,
   SearchRanker,
+  WaitUntil,
 } from 'docusaurus-plugin-mcp-server';
 import type {
   McpInstallButtonProps,
@@ -113,6 +116,26 @@ describe('public API surface', () => {
     ];
     const nodeOptions: Partial<NodeAdapterOptions> = { onEvent: handlers[1] };
     expect([typeof same, configs.length, typeof nodeOptions]).toEqual(['function', 2, 'object']);
+  });
+
+  it('types the web handler to take the platform context after the request', () => {
+    // Type-level: the handler fits where Workers and Netlify call it, and
+    // McpDocsServer takes the same WaitUntil from both entries.
+    type Handler = ReturnType<typeof createWebRequestHandler>;
+    type WorkersFetch = (
+      request: Request,
+      env: { ASSETS: unknown },
+      ctx: { waitUntil(promise: Promise<unknown>): void }
+    ) => Promise<Response>;
+    type NetlifyFunction = (
+      request: Request,
+      context: { waitUntil(promise: Promise<unknown>): void }
+    ) => Promise<Response>;
+    const fits = (handler: Handler): [WorkersFetch, NetlifyFunction] => [handler, handler];
+    const waitUntil: WaitUntil = () => {};
+    const edge: EdgeWaitUntil = waitUntil;
+    const options: Parameters<McpDocsServer['handleWebRequest']>[1] = { waitUntil: edge };
+    expect([typeof fits, typeof options]).toEqual(['function', 'object']);
   });
 
   it('exports the onCopy event type from the theme entry', () => {
