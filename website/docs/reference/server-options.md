@@ -57,6 +57,8 @@ Without `instructions`, the server sends the pointer alone. With no skills, it s
 
 ## Usage events
 
+[Track usage](../guides/track-usage.md) shows how to send these events to your analytics, with the install button's copy events.
+
 `onEvent` is called after each `docs_search` and `docs_fetch` call that reaches the tool. Use it to see which pages agents read, which searches find nothing, and which clients connect. A call that the MCP SDK rejects first, such as a call with invalid arguments or to an unknown tool, doesn't reach the tool and has no event. Each event has these fields:
 
 | Field | Present | Description |

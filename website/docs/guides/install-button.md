@@ -97,6 +97,6 @@ Use `onCopy` to count installs with your site's analytics:
 />
 ```
 
-Replace `analytics.track` with your analytics library's call.
+Replace `analytics.track` with your analytics library's call. [Track usage](./track-usage.md) covers this and the server's usage events together.
 
 The client configs come from [`@gleanwork/mcp-config-schema`](https://www.npmjs.com/package/@gleanwork/mcp-config-schema). [Connecting AI tools](./connect-clients.md) shows what they look like.
