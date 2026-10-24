@@ -118,6 +118,17 @@ This repository ships agent skills under `skills/`, installed with `npx skills a
 - `skills/docusaurus-plugin-mcp-server/SKILL.md` is hand-written: the API reference and common mistakes. Keep it accurate as the public API changes, and keep its "Step-by-step skills" table in step with the guides.
 - `skills/guides/<name>/` are agent guides compiled from website pages (Getting started, the Vercel, Netlify, Cloudflare Workers, and static-host deploy pages, and Agent guides), with symptoms from `website/docs/deploy/troubleshooting.md`. Don't edit them: edit the page, then in `website/` run `npm run build && npm run skills:sync` and commit `skills/guides/`. `website/scripts/sync-skills.mjs` copies them from the bundle, and CI (`npm run skills:check`) fails when they don't match the site. They're a level down because the agent baseline check (`configure-agents check`, the `agent-baseline` workflow) holds every `skills/<name>/SKILL.md` to the library-skill sections; the skills CLI finds both levels.
 
+## Releasing
+
+Release only when asked, with the Release workflow. `RELEASE.md` has the details.
+
+1. Check that the pull requests merged since the last tag have changelog labels (`breaking`, `enhancement`, `bug`, `documentation`, `internal`) and titles that make sense to users. Unlabeled pull requests are left out of the changelog.
+2. Run a dry run, `gh workflow run release.yml -f increment=<patch|minor|major> -f dry_run=true`, and show the changelog from its log.
+3. Release with `gh workflow run release.yml -f increment=<patch|minor|major>`, then watch the run.
+4. Check that npm, the GitHub release, and the Deploy website run all show the new version.
+
+Never publish with `npm publish` or a local `npx release-it`. If the workflow fails after it publishes, don't rerun it: follow "If a release fails after publishing" in `RELEASE.md`.
+
 ## Breaking changes
 
 Every major release gets a migration guide at `migrations/<from>-<to>.md` (published with the package). List each breaking change with before/after code, and end with a "For agents" checklist that an agent can run top to bottom. Errors thrown for removed configuration should link to it (`MIGRATION_GUIDE` in `src/errors.ts`). The README's "Upgrading" section stays a short summary that links to the guide; `website/docs/upgrading.md` carries the per-release summary.

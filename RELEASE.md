@@ -26,35 +26,67 @@ When reviewing merged PR's the labels to be used are:
 
 ## Release
 
-Once the prep work is completed, the actual release is straight forward:
+Releases run in the Release workflow (`.github/workflows/release.yml`). It
+publishes to npm with [trusted publishing][trusted-publishing], so it needs no
+npm token and no one-time password.
 
-* First, ensure that you have installed your projects dependencies:
+1. Check the labels and titles of the pull requests since the last release
+   (see Preparation). The changelog is generated from them, and the workflow
+   has no editor step to fix it afterwards.
+2. Do a dry run, and read the changelog in the run's log:
+
+   ```sh
+   gh workflow run release.yml -f increment=minor -f dry_run=true
+   ```
+
+3. Release:
+
+   ```sh
+   gh workflow run release.yml -f increment=minor
+   ```
+
+4. Check the result: the run succeeded (`gh run watch`),
+   `npm view docusaurus-plugin-mcp-server version` shows the new version, the
+   GitHub release exists, and the Deploy website run for the new tag succeeded.
+
+The workflow runs `npx release-it <increment> --ci`. That bumps the version and
+publishes to npm (`prepublishOnly` builds and tests first). Then it commits
+`Release <version>`, tags `v<version>`, pushes both to `main`, creates the
+GitHub release, and comments on the pull requests it includes. Last, the
+workflow starts the docs deploy, because a tag pushed with `GITHUB_TOKEN`
+doesn't trigger other workflows.
+
+A pull request that changes `release.yml` or `.release-it.js` gets a dry run.
+
+[trusted-publishing]: https://docs.npmjs.com/trusted-publishers
+
+### One-time setup
+
+- On npmjs.com, the package's Settings have a GitHub Actions trusted publisher
+  with owner `scalvert`, repository `docusaurus-plugin-mcp-server`, workflow
+  `release.yml`, environment `npm`, and "npm publish" allowed.
+- The repository has an `npm` environment that deploys only from `main`.
+- Publishing access is "Require two-factor authentication and disallow
+  tokens". Trusted publishing still works with that setting.
+
+### If a release fails after publishing
+
+release-it publishes to npm before it commits and tags. If a later step fails,
+npm has the new version and GitHub doesn't. Don't rerun the workflow: it would
+try to publish the same version again, and npm versions can't be republished.
+Finish the GitHub side from an up-to-date checkout of `main` instead. This is
+the command in fish; `CI=true` turns off the changelog editor and the npm
+checks:
 
 ```sh
-npm install
+env CI=true GITHUB_AUTH=(gh auth token) npx release-it <version> --no-npm.publish
 ```
 
-* Second, ensure that you have obtained a
-  [GitHub personal access token][generate-token] with the `repo` scope (no
-  other permissions are needed). Make sure the token is available as the
-  `GITHUB_AUTH` environment variable.
+That push comes from your account rather than `GITHUB_TOKEN`, so the tag starts
+the docs deploy by itself.
 
-  For instance:
+### From a laptop
 
-  ```bash
-  export GITHUB_AUTH=abc123def456
-  ```
-
-[generate-token]: https://github.com/settings/tokens/new?scopes=repo&description=GITHUB_AUTH+env+variable
-
-* And last (but not least 😁) do your release.
-
-```sh
-npx release-it
-```
-
-[release-it](https://github.com/release-it/release-it/) manages the actual
-release process. It will prompt you to to choose the version number after which
-you will have the chance to hand tweak the changelog to be used (for the
-`CHANGELOG.md` and GitHub release), then `release-it` continues on to tagging,
-pushing the tag and commits, etc.
+`npx release-it` still works locally. It opens the changelog in `$EDITOR`
+before it commits, and npm asks for your one-time password when it publishes.
+It needs `GITHUB_AUTH` set to a GitHub token with the `repo` scope.
