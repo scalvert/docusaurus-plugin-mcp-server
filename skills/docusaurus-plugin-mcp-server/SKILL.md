@@ -58,7 +58,7 @@ The authoritative API is the published TypeScript types. Read the `.d.ts` files 
 - `.` → `dist/index.d.ts` (plugin options, `McpDocsServer`, provider/`ProcessedDoc` types)
 - `./adapters` → `dist/adapters-entry.d.ts` (`WebRequestHandlerConfig`, `ArtifactBundle`)
 - `./adapters/node` → `dist/adapters-node.d.ts` (`createNodeServer`/`createNodeHandler`, `NodeAdapterOptions`, `McpServerBundleDirConfig`, `readArtifactBundle`)
-- `./theme` → `dist/theme/index.d.ts` (`McpInstallButton` props)
+- `./theme` → `dist/theme/index.d.ts` (`McpInstallButton` props and `McpInstallCopyEvent`, the agent guide component props such as `AgentGuideProps`, `StepProps` and `SymptomProps`)
 
 Config shape in particular (`artifacts`/`artifactsDir`, overrides such as `instructions`/`tools`, the `onEvent` usage hook) lives in those types — read them rather than copying field lists. `McpServerFileConfig` (`docsPath`/`indexPath`) and `McpServerDataConfig` (`docs`/`searchIndexData`) are deprecated since 2.2, as are the 2.1 unions `McpServerConfig`, `WebRequestAdapterConfig`, and `NodeServerOptions` (use `McpDocsServerConfig`, `WebRequestHandlerConfig`, `NodeAdapterOptions`); don't write new code against them.
 
@@ -101,7 +101,7 @@ Use `.mjs` for function files unless the site's `package.json` has `"type": "mod
 
 **Agent guides.** A setup or troubleshooting procedure written in a page and compiled at build time into a skill named after the guide (format v1: `docs/agent-guide-format.md`). Wrap it in `<AgentGuide name kind="setup"|"troubleshooting" description>` with one `<DoneWhen>`, optional `<Prerequisites>`, and `<Step id>` blocks (title from the `title` prop or the first heading, leading `1.` dropped; `needs="user"`, `confirm`, `symptoms="id id"`), each with a `<Check>`. `<Symptom id guide="name">` can live on another page, and can name several guides (`guide="a b"`) so they share it; links in compiled guides become absolute URLs; its title is the `title` prop or its first heading; **Cause:**/**Fix:**/**Escalate if:** paragraphs are read by label. The contract is the HTML (`data-mcp-*` attributes), so a site's own components can render it. The build fails with `GuideValidationError` listing every problem (missing name/kind/description/DoneWhen/ids, unknown symptom references, misplaced markup) and fails with `SkillValidationError` if a guide's name matches another skill; it warns on steps without checks and guides without symptoms, and records the warnings in the manifest for `docusaurus-mcp-verify`. Guides are served only when skills are on. Code: contract `src/guides/contract.ts`, page reading `src/guides/extract.ts`, compiler `src/guides/compile.ts` (pure).
 
-**4. Install button.** Render `McpInstallButton` (from `./theme`); with no props it reads the URL and name from the plugin. For the navbar, register it as a custom item type by swizzle-wrapping `src/theme/NavbarItem/ComponentTypes.js` (`{ ...ComponentTypes, 'custom-mcpInstall': MyItem }`) and add `{ type: 'custom-mcpInstall', position: 'right' }` to `themeConfig.navbar.items`.
+**4. Install button.** Render `McpInstallButton` (from `./theme`); with no props it reads the URL and name from the plugin. Its optional `onCopy` prop is called after each successful copy with an `McpInstallCopyEvent` (`{ client, kind: 'command' | 'config' }`), for analytics; a failed copy doesn't call it. For the navbar, register it as a custom item type by swizzle-wrapping `src/theme/NavbarItem/ComponentTypes.js` (`{ ...ComponentTypes, 'custom-mcpInstall': MyItem }`) and add `{ type: 'custom-mcpInstall', position: 'right' }` to `themeConfig.navbar.items`.
 
 ## Common mistakes
 
@@ -116,7 +116,7 @@ Use `.mjs` for function files unless the site's `package.json` has `"type": "mod
 - **zod 3.** 2.x requires zod >= 4.2 (MCP SDK v2).
 - **1.x search options.** The built-in search is `'local'` (BM25). `'flexsearch'` in `indexers`/`search`, and the `flexsearch` plugin/server option, now throw. A 1.x `search-index.json` is rejected until the site is rebuilt; the error is returned in MCP responses and the GET status. Tune ranking with the server option `localSearch: { fieldBoosts }`. The plugin's `search` option does not choose the runtime provider (it has done nothing since 2.0, is deprecated since 2.2, and is removed in 3.0); the server config's `search` does.
 - **Very long queries.** `docs_search` accepts up to 500 characters and searches the first 16 distinct terms.
-- **Sending raw `onEvent` inputs to analytics.** Events carry the agent's `query` and `uri` as sent. Send `tool`, `ok`, `resolved`, `resultCount`, `documentId` and `client.name`, not free text. The server doesn't await `onEvent`, so on serverless runtimes wrap async sends in the platform's `waitUntil`.
+- **Sending raw `onEvent` inputs to analytics.** Events carry the agent's `query` and `uri` as sent. Send `tool`, `ok`, `resolved`, `resultCount`, `documentId` and `client.name`, not free text. With a custom provider whose `getDocument` accepts the URL as sent, `documentId` keeps that URL's query string, so strip it first. The server doesn't await `onEvent`, so on serverless runtimes wrap async sends in the platform's `waitUntil`.
 - **Guessing whether search is good enough.** Measure it: `evaluateSearch(provider, [{ query, expected: [routes] }])` reports top-k hits and MRR for any provider.
 
 ## Version notes

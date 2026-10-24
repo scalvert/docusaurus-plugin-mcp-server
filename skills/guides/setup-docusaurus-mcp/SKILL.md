@@ -85,7 +85,7 @@ The build writes the artifact bundle to `build/mcp/bundle.json`. `docusaurus-mcp
    ✓ Artifact bundle is valid
 
 🚀 Testing MCP server...
-   ✓ Server "my-docs" initialized with 42 documents
+   ✓ Server "my-docs" initialized with 42 documents and 1 skill(s)
 
 ✅ All checks passed!
 ```

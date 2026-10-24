@@ -24,9 +24,11 @@ export interface McpToolCallEventBase {
   /** Time the tool took, in milliseconds. */
   durationMs: number;
   /**
-   * The calling client, when the request says. Protocol 2026-07-28 requests
-   * carry it on every call. 2025-era clients send it only in `initialize`,
-   * and the server is stateless, so their tool calls have no `client`.
+   * The calling client, when the request says. On protocol 2026-07-28, a
+   * request names its client when the client includes its info, as the
+   * TypeScript SDK client does on every call. 2025-era clients send it only
+   * in `initialize`, and the server is stateless, so their tool calls have
+   * no `client`.
    */
   client?: McpClientInfo;
 }
@@ -53,9 +55,12 @@ export interface McpDocsFetchEvent extends McpToolCallEventBase {
    */
   resolved?: 'document' | 'skill-file' | 'not-found';
   /**
-   * The document ID when `resolved` is `document`: the page's absolute URL
-   * (e.g. `https://docs.example.com/docs/install`), without a fragment,
-   * whatever form the agent passed.
+   * The document ID when `resolved` is `document`, whatever form the agent
+   * passed. For a bundle the plugin builds, it's the page's absolute URL
+   * (e.g. `https://docs.example.com/docs/install`), without a fragment or
+   * query string. A custom provider whose `getDocument` accepts the URL as
+   * sent makes that URL the ID, without its fragment but with any query
+   * string, so strip the query string before you store it.
    */
   documentId?: string;
 }
