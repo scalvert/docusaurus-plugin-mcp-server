@@ -1,5 +1,22 @@
 
 
+
+## v2.5.0 (2026-10-24)
+
+#### :rocket: Enhancement
+* [#203](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/203) feat: onEvent usage hook for tool calls, and onCopy on McpInstallButton ([@scalvert](https://github.com/scalvert))
+
+#### :memo: Documentation
+* [#207](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/207) docs: add a Track usage guide for onEvent and onCopy ([@scalvert](https://github.com/scalvert))
+* [#205](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/205) docs: correct the agent guide and usage event docs against the code ([@scalvert](https://github.com/scalvert))
+
+#### :house: Internal
+* [#206](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/206) chore: build once before the checks that read dist/ ([@scalvert](https://github.com/scalvert))
+* [#204](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/204) ci: stop installing a browser for the MCP integration tests ([@scalvert](https://github.com/scalvert))
+
+#### Committers: 1
+- Steve Calvert ([@scalvert](https://github.com/scalvert))
+
 ## v2.4.0 (2026-10-14)
 
 #### :rocket: Enhancement
