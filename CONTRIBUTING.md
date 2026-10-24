@@ -27,7 +27,9 @@ npm run build
 | `npm run test:mcp` | Run Playwright MCP integration tests |
 | `npm run test:site` | Run the docs site's contract tests (build the site first) |
 | `npm run evals -- <name>` | Run an agent eval in `tests/evals/` (local only, uses your Claude Code login) |
-| `npm run test:all` | Run lint, typecheck, unit and MCP tests, and the snippets check |
+| `npm run test:all` | Build once, then run lint, typecheck, unit and MCP tests, and the snippets check |
+
+`typecheck`, `test:mcp`, and a few unit tests of the built package read `dist/`. Run `npm run build` before running them alone, or use `test:all`, which builds first.
 
 Run a single test file:
 
@@ -54,10 +56,7 @@ See `CLAUDE.md` for detailed architecture notes.
 
 Before submitting a PR:
 
-1. Run `npm run lint` and fix any issues.
-2. Run `npm run typecheck` to verify types.
-3. Run `npm test` to ensure all unit tests pass.
-4. Run `npm run test:mcp` if your changes affect the MCP server or adapters.
-5. If you changed a guide or a docs page an agent relies on, build the site and run `npm run test:site`. For a change to what a guide tells agents to do, also run the evals in `tests/evals/`.
+1. Run `npm run test:all`. It builds once, then runs lint, typecheck, unit and MCP tests, and the snippets check.
+2. If you changed a guide or a docs page an agent relies on, build the site and run `npm run test:site`. For a change to what a guide tells agents to do, also run the evals in `tests/evals/`.
 
 Keep PRs focused on a single concern. Include tests for new functionality.

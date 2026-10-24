@@ -15,8 +15,10 @@ npm run test:watch     # Run tests in watch mode
 npm run test:mcp       # Run Playwright MCP integration tests
 npm run test:site      # Run the docs site's contract tests (build the site first)
 npm run evals -- <name> # Run an agent eval in tests/evals/ (local only, uses your Claude Code login)
-npm run test:all       # Run lint, typecheck, unit and MCP tests, and the snippets check
+npm run test:all       # Build once, then run lint, typecheck, unit and MCP tests, and the snippets check
 ```
+
+`typecheck`, `test:mcp`, and the built-output tests in `tests/docusaurus-load-test.ts` and `tests/package-files-test.ts` read `dist/`, so they check whatever the last build produced. Run `npm run build` before running them alone. `test:all` and `prepublishOnly` build first.
 
 Run a single test file:
 ```bash
