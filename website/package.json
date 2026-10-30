@@ -11,6 +11,7 @@
     "serve": "docusaurus serve",
     "clear": "docusaurus clear",
     "smoke": "node scripts/smoke-mcp.mjs",
+    "test": "node --test \"test/**/*.test.mjs\"",
     "skills:sync": "node scripts/sync-skills.mjs",
     "skills:check": "node scripts/sync-skills.mjs --check"
   },
@@ -19,6 +20,7 @@
     "@docusaurus/faster": "^3.10.2",
     "@docusaurus/preset-classic": "^3.10.2",
     "@mdx-js/react": "^3.1.0",
+    "@vercel/analytics": "^2.0.1",
     "clsx": "^2.1.1",
     "docusaurus-plugin-mcp-server": "file:..",
     "prism-react-renderer": "^2.4.1",

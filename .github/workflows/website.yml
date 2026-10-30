@@ -38,6 +38,10 @@ jobs:
         working-directory: website
         run: npm ci
 
+      - name: Unit tests for the site's analytics
+        working-directory: website
+        run: npm test
+
       # postbuild runs docusaurus-mcp-verify on the artifact bundle.
       - name: Build the site
         working-directory: website
