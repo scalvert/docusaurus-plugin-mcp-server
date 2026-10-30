@@ -1,0 +1,8 @@
+  plugins: [
+    [
+      'docusaurus-plugin-mcp-server',
+      {
+        server: {
+          name: 'example-docs',
+          version: '1.0.0',
+        },

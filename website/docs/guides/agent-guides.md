@@ -3,9 +3,35 @@ title: Agent guides
 description: Mark up a setup or troubleshooting page so the build compiles it into an Agent Skill that agents can follow, step by step.
 ---
 
+import DocVideo from '@site/src/components/DocVideo';
+
 # Agent guides
 
 An agent guide is a setup or troubleshooting procedure, written in the docs page people already read, that the build compiles into an [Agent Skill](./agent-skills.md). Agents get the steps, how to check each one worked, and what to do when a check fails. People reading the page see the same steps they always did, so the two can't drift apart.
+
+<ForHumans>
+
+<DocVideo id="agent-guides" title="Agent guides">
+
+Your setup page is already a procedure. Mark it up, and the build turns it into a skill an agent can follow, one step at a time.
+
+Here's the Example SDK's installation page. People read it as they always have: install the package, set your key, and check that it works.
+
+Wrap the procedure in `AgentGuide`. Put each step in a `Step` component, with a `Check` that says how to tell it worked. Then add a `Symptom` for each error people hit.
+
+Some directions are for one reader. `ForHumans` shows on the page, like where to find the button.
+
+`ForAgents` is hidden from people, and goes only to agents, like never ask for the key in the chat. It's hidden, not secret: anyone can read it in the page's source.
+
+Build the site, and the guide compiles into a skill named after it. Steps come in order, each with its check, and the key step says "Needs the user".
+
+Now an agent hits the module not found error. It reads the guide, searches, opens its troubleshooting, and answers with the fix and how to check it.
+
+Start with the agent guides page on the plugin's docs site.
+
+</DocVideo>
+
+</ForHumans>
 
 ## This site's guides
 

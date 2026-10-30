@@ -111,6 +111,14 @@ npm run build && (cd website && npm ci && npm run build && npm run smoke)
 - The site deploys to Vercel only on release tags (`.github/workflows/deploy-website.yml`); `.github/workflows/website.yml` builds and smoke-tests it on every PR. Git-triggered Vercel deployments are off (`git.deploymentEnabled: false`) in both the root `vercel.json` (read by Vercel's Git integration, since the project's Root Directory is the repo root) and `website/vercel.json`.
 - Deploy guides were verified against real platform builds; keep the function files and configs in them exact.
 
+## Videos
+
+`videos/` holds the source of the docs site's explainer videos, made with [oncue](https://github.com/scalvert/oncue). It's a separate npm package, not a workspace: run `npm ci` and `npx oncue ...` inside `videos/`, and follow `videos/AGENTS.md` there. It isn't built in CI, because renders need ffmpeg, Chrome, and an ElevenLabs key.
+
+- Each video's claims and captures are listed in `videos/projects/<name>/STORYBOARD.md`. When behavior a video shows changes, say so in the PR: the video needs a new capture, narration, or both.
+- Renders aren't committed. A person reviews and approves a render, then `npx oncue registry --accept <id>` and `npx oncue deploy` upload it to the media store under a content-hashed name. They also update `videos/registry.json`.
+- `website/src/components/DocVideo` reads `videos/registry.json` at build time, so a page shows a video once it's accepted and deployed, and the next site deploy picks up a new version. Wrap each `<DocVideo>` in `<ForHumans>` so agents reading the page don't get it.
+
 ## Skills
 
 This repository ships agent skills under `skills/`, installed with `npx skills add scalvert/docusaurus-plugin-mcp-server`:

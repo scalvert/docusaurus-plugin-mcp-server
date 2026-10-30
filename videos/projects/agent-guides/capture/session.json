@@ -1,0 +1,26 @@
+{
+  "prompt": "I'm setting up the Example SDK and my script fails with: Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@example/sdk'. How do I fix it? Answer from the example-docs documentation in three short sentences, and cite the page URL.",
+  "model": "claude-sonnet-5-5",
+  "client": "Claude Code 2.1.312 (claude -p, --output-format stream-json)",
+  "calls": [
+    {
+      "tool": "docs_fetch",
+      "input": {
+        "url": "skill://setup-example-sdk/SKILL.md"
+      }
+    },
+    {
+      "tool": "docs_search",
+      "input": {
+        "query": "ERR_MODULE_NOT_FOUND Cannot find package @example/sdk install"
+      }
+    },
+    {
+      "tool": "docs_fetch",
+      "input": {
+        "url": "skill://setup-example-sdk/references/troubleshooting.md"
+      }
+    }
+  ],
+  "answer": "The SDK isn't installed in the folder your script runs from, often because it went into a different workspace package. Run `npm install @example/sdk` in the folder that holds the script's `package.json`, then run the script again. Confirm with `npm ls @example/sdk`, which should list the package.\n\nSource: https://example.com/docs/getting-started/installation"
+}

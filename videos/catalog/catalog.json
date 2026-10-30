@@ -1,0 +1,19 @@
+{
+  "tracks": [
+    {
+      "id": "getting-started",
+      "label": "Getting started"
+    },
+    {
+      "id": "guides",
+      "label": "Guides"
+    }
+  ],
+  "series": {},
+  "order": [
+    "docs-as-mcp-server",
+    "skills-over-mcp",
+    "agent-guides"
+  ],
+  "mediaBaseUrl": null
+}

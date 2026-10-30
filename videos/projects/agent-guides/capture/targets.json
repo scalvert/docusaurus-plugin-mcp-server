@@ -1,0 +1,44 @@
+{
+ "page-install": {
+  "heading": {
+   "x": 632,
+   "y": 280,
+   "width": 1646,
+   "height": 60
+  },
+  "check": {
+   "x": 632,
+   "y": 666,
+   "width": 1646,
+   "height": 55
+  }
+ },
+ "page-env": {
+  "heading": {
+   "x": 632,
+   "y": 281,
+   "width": 1646,
+   "height": 60
+  },
+  "forHumans": {
+   "x": 632,
+   "y": 613,
+   "width": 1646,
+   "height": 53
+  }
+ },
+ "page-trouble": {
+  "heading": {
+   "x": 632,
+   "y": 384,
+   "width": 1646,
+   "height": 60
+  },
+  "cause": {
+   "x": 632,
+   "y": 561,
+   "width": 1646,
+   "height": 106
+  }
+ }
+}

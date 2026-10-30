@@ -1,0 +1,26 @@
+{
+  "prompt": "My requests to the Example API started failing with HTTP 429 and the error code rate_limited. What should I do? Answer from the example-docs documentation in three short sentences, and cite the page URL.",
+  "model": "claude-sonnet-5-5",
+  "client": "Claude Code 2.1.312 (claude -p, --output-format stream-json)",
+  "calls": [
+    {
+      "tool": "docs_fetch",
+      "input": {
+        "url": "skill://example-api-errors/SKILL.md"
+      }
+    },
+    {
+      "tool": "docs_search",
+      "input": {
+        "query": "rate_limited 429"
+      }
+    },
+    {
+      "tool": "docs_fetch",
+      "input": {
+        "url": "https://example.com/docs/api/endpoints#rate-limiting"
+      }
+    }
+  ],
+  "answer": "You hit the rate limit: standard plans allow 100 requests per minute, and enterprise plans allow 1000. Read the `X-RateLimit-Reset` header on the 429 response, and wait until that time before you retry. Check `X-RateLimit-Remaining` on each response to slow down before you reach the limit.\n\nSource: https://example.com/docs/api/endpoints (section \"Rate Limiting\")"
+}

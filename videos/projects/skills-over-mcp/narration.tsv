@@ -1,0 +1,7 @@
+s1	Tool descriptions tell an agent what your docs tools do, not how to use your docs well. Agent Skills fill that gap, and your docs site can ship them.
+s2	Every build includes one skill, docs research. It's written from your site. It tells the agent to search, fetch the page, and link its source, then maps where things are.
+s3	Add your own for what only your team knows. Put each skill in a folder with a skill dot M D, and point the plugin at the parent folder.
+s4	Build the site. The plugin checks every skill, and packs it into the same bundle as your docs. There's nothing extra to deploy.
+s5	The server supports the M C P skills extension. Few hosts do yet, so its instructions also list every skill, and tell the agent to read it with docs fetch.
+s6	Here's Claude Code, with a request that fails with a four twenty nine. It reads the error skill first, searches, fetches the rate limiting section, and answers with the fix and a link.
+s7	Read the Agent Skills guide on the plugin's docs site.

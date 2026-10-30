@@ -6,3 +6,6 @@ node_modules/
 .remember/
 build/
 tests/fixtures/
+# The video workspace has its own formatting: oncue writes its JSON files
+# (registry.json, versions.json, narration_words.json) in its own layout.
+videos/

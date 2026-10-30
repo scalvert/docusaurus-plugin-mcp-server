@@ -1,0 +1,11 @@
+9:<AgentGuide
+27:<Step id="install" symptoms="module-not-found">
+37:<Check>
+45:<Step id="api-key" needs="user">
+55:<ForHumans>
+61:<ForAgents>
+67:<Check>
+75:<Step id="verify" symptoms="module-not-found">
+91:<Check>
+101:<Symptom id="module-not-found">
+109:<Check>

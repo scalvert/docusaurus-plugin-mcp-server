@@ -1,0 +1,26 @@
+.figure {
+  margin: 0 0 var(--ifm-spacing-vertical);
+}
+
+.video {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  border-radius: var(--ifm-global-radius);
+  background: var(--ifm-color-emphasis-100);
+}
+
+.transcript {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.transcript summary {
+  cursor: pointer;
+  color: var(--ifm-color-emphasis-700);
+}
+
+.transcript p:last-child {
+  margin-bottom: 0;
+}

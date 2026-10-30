@@ -1,0 +1,15 @@
+{
+  "id": "docs-as-mcp-server",
+  "title": "Your Docusaurus docs, as an MCP server",
+  "summary": "Add docusaurus-plugin-mcp-server to a Docusaurus site, build it, and let an AI agent search and read your docs.",
+  "track": "getting-started",
+  "type": "explainer",
+  "visibility": "preview",
+  "previewReason": "Pilot: narration recorded, not yet listened to or reviewed.",
+  "related": {
+    "doc": "https://docusaurus-plugin-mcp-server.vercel.app/docs/getting-started",
+    "docLabel": "Getting started"
+  },
+  "updated": "2026-10-30",
+  "approvals": {}
+}

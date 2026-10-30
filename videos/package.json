@@ -1,0 +1,14 @@
+{
+  "name": "docusaurus-plugin-mcp-server-videos",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Source for the docs site's explainer videos, made with oncue",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "devDependencies": {
+    "oncue": "github:scalvert/oncue#398fe38"
+  }
+}
