@@ -2,6 +2,18 @@
 
 
 
+
+## v2.7.0 (2026-10-30)
+
+#### :rocket: Enhancement
+* [#217](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/217) feat: report the pages a search returned in docs_search events ([@scalvert](https://github.com/scalvert))
+
+#### :house: Internal
+* [#218](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/218) chore(website): send page views and usage events to Vercel Web Analytics ([@scalvert](https://github.com/scalvert))
+
+#### Committers: 1
+- Steve Calvert ([@scalvert](https://github.com/scalvert))
+
 ## v2.6.0 (2026-10-24)
 
 #### :rocket: Enhancement
