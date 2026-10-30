@@ -42,6 +42,15 @@ export interface McpDocsSearchEvent extends McpToolCallEventBase {
   limit: number;
   /** How many results the search returned. Absent when `ok` is false. */
   resultCount?: number;
+  /**
+   * The pages the search returned, in rank order: each page's absolute URL
+   * and route, as the search provider reported them. Absent when `ok` is
+   * false, and empty when the search found nothing. Use it to see what a
+   * search surfaced without storing the query.
+   *
+   * @since 2.7
+   */
+  results?: Array<{ url: string; route: string }>;
 }
 
 /** A `docs_fetch` call. */

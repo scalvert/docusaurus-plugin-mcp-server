@@ -102,6 +102,8 @@ describe('public API surface', () => {
       if (event.tool === 'docs_search') {
         const search: McpDocsSearchEvent = event;
         void search.resultCount;
+        const routes: string[] | undefined = search.results?.map((result) => result.route);
+        void routes;
       } else {
         const fetch: McpDocsFetchEvent = event;
         void fetch.documentId;
