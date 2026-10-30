@@ -12,7 +12,7 @@ The plugin has two hooks for analytics. It sends nothing anywhere itself: you ch
 
 | Hook | Where | Reports |
 | --- | --- | --- |
-| `onEvent` | Server option | Each `docs_search` and `docs_fetch` call: the tool, whether it worked, how many results a search found, which page a fetch read, and the client |
+| `onEvent` | Server option | Each `docs_search` and `docs_fetch` call: the tool, whether it worked, which pages a search found, which page a fetch read, and the client |
 | `onCopy` | `McpInstallButton` prop | Each time a reader copies a client's setup: the client, and whether it was a command or a config |
 
 Both are new in 2.5.
@@ -44,6 +44,7 @@ export function fieldsOf(event) {
     ok: event.ok,
     page: event.tool === 'docs_fetch' ? event.documentId?.split('?')[0] : undefined,
     results: event.tool === 'docs_search' ? event.resultCount : undefined,
+    top: event.tool === 'docs_search' ? event.results?.[0]?.route : undefined,
     client: event.client?.name,
   };
 }
@@ -143,6 +144,7 @@ A Worker that exports the handler as `fetch` directly, such as `export default {
 The events answer these questions:
 
 - **Which pages do agents read?** Count `docs_fetch` events by `documentId`. `resolved` is `'document'` when the fetch found a page, and `'not-found'` when it didn't.
+- **What are agents looking for?** Count `docs_search` events by the route of their first result, `results[0].route`. It shows which pages searches surface, without storing the query. `results` is new in 2.7.
 - **Which searches find nothing?** Count `docs_search` events where `resultCount` is `0`.
 - **Which agents connect?** Count events by `client.name`. Only protocol 2026-07-28 requests can carry it, so 2025-era clients don't appear.
 
@@ -150,7 +152,7 @@ Follow these rules when you write the handler:
 
 - **Leave out `query` and `uri`.** They're the agent's input, as sent, and can hold anything. Send them only if your analytics may store free text.
 - **Remove the query string from `documentId`.** With a custom search provider, it can keep the one the agent sent.
-- **Check `event.tool` before you read a tool's fields.** `resultCount` is only on search events, and `documentId` only on fetch events.
+- **Check `event.tool` before you read a tool's fields.** `resultCount` and `results` are only on search events, and `documentId` only on fetch events.
 - **Return the send's promise.** On a serverless platform, also pass the request's context to the handler, as in [On serverless platforms](#on-serverless-platforms). The server logs an error from `onEvent` instead of returning it to the client.
 
 Every field, and when it's present, is in [Usage events](../reference/server-options.md#usage-events).

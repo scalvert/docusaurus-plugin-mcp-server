@@ -241,6 +241,7 @@ describe('onEvent through the adapters', () => {
     query: 'body',
     limit: 16,
     resultCount: 1,
+    results: [{ url: 'https://example.com/docs/x', route: '/docs/x' }],
     client: { name: 'adapter-test', version: '1.0.0' },
   };
 

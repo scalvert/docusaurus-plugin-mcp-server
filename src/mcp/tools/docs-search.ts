@@ -53,7 +53,7 @@ export const docsSearch: DocsToolModule = {
         annotations: READ_ONLY_ANNOTATIONS,
       },
       ({ query, limit }, ctx) => {
-        let resultCount: number | undefined;
+        let found: SearchResult[] | undefined;
         return runTool(
           deps,
           {
@@ -65,12 +65,16 @@ export const docsSearch: DocsToolModule = {
               tool: 'docs_search',
               query,
               limit,
-              ...(base.ok && resultCount !== undefined && { resultCount }),
+              ...(base.ok &&
+                found !== undefined && {
+                  resultCount: found.length,
+                  results: found.map(({ url, route }) => ({ url, route })),
+                }),
             }),
           },
           async () => {
             const results = await deps.search(query, { limit });
-            resultCount = results.length;
+            found = results;
             return formatSearchResults(results);
           }
         );

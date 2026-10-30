@@ -59,7 +59,7 @@ Without `instructions`, the server sends the pointer alone. With no skills, it s
 
 [Track usage](../guides/track-usage.md) shows how to send these events to your analytics, with the install button's copy events.
 
-`onEvent` is called after each `docs_search` and `docs_fetch` call that reaches the tool. Use it to see which pages agents read, which searches find nothing, and which clients connect. A call that the MCP SDK rejects first, such as a call with invalid arguments or to an unknown tool, doesn't reach the tool and has no event. Each event has these fields:
+`onEvent` is called after each `docs_search` and `docs_fetch` call that reaches the tool. Use it to see which pages agents read, which pages their searches surface, which searches find nothing, and which clients connect. A call that the MCP SDK rejects first, such as a call with invalid arguments or to an unknown tool, doesn't reach the tool and has no event. Each event has these fields:
 
 | Field | Present | Description |
 | --- | --- | --- |
@@ -70,6 +70,7 @@ Without `instructions`, the server sends the pointer alone. With no skills, it s
 | `client` | When the request names it | `{ name, version? }` of the client. On protocol 2026-07-28, a request names its client when the client includes its info, as the TypeScript SDK client does on every call. 2025-era clients send it only when they connect, so their tool calls don't have it |
 | `query`, `limit` | `docs_search` | The query and result limit the call used |
 | `resultCount` | `docs_search`, when `ok` | How many results the search returned. `0` is a search that found nothing |
+| `results` | `docs_search`, when `ok` | The pages the search returned, in rank order, as `{ url, route }` objects. Empty when the search found nothing. Since 2.7 |
 | `uri` | `docs_fetch` | The URL, path, or `skill://` URI the agent passed |
 | `resolved` | `docs_fetch`, when `ok` | What `uri` named: `'document'`, `'skill-file'`, or `'not-found'` |
 | `documentId` | `docs_fetch`, when `resolved` is `'document'` | The ID of the page `uri` named, whatever form `uri` took. For a bundle the plugin builds, it's the page's absolute URL, without a fragment or query string. A [custom provider](../guides/custom-providers.md#searchprovider) whose `getDocument` accepts the URL as sent makes that URL the ID, without its fragment but with any query string |

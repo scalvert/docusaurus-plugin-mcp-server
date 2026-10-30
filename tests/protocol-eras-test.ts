@@ -311,6 +311,7 @@ describe.each(['modern', 'legacy'] as const)('onEvent with a %s client', (mode) 
         query: 'install',
         limit: 3,
         resultCount: 1,
+        results: [{ url: 'https://docs.example.com/docs/install', route: '/docs/install' }],
         ...client,
       },
       {
@@ -342,6 +343,45 @@ describe.each(['modern', 'legacy'] as const)('onEvent with a %s client', (mode) 
         ...client,
       },
     ]);
+  });
+
+  it('reports the pages a search returned, in rank order, with only their URL and route', async () => {
+    const page = (route: string, score: number) => ({
+      url: `https://docs.example.com${route}`,
+      route,
+      title: `Title of ${route}`,
+      score,
+      snippet: 'snippet',
+      matchingHeadings: ['Heading'],
+    });
+    const { client: mcp, events } = await connectRecording({
+      search: {
+        name: 'fixed',
+        search: () => Promise.resolve([page('/docs/b', 2), page('/docs/a', 1)]),
+      },
+    });
+
+    await mcp.callTool({ name: 'docs_search', arguments: { query: 'anything' } });
+
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({
+      resultCount: 2,
+      results: [
+        { url: 'https://docs.example.com/docs/b', route: '/docs/b' },
+        { url: 'https://docs.example.com/docs/a', route: '/docs/a' },
+      ],
+    });
+    expect(Object.keys((events[0] as { results: object[] }).results[0]!)).toEqual(['url', 'route']);
+  });
+
+  it('reports an empty result list for a search that finds nothing', async () => {
+    const { client: mcp, events } = await connectRecording({
+      search: { name: 'empty', search: () => Promise.resolve([]) },
+    });
+
+    await mcp.callTool({ name: 'docs_search', arguments: { query: 'zzzz-no-match' } });
+
+    expect(events[0]).toMatchObject({ ok: true, resultCount: 0, results: [] });
   });
 
   it('reports a failed search without a result count', async () => {
