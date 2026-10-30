@@ -6,7 +6,7 @@ sidebar_label: Vercel
 
 # Deploy to Vercel
 
-Vercel serves the static site and runs `api/mcp.mjs` as a Vercel Function. A rewrite maps `/mcp` to it. This site is deployed this way.
+Vercel serves the static site and runs `api/mcp.mjs` as a Vercel Function. A rewrite maps `/mcp` to it. This site is deployed this way, and its function also sends the usage events from [Track usage](../guides/track-usage.md).
 
 You'll add two files:
 

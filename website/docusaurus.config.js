@@ -67,6 +67,9 @@ const config = {
     ],
   ],
 
+  // Vercel Web Analytics, in production builds.
+  clientModules: ['./src/clientModules/vercelAnalytics.js'],
+
   plugins: [
     // The migration guides live in the repo's migrations/ directory (they ship
     // with the package and errors link to them). Rendering them from there keeps
