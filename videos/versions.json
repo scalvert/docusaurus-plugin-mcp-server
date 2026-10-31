@@ -1,4 +1,56 @@
 {
   "$comment": "Every accepted render of every video, appended by `npx oncue registry --accept`. Don't edit by hand.",
-  "videos": {}
+  "videos": {
+    "docs-as-mcp-server": [
+      {
+        "version": 1,
+        "accepted": "2026-10-31",
+        "file": "docs-as-mcp-server.ddfccf1f8e.mp4",
+        "sha256": "ddfccf1f8e7948e06e1bbbc602615614fcf6d113183bc8598e85882ad7802589",
+        "poster": "docs-as-mcp-server.997367d00e.webp",
+        "posterSha256": "997367d00e030172ed3df6c02a77ab3e6b689218daa0d2af0cf7c16818c9f29a",
+        "renderer": "frame_render",
+        "fingerprint": {
+          "inputs": "2fedf79ea0399dab",
+          "renderer": "ebfc7125e8b91289"
+        },
+        "commit": "8e6728430f",
+        "note": "Approved by Steve Calvert after watching and listening in full, on the review page and the docs site preview."
+      }
+    ],
+    "skills-over-mcp": [
+      {
+        "version": 1,
+        "accepted": "2026-10-31",
+        "file": "skills-over-mcp.5cdda23eb7.mp4",
+        "sha256": "5cdda23eb7f43513b736bfe610400896ffc4da210db05e01a2429fff95c193d8",
+        "poster": "skills-over-mcp.b02a695b97.webp",
+        "posterSha256": "b02a695b9793e4c8db0c5240d94ef9556a759d541c63029f43bf0bce267ae635",
+        "renderer": "frame_render",
+        "fingerprint": {
+          "inputs": "d15a27705b9bb24c",
+          "renderer": "ebfc7125e8b91289"
+        },
+        "commit": "8e6728430f",
+        "note": "Approved by Steve Calvert after watching and listening in full, on the review page and the docs site preview."
+      }
+    ],
+    "agent-guides": [
+      {
+        "version": 1,
+        "accepted": "2026-10-31",
+        "file": "agent-guides.8744740f82.mp4",
+        "sha256": "8744740f82eccaf6ab2b0163d3a1a62cea5c46cd98f8462e3298692d162c3874",
+        "poster": "agent-guides.72059e057f.webp",
+        "posterSha256": "72059e057f86bac3528f8c393344be0b3fe335f38546936a68d7324ca8b5bf28",
+        "renderer": "frame_render",
+        "fingerprint": {
+          "inputs": "a7f8d1de6f7f3325",
+          "renderer": "ebfc7125e8b91289"
+        },
+        "commit": "8e6728430f",
+        "note": "Approved by Steve Calvert after watching and listening in full, on the review page and the docs site preview."
+      }
+    ]
+  }
 }
