@@ -4,6 +4,22 @@
 
 
 
+
+## v2.7.2 (2026-10-31)
+
+#### :house: Internal
+* [#202](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/202) chore(deps-dev): bump tsup from 8.5.1 to 9.0.0 ([@dependabot[bot]](https://github.com/apps/dependabot))
+* [#214](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/214) chore(deps-dev): bump @gleanwork/mcp-server-tester from 2.0.0-beta.12 to 2.0.0-beta.13 in the mcp group ([@dependabot[bot]](https://github.com/apps/dependabot))
+* [#196](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/196) chore(deps-dev): bump the testing group across 1 directory with 4 updates ([@dependabot[bot]](https://github.com/apps/dependabot))
+* [#216](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/216) chore(deps-dev): bump the eslint group across 1 directory with 2 updates ([@dependabot[bot]](https://github.com/apps/dependabot))
+* [#197](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/197) chore(deps-dev): bump the react group across 1 directory with 2 updates ([@dependabot[bot]](https://github.com/apps/dependabot))
+* [#215](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/215) chore(deps-dev): bump jsdom from 30.1.2 to 30.1.3 ([@dependabot[bot]](https://github.com/apps/dependabot))
+* [#200](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/200) chore(deps): bump p-map from 7.0.8 to 7.1.1 ([@dependabot[bot]](https://github.com/apps/dependabot))
+* [#198](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/198) chore(deps-dev): bump zod from 4.6.5 to 4.6.7 ([@dependabot[bot]](https://github.com/apps/dependabot))
+* [#199](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/199) chore(deps-dev): bump @types/node from 26.6.4 to 26.6.5 ([@dependabot[bot]](https://github.com/apps/dependabot))
+* [#201](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/201) chore(deps-dev): bump prettier from 3.9.9 to 3.9.10 ([@dependabot[bot]](https://github.com/apps/dependabot))
+* [#213](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/213) chore(deps): bump jdx/mise-action from 5.1.1 to 5.2.2 ([@dependabot[bot]](https://github.com/apps/dependabot))
+
 ## v2.7.1 (2026-10-31)
 
 #### :memo: Documentation
