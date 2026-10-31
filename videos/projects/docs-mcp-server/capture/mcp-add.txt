@@ -1,0 +1,2 @@
+Added HTTP MCP server example-docs with URL: http://localhost:3456 to project config
+File modified: /private/tmp/agent-demo/.mcp.json

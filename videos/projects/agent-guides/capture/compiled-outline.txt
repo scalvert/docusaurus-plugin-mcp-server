@@ -1,0 +1,7 @@
+### 1. Installing the SDK {#install}
+**Check:** `npm ls @example/sdk` lists the package.
+### 2. Environment Variables {#api-key}
+**Needs the user.**
+**Check:** `node -e "console.log(Boolean(process.env.EXAMPLE_API_KEY))"` prints `true`.
+### 3. Verifying Installation {#verify}
+**Check:** The script prints `SDK version:` and a version number.

@@ -1,0 +1,14 @@
+{
+  "capabilities": {
+    "tools": {
+      "listChanged": false
+    },
+    "resources": {
+      "listChanged": false
+    },
+    "extensions": {
+      "io.modelcontextprotocol/skills": {}
+    }
+  },
+  "instructions": "This server publishes Agent Skills with step-by-step guidance for using its tools. Before starting a matching task, read the skill: call docs_fetch with its skill:// URI (or use resources/read if your client supports it). Links inside a skill resolve against its URI, so references/setup.md in skill://example/SKILL.md is skill://example/references/setup.md.\n- skill://docs-research/SKILL.md: Answer questions using the Example Docs at example.com (Documentation with MCP Server). Use when the user asks about anything these docs cover, or wants answers backed by links to the docs.\n- skill://example-api-errors/SKILL.md: Diagnose a failed Example API request from its error code or HTTP status, and find the fix in the Example docs. Use when a request to the Example API returns an error.\n- skill://setup-example-sdk/SKILL.md: Install the Example SDK in a Node.js project and connect it with an API key. Use when the user wants to install, set up, or start using the Example SDK."
+}

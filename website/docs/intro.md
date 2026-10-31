@@ -4,9 +4,31 @@ description: What docusaurus-plugin-mcp-server does, how it works, and what you 
 slug: /
 ---
 
+import DocVideo from '@site/src/components/DocVideo';
+
 # Introduction
 
 `docusaurus-plugin-mcp-server` turns a built Docusaurus site into a [Model Context Protocol (MCP)](https://modelcontextprotocol.io/) server. AI agents such as Claude, Cursor, and VS Code connect to it and can search your docs and read any page as Markdown.
+
+<ForHumans>
+
+<DocVideo id="docs-as-mcp-server" title="Your Docusaurus docs, as an MCP server">
+
+Ask an AI agent about your project, and it answers from whatever it saw in training. This Docusaurus plugin gives it your real docs, as an MCP server.
+
+Install it, and add it to the plugins in your Docusaurus config. Give the server a name, and that's the setup.
+
+Build the site as usual. The plugin turns every page into a search index and one bundle. Then the verify command starts a server from that bundle, and checks it.
+
+To serve it, export one web request handler. The same few lines run on Vercel, Netlify, Cloudflare Workers, Deno, Bun, or Node.
+
+Then connect your agent. Here's Claude Code with the example site. It reads the skill the server ships, searches the docs, fetches the page, and answers with a link to the source.
+
+Start with the [getting started guide](./getting-started.md) on the plugin's docs site.
+
+</DocVideo>
+
+</ForHumans>
 
 The server speaks MCP [2026-07-28](https://modelcontextprotocol.io/specification/2026-07-28). It also serves clients on 2025-era revisions (the `initialize` handshake) from the same endpoint, so you don't have to know which protocol a client uses.
 

@@ -3,9 +3,33 @@ title: Agent Skills
 description: Serve the built-in docs-research skill, write your own, and how skills reach MCP clients.
 ---
 
+import DocVideo from '@site/src/components/DocVideo';
+
 # Agent Skills
 
 Tool descriptions tell an agent what `docs_search` and `docs_fetch` do, not how to research your docs well. The server can also ship that guidance as [Agent Skills](https://agentskills.io), through the MCP skills extension ([SEP-2640](https://modelcontextprotocol.io/seps/2640-skills-extension), `io.modelcontextprotocol/skills`).
+
+<ForHumans>
+
+<DocVideo id="skills-over-mcp" title="Agent Skills over MCP">
+
+Tool descriptions tell an agent what your docs tools do, not how to use your docs well. Agent Skills fill that gap, and your docs site can ship them.
+
+Every build includes one skill, `docs-research`. It's written from your site. It tells the agent to search, fetch the page, and link its source, then maps where things are.
+
+Add your own for what only your team knows. Put each skill in a folder with a `SKILL.md`, and point the plugin at the parent folder.
+
+Build the site. The plugin checks every skill, and packs it into the same bundle as your docs. There's nothing extra to deploy.
+
+The server supports the MCP skills extension. Few hosts do yet, so its instructions also list every skill, and tell the agent to read it with `docs_fetch`.
+
+Here's Claude Code, with a request that fails with a 429. It reads the error skill first, searches, fetches the rate limiting section, and answers with the fix and a link.
+
+Read the Agent Skills guide on the plugin's docs site.
+
+</DocVideo>
+
+</ForHumans>
 
 ## The built-in `docs-research` skill
 

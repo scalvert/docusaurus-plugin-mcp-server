@@ -1,0 +1,971 @@
+{
+ "text": "Tool descriptions tell an agent what your docs tools do, not how to use your docs well. Agent Skills fill that gap, and your docs site can ship them.\n\nEvery build includes one skill, docs research. It's written from your site. It tells the agent to search, fetch the page, and link its source, then maps where things are.\n\nAdd your own for what only your team knows. Put each skill in a folder with a skill dot M D, and point the plugin at the parent folder.\n\nBuild the site. The plugin checks every skill, and packs it into the same bundle as your docs. There's nothing extra to deploy.\n\nThe server supports the M C P skills extension. Few hosts do yet, so its instructions also list every skill, and tell the agent to read it with docs fetch.\n\nHere's Claude Code, with a request that fails with a four twenty nine. It reads the error skill first, searches, fetches the rate limiting section, and answers with the fix and a link.\n\nRead the Agent Skills guide on the plugin's docs site.",
+ "voice": {
+  "voice_id": "JlIjsZ6UuvvPTqUbVOGz",
+  "model_id": "eleven_v3",
+  "settings": {
+   "stability": 0.5,
+   "similarity_boost": 0.8
+  }
+ },
+ "words": [
+  {
+   "word": "Tool",
+   "start": 0,
+   "end": 0.16
+  },
+  {
+   "word": "descriptions",
+   "start": 0.203,
+   "end": 0.72
+  },
+  {
+   "word": "tell",
+   "start": 0.752,
+   "end": 0.88
+  },
+  {
+   "word": "an",
+   "start": 0.907,
+   "end": 0.96
+  },
+  {
+   "word": "agent",
+   "start": 1.013,
+   "end": 1.28
+  },
+  {
+   "word": "what",
+   "start": 1.328,
+   "end": 1.52
+  },
+  {
+   "word": "your",
+   "start": 1.552,
+   "end": 1.68
+  },
+  {
+   "word": "docs",
+   "start": 1.744,
+   "end": 2
+  },
+  {
+   "word": "tools",
+   "start": 2.053,
+   "end": 2.32
+  },
+  {
+   "word": "do,",
+   "start": 2.4,
+   "end": 3.04
+  },
+  {
+   "word": "not",
+   "start": 3.1,
+   "end": 3.28
+  },
+  {
+   "word": "how",
+   "start": 3.3,
+   "end": 3.36
+  },
+  {
+   "word": "to",
+   "start": 3.413,
+   "end": 3.52
+  },
+  {
+   "word": "use",
+   "start": 3.56,
+   "end": 3.68
+  },
+  {
+   "word": "your",
+   "start": 3.696,
+   "end": 3.76
+  },
+  {
+   "word": "docs",
+   "start": 3.824,
+   "end": 4.08
+  },
+  {
+   "word": "well.",
+   "start": 4.144,
+   "end": 4.48
+  },
+  {
+   "word": "Agent",
+   "start": 4.667,
+   "end": 5.6
+  },
+  {
+   "word": "Skills",
+   "start": 5.657,
+   "end": 6
+  },
+  {
+   "word": "fill",
+   "start": 6.032,
+   "end": 6.16
+  },
+  {
+   "word": "that",
+   "start": 6.192,
+   "end": 6.32
+  },
+  {
+   "word": "gap,",
+   "start": 6.42,
+   "end": 6.88
+  },
+  {
+   "word": "and",
+   "start": 6.92,
+   "end": 7.04
+  },
+  {
+   "word": "your",
+   "start": 7.056,
+   "end": 7.12
+  },
+  {
+   "word": "docs",
+   "start": 7.184,
+   "end": 7.44
+  },
+  {
+   "word": "site",
+   "start": 7.488,
+   "end": 7.68
+  },
+  {
+   "word": "can",
+   "start": 7.72,
+   "end": 7.84
+  },
+  {
+   "word": "ship",
+   "start": 7.888,
+   "end": 8.08
+  },
+  {
+   "word": "them.",
+   "start": 8.112,
+   "end": 8.32
+  },
+  {
+   "word": "Every",
+   "start": 8.833,
+   "end": 9.2
+  },
+  {
+   "word": "build",
+   "start": 9.253,
+   "end": 9.52
+  },
+  {
+   "word": "includes",
+   "start": 9.564,
+   "end": 9.92
+  },
+  {
+   "word": "one",
+   "start": 9.98,
+   "end": 10.16
+  },
+  {
+   "word": "skill,",
+   "start": 10.213,
+   "end": 10.8
+  },
+  {
+   "word": "docs",
+   "start": 10.864,
+   "end": 11.12
+  },
+  {
+   "word": "research.",
+   "start": 11.173,
+   "end": 11.68
+  },
+  {
+   "word": "It's",
+   "start": 11.867,
+   "end": 12.241
+  },
+  {
+   "word": "written",
+   "start": 12.27,
+   "end": 12.48
+  },
+  {
+   "word": "from",
+   "start": 12.528,
+   "end": 12.72
+  },
+  {
+   "word": "your",
+   "start": 12.736,
+   "end": 12.8
+  },
+  {
+   "word": "site.",
+   "start": 12.88,
+   "end": 13.28
+  },
+  {
+   "word": "It",
+   "start": 13.387,
+   "end": 13.6
+  },
+  {
+   "word": "tells",
+   "start": 13.653,
+   "end": 13.92
+  },
+  {
+   "word": "the",
+   "start": 13.94,
+   "end": 14
+  },
+  {
+   "word": "agent",
+   "start": 14.053,
+   "end": 14.32
+  },
+  {
+   "word": "to",
+   "start": 14.373,
+   "end": 14.48
+  },
+  {
+   "word": "search,",
+   "start": 14.549,
+   "end": 15.28
+  },
+  {
+   "word": "fetch",
+   "start": 15.32,
+   "end": 15.52
+  },
+  {
+   "word": "the",
+   "start": 15.56,
+   "end": 15.68
+  },
+  {
+   "word": "page,",
+   "start": 15.744,
+   "end": 16.16
+  },
+  {
+   "word": "and",
+   "start": 16.18,
+   "end": 16.24
+  },
+  {
+   "word": "link",
+   "start": 16.288,
+   "end": 16.48
+  },
+  {
+   "word": "its",
+   "start": 16.52,
+   "end": 16.64
+  },
+  {
+   "word": "source,",
+   "start": 16.697,
+   "end": 17.52
+  },
+  {
+   "word": "then",
+   "start": 17.552,
+   "end": 17.68
+  },
+  {
+   "word": "maps",
+   "start": 17.744,
+   "end": 18
+  },
+  {
+   "word": "where",
+   "start": 18.027,
+   "end": 18.16
+  },
+  {
+   "word": "things",
+   "start": 18.194,
+   "end": 18.4
+  },
+  {
+   "word": "are.",
+   "start": 18.46,
+   "end": 18.72
+  },
+  {
+   "word": "Add",
+   "start": 19.27,
+   "end": 19.6
+  },
+  {
+   "word": "your",
+   "start": 19.616,
+   "end": 19.68
+  },
+  {
+   "word": "own",
+   "start": 19.74,
+   "end": 19.92
+  },
+  {
+   "word": "for",
+   "start": 19.96,
+   "end": 20.08
+  },
+  {
+   "word": "what",
+   "start": 20.112,
+   "end": 20.24
+  },
+  {
+   "word": "only",
+   "start": 20.304,
+   "end": 20.56
+  },
+  {
+   "word": "your",
+   "start": 20.576,
+   "end": 20.64
+  },
+  {
+   "word": "team",
+   "start": 20.704,
+   "end": 20.96
+  },
+  {
+   "word": "knows.",
+   "start": 21.027,
+   "end": 21.52
+  },
+  {
+   "word": "Put",
+   "start": 21.72,
+   "end": 22.32
+  },
+  {
+   "word": "each",
+   "start": 22.352,
+   "end": 22.48
+  },
+  {
+   "word": "skill",
+   "start": 22.52,
+   "end": 22.72
+  },
+  {
+   "word": "in",
+   "start": 22.747,
+   "end": 22.8
+  },
+  {
+   "word": "a",
+   "start": 22.84,
+   "end": 22.88
+  },
+  {
+   "word": "folder",
+   "start": 22.937,
+   "end": 23.28
+  },
+  {
+   "word": "with",
+   "start": 23.328,
+   "end": 23.52
+  },
+  {
+   "word": "a",
+   "start": 23.56,
+   "end": 23.6
+  },
+  {
+   "word": "skill",
+   "start": 23.68,
+   "end": 24.08
+  },
+  {
+   "word": "dot",
+   "start": 24.14,
+   "end": 24.32
+  },
+  {
+   "word": "M",
+   "start": 24.48,
+   "end": 24.64
+  },
+  {
+   "word": "D,",
+   "start": 24.8,
+   "end": 25.04
+  },
+  {
+   "word": "and",
+   "start": 25.14,
+   "end": 25.44
+  },
+  {
+   "word": "point",
+   "start": 25.48,
+   "end": 25.68
+  },
+  {
+   "word": "the",
+   "start": 25.7,
+   "end": 25.76
+  },
+  {
+   "word": "plugin",
+   "start": 25.817,
+   "end": 26.16
+  },
+  {
+   "word": "at",
+   "start": 26.187,
+   "end": 26.24
+  },
+  {
+   "word": "the",
+   "start": 26.28,
+   "end": 26.4
+  },
+  {
+   "word": "parent",
+   "start": 26.446,
+   "end": 26.72
+  },
+  {
+   "word": "folder.",
+   "start": 26.777,
+   "end": 27.2
+  },
+  {
+   "word": "Build",
+   "start": 27.713,
+   "end": 28.08
+  },
+  {
+   "word": "the",
+   "start": 28.1,
+   "end": 28.16
+  },
+  {
+   "word": "site.",
+   "start": 28.24,
+   "end": 28.88
+  },
+  {
+   "word": "The",
+   "start": 28.96,
+   "end": 29.2
+  },
+  {
+   "word": "plugin",
+   "start": 29.246,
+   "end": 29.52
+  },
+  {
+   "word": "checks",
+   "start": 29.577,
+   "end": 29.92
+  },
+  {
+   "word": "every",
+   "start": 29.96,
+   "end": 30.16
+  },
+  {
+   "word": "skill,",
+   "start": 30.227,
+   "end": 30.64
+  },
+  {
+   "word": "and",
+   "start": 30.66,
+   "end": 30.72
+  },
+  {
+   "word": "packs",
+   "start": 30.773,
+   "end": 31.04
+  },
+  {
+   "word": "it",
+   "start": 31.067,
+   "end": 31.12
+  },
+  {
+   "word": "into",
+   "start": 31.168,
+   "end": 31.36
+  },
+  {
+   "word": "the",
+   "start": 31.38,
+   "end": 31.44
+  },
+  {
+   "word": "same",
+   "start": 31.488,
+   "end": 31.68
+  },
+  {
+   "word": "bundle",
+   "start": 31.726,
+   "end": 32
+  },
+  {
+   "word": "as",
+   "start": 32.027,
+   "end": 32.08
+  },
+  {
+   "word": "your",
+   "start": 32.112,
+   "end": 32.24
+  },
+  {
+   "word": "docs.",
+   "start": 32.32,
+   "end": 32.72
+  },
+  {
+   "word": "There's",
+   "start": 32.8,
+   "end": 33.28
+  },
+  {
+   "word": "nothing",
+   "start": 33.32,
+   "end": 33.6
+  },
+  {
+   "word": "extra",
+   "start": 33.653,
+   "end": 33.92
+  },
+  {
+   "word": "to",
+   "start": 33.947,
+   "end": 34
+  },
+  {
+   "word": "deploy.",
+   "start": 34.069,
+   "end": 34.481
+  },
+  {
+   "word": "The",
+   "start": 34.661,
+   "end": 35.201
+  },
+  {
+   "word": "server",
+   "start": 35.247,
+   "end": 35.521
+  },
+  {
+   "word": "supports",
+   "start": 35.565,
+   "end": 35.921
+  },
+  {
+   "word": "the",
+   "start": 35.961,
+   "end": 36.081
+  },
+  {
+   "word": "M",
+   "start": 36.201,
+   "end": 36.321
+  },
+  {
+   "word": "C",
+   "start": 36.361,
+   "end": 36.401
+  },
+  {
+   "word": "P",
+   "start": 36.561,
+   "end": 36.721
+  },
+  {
+   "word": "skills",
+   "start": 36.767,
+   "end": 37.041
+  },
+  {
+   "word": "extension.",
+   "start": 37.097,
+   "end": 37.961
+  },
+  {
+   "word": "Few",
+   "start": 38.051,
+   "end": 38.321
+  },
+  {
+   "word": "hosts",
+   "start": 38.374,
+   "end": 38.641
+  },
+  {
+   "word": "do",
+   "start": 38.694,
+   "end": 38.801
+  },
+  {
+   "word": "yet,",
+   "start": 38.861,
+   "end": 39.361
+  },
+  {
+   "word": "so",
+   "start": 39.414,
+   "end": 39.521
+  },
+  {
+   "word": "its",
+   "start": 39.541,
+   "end": 39.601
+  },
+  {
+   "word": "instructions",
+   "start": 39.65,
+   "end": 40.241
+  },
+  {
+   "word": "also",
+   "start": 40.289,
+   "end": 40.481
+  },
+  {
+   "word": "list",
+   "start": 40.545,
+   "end": 40.801
+  },
+  {
+   "word": "every",
+   "start": 40.841,
+   "end": 41.041
+  },
+  {
+   "word": "skill,",
+   "start": 41.108,
+   "end": 41.761
+  },
+  {
+   "word": "and",
+   "start": 41.801,
+   "end": 41.921
+  },
+  {
+   "word": "tell",
+   "start": 41.953,
+   "end": 42.081
+  },
+  {
+   "word": "the",
+   "start": 42.101,
+   "end": 42.161
+  },
+  {
+   "word": "agent",
+   "start": 42.214,
+   "end": 42.481
+  },
+  {
+   "word": "to",
+   "start": 42.508,
+   "end": 42.561
+  },
+  {
+   "word": "read",
+   "start": 42.609,
+   "end": 42.801
+  },
+  {
+   "word": "it",
+   "start": 42.854,
+   "end": 42.961
+  },
+  {
+   "word": "with",
+   "start": 42.977,
+   "end": 43.041
+  },
+  {
+   "word": "docs",
+   "start": 43.121,
+   "end": 43.441
+  },
+  {
+   "word": "fetch.",
+   "start": 43.508,
+   "end": 43.921
+  },
+  {
+   "word": "Here's",
+   "start": 44.145,
+   "end": 44.801
+  },
+  {
+   "word": "Claude",
+   "start": 44.847,
+   "end": 45.121
+  },
+  {
+   "word": "Code,",
+   "start": 45.201,
+   "end": 45.761
+  },
+  {
+   "word": "with",
+   "start": 45.793,
+   "end": 45.921
+  },
+  {
+   "word": "a",
+   "start": 45.961,
+   "end": 46.001
+  },
+  {
+   "word": "request",
+   "start": 46.051,
+   "end": 46.401
+  },
+  {
+   "word": "that",
+   "start": 46.417,
+   "end": 46.481
+  },
+  {
+   "word": "fails",
+   "start": 46.561,
+   "end": 46.961
+  },
+  {
+   "word": "with",
+   "start": 46.977,
+   "end": 47.041
+  },
+  {
+   "word": "a",
+   "start": 47.081,
+   "end": 47.121
+  },
+  {
+   "word": "four",
+   "start": 47.153,
+   "end": 47.281
+  },
+  {
+   "word": "twenty",
+   "start": 47.327,
+   "end": 47.601
+  },
+  {
+   "word": "nine.",
+   "start": 47.681,
+   "end": 48.081
+  },
+  {
+   "word": "It",
+   "start": 48.321,
+   "end": 48.801
+  },
+  {
+   "word": "reads",
+   "start": 48.854,
+   "end": 49.121
+  },
+  {
+   "word": "the",
+   "start": 49.141,
+   "end": 49.201
+  },
+  {
+   "word": "error",
+   "start": 49.254,
+   "end": 49.521
+  },
+  {
+   "word": "skill",
+   "start": 49.574,
+   "end": 49.841
+  },
+  {
+   "word": "first,",
+   "start": 49.908,
+   "end": 50.641
+  },
+  {
+   "word": "searches,",
+   "start": 50.703,
+   "end": 51.521
+  },
+  {
+   "word": "fetches",
+   "start": 51.561,
+   "end": 51.841
+  },
+  {
+   "word": "the",
+   "start": 51.881,
+   "end": 52.001
+  },
+  {
+   "word": "rate",
+   "start": 52.033,
+   "end": 52.161
+  },
+  {
+   "word": "limiting",
+   "start": 52.205,
+   "end": 52.561
+  },
+  {
+   "word": "section,",
+   "start": 52.611,
+   "end": 53.361
+  },
+  {
+   "word": "and",
+   "start": 53.401,
+   "end": 53.521
+  },
+  {
+   "word": "answers",
+   "start": 53.571,
+   "end": 53.921
+  },
+  {
+   "word": "with",
+   "start": 53.953,
+   "end": 54.081
+  },
+  {
+   "word": "the",
+   "start": 54.101,
+   "end": 54.161
+  },
+  {
+   "word": "fix",
+   "start": 54.261,
+   "end": 54.561
+  },
+  {
+   "word": "and",
+   "start": 54.621,
+   "end": 54.801
+  },
+  {
+   "word": "a",
+   "start": 54.841,
+   "end": 54.881
+  },
+  {
+   "word": "link.",
+   "start": 54.945,
+   "end": 55.281
+  },
+  {
+   "word": "Read",
+   "start": 55.537,
+   "end": 56.241
+  },
+  {
+   "word": "the",
+   "start": 56.261,
+   "end": 56.321
+  },
+  {
+   "word": "Agent",
+   "start": 56.374,
+   "end": 56.641
+  },
+  {
+   "word": "Skills",
+   "start": 56.687,
+   "end": 56.961
+  },
+  {
+   "word": "guide",
+   "start": 57.001,
+   "end": 57.201
+  },
+  {
+   "word": "on",
+   "start": 57.228,
+   "end": 57.281
+  },
+  {
+   "word": "the",
+   "start": 57.301,
+   "end": 57.361
+  },
+  {
+   "word": "plugin's",
+   "start": 57.418,
+   "end": 57.841
+  },
+  {
+   "word": "docs",
+   "start": 57.905,
+   "end": 58.161
+  },
+  {
+   "word": "site.",
+   "start": 58.225,
+   "end": 58.561
+  }
+ ],
+ "segments": [
+  {
+   "id": "s1",
+   "start": 0,
+   "end": 8.32
+  },
+  {
+   "id": "s2",
+   "start": 8.833,
+   "end": 18.72
+  },
+  {
+   "id": "s3",
+   "start": 19.27,
+   "end": 27.2
+  },
+  {
+   "id": "s4",
+   "start": 27.713,
+   "end": 34.481
+  },
+  {
+   "id": "s5",
+   "start": 34.661,
+   "end": 43.921
+  },
+  {
+   "id": "s6",
+   "start": 44.145,
+   "end": 55.281
+  },
+  {
+   "id": "s7",
+   "start": 55.537,
+   "end": 58.561
+  }
+ ],
+ "audioSha256": "ef634013adbe23c22281b44d4a9bb5acf7caa67a2150b2083091c18f0f24cd14"
+}

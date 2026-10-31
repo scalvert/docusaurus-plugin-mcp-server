@@ -1,0 +1,6 @@
+{
+  "$comment": "The narration voice every video in this repo uses: Steve's ElevenLabs voice. Changing it marks every take stale until you run `npx oncue narrate`.",
+  "voice_id": "JlIjsZ6UuvvPTqUbVOGz",
+  "model_id": "eleven_v3",
+  "settings": { "stability": 0.5, "similarity_boost": 0.8 }
+}

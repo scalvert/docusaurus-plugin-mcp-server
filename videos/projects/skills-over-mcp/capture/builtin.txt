@@ -1,0 +1,9 @@
+description: Answer questions using the Example Docs at example.com (Documentati
+1. **Search first.** Call `docs_search` with a few specific keywords (product te
+2. **Pick candidates.** Use titles, matching sections, and snippets to choose th
+3. **Fetch before answering.** Call `docs_fetch` with an exact URL from the resu
+4. **Refine when results are thin.** Search again with synonyms, narrower terms,
+5. **Answer from the docs.** Ground the answer in fetched content and link the p
+- `/docs/api` (2 pages): Includes Authentication; API Endpoints.
+- `/docs/getting-started` (2 pages): Includes Configuration; Installation.
+- `/docs/intro`: [Introduction](<https://example.com/docs/intro>)

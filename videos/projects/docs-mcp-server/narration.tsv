@@ -1,0 +1,6 @@
+s1	Ask an AI agent about your project, and it answers from whatever it saw in training. This Docusaurus plugin gives it your real docs, as an M C P server.
+s2	Install it, and add it to the plugins in your Docusaurus config. Give the server a name, and that's the setup.
+s3	Build the site as usual. The plugin turns every page into a search index and one bundle. Then the verify command starts a server from that bundle, and checks it.
+s4	To serve it, export one web request handler. The same few lines run on Vercel, Netlify, Cloudflare Workers, Deno, Bun, or Node.
+s5	Then connect your agent. Here's Claude Code with the example site. It reads the skill the server ships, searches the docs, fetches the page, and answers with a link to the source.
+s6	Start with the getting started guide on the plugin's docs site.

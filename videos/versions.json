@@ -1,0 +1,4 @@
+{
+  "$comment": "Every accepted render of every video, appended by `npx oncue registry --accept`. Don't edit by hand.",
+  "videos": {}
+}

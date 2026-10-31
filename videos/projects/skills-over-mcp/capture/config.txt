@@ -1,0 +1,1 @@
+48:        skills: { dir: 'mcp-skills' },

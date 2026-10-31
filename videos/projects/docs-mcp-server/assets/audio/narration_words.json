@@ -1,0 +1,776 @@
+{
+ "text": "Ask an AI agent about your project, and it answers from whatever it saw in training. This Docusaurus plugin gives it your real docs, as an M C P server.\n\nInstall it, and add it to the plugins in your Docusaurus config. Give the server a name, and that's the setup.\n\nBuild the site as usual. The plugin turns every page into a search index and one bundle. Then the verify command starts a server from that bundle, and checks it.\n\nTo serve it, export one web request handler. The same few lines run on Vercel, Netlify, Cloudflare Workers, Deno, Bun, or Node.\n\nThen connect your agent. Here's Claude Code with the example site. It reads the skill the server ships, searches the docs, fetches the page, and answers with a link to the source.\n\nStart with the getting started guide on the plugin's docs site.",
+ "voice": {
+  "voice_id": "JlIjsZ6UuvvPTqUbVOGz",
+  "model_id": "eleven_v3",
+  "settings": {
+   "stability": 0.5,
+   "similarity_boost": 0.8
+  }
+ },
+ "words": [
+  {
+   "word": "Ask",
+   "start": 0,
+   "end": 0.24
+  },
+  {
+   "word": "an",
+   "start": 0.293,
+   "end": 0.4
+  },
+  {
+   "word": "AI",
+   "start": 0.507,
+   "end": 0.72
+  },
+  {
+   "word": "agent",
+   "start": 0.773,
+   "end": 1.04
+  },
+  {
+   "word": "about",
+   "start": 1.067,
+   "end": 1.2
+  },
+  {
+   "word": "your",
+   "start": 1.232,
+   "end": 1.36
+  },
+  {
+   "word": "project,",
+   "start": 1.42,
+   "end": 2
+  },
+  {
+   "word": "and",
+   "start": 2.02,
+   "end": 2.08
+  },
+  {
+   "word": "it",
+   "start": 2.133,
+   "end": 2.24
+  },
+  {
+   "word": "answers",
+   "start": 2.3,
+   "end": 2.72
+  },
+  {
+   "word": "from",
+   "start": 2.752,
+   "end": 2.88
+  },
+  {
+   "word": "whatever",
+   "start": 2.916,
+   "end": 3.2
+  },
+  {
+   "word": "it",
+   "start": 3.253,
+   "end": 3.36
+  },
+  {
+   "word": "saw",
+   "start": 3.44,
+   "end": 3.68
+  },
+  {
+   "word": "in",
+   "start": 3.733,
+   "end": 3.84
+  },
+  {
+   "word": "training.",
+   "start": 3.893,
+   "end": 4.88
+  },
+  {
+   "word": "This",
+   "start": 4.912,
+   "end": 5.04
+  },
+  {
+   "word": "Docusaurus",
+   "start": 5.12,
+   "end": 5.76
+  },
+  {
+   "word": "plugin",
+   "start": 5.84,
+   "end": 6.32
+  },
+  {
+   "word": "gives",
+   "start": 6.36,
+   "end": 6.56
+  },
+  {
+   "word": "it",
+   "start": 6.613,
+   "end": 6.72
+  },
+  {
+   "word": "your",
+   "start": 6.752,
+   "end": 6.88
+  },
+  {
+   "word": "real",
+   "start": 6.928,
+   "end": 7.12
+  },
+  {
+   "word": "docs,",
+   "start": 7.232,
+   "end": 7.76
+  },
+  {
+   "word": "as",
+   "start": 7.813,
+   "end": 7.92
+  },
+  {
+   "word": "an",
+   "start": 7.947,
+   "end": 8
+  },
+  {
+   "word": "M",
+   "start": 8.12,
+   "end": 8.24
+  },
+  {
+   "word": "C",
+   "start": 8.28,
+   "end": 8.32
+  },
+  {
+   "word": "P",
+   "start": 8.44,
+   "end": 8.56
+  },
+  {
+   "word": "server.",
+   "start": 8.629,
+   "end": 9.041
+  },
+  {
+   "word": "Install",
+   "start": 9.22,
+   "end": 9.92
+  },
+  {
+   "word": "it,",
+   "start": 9.947,
+   "end": 10.08
+  },
+  {
+   "word": "and",
+   "start": 10.12,
+   "end": 10.24
+  },
+  {
+   "word": "add",
+   "start": 10.28,
+   "end": 10.4
+  },
+  {
+   "word": "it",
+   "start": 10.427,
+   "end": 10.48
+  },
+  {
+   "word": "to",
+   "start": 10.507,
+   "end": 10.56
+  },
+  {
+   "word": "the",
+   "start": 10.6,
+   "end": 10.72
+  },
+  {
+   "word": "plugins",
+   "start": 10.78,
+   "end": 11.2
+  },
+  {
+   "word": "in",
+   "start": 11.253,
+   "end": 11.36
+  },
+  {
+   "word": "your",
+   "start": 11.376,
+   "end": 11.44
+  },
+  {
+   "word": "Docusaurus",
+   "start": 11.48,
+   "end": 12.08
+  },
+  {
+   "word": "config.",
+   "start": 12.149,
+   "end": 12.64
+  },
+  {
+   "word": "Give",
+   "start": 12.752,
+   "end": 13.2
+  },
+  {
+   "word": "the",
+   "start": 13.22,
+   "end": 13.28
+  },
+  {
+   "word": "server",
+   "start": 13.326,
+   "end": 13.6
+  },
+  {
+   "word": "a",
+   "start": 13.64,
+   "end": 13.68
+  },
+  {
+   "word": "name,",
+   "start": 13.744,
+   "end": 14.16
+  },
+  {
+   "word": "and",
+   "start": 14.18,
+   "end": 14.24
+  },
+  {
+   "word": "that's",
+   "start": 14.272,
+   "end": 14.48
+  },
+  {
+   "word": "the",
+   "start": 14.5,
+   "end": 14.56
+  },
+  {
+   "word": "setup.",
+   "start": 14.627,
+   "end": 15.04
+  },
+  {
+   "word": "Build",
+   "start": 15.413,
+   "end": 15.68
+  },
+  {
+   "word": "the",
+   "start": 15.7,
+   "end": 15.76
+  },
+  {
+   "word": "site",
+   "start": 15.808,
+   "end": 16
+  },
+  {
+   "word": "as",
+   "start": 16.053,
+   "end": 16.16
+  },
+  {
+   "word": "usual.",
+   "start": 16.227,
+   "end": 16.64
+  },
+  {
+   "word": "The",
+   "start": 16.74,
+   "end": 17.04
+  },
+  {
+   "word": "plugin",
+   "start": 17.097,
+   "end": 17.44
+  },
+  {
+   "word": "turns",
+   "start": 17.493,
+   "end": 17.76
+  },
+  {
+   "word": "every",
+   "start": 17.8,
+   "end": 18
+  },
+  {
+   "word": "page",
+   "start": 18.08,
+   "end": 18.4
+  },
+  {
+   "word": "into",
+   "start": 18.448,
+   "end": 18.64
+  },
+  {
+   "word": "a",
+   "start": 18.68,
+   "end": 18.72
+  },
+  {
+   "word": "search",
+   "start": 18.766,
+   "end": 19.04
+  },
+  {
+   "word": "index",
+   "start": 19.107,
+   "end": 19.44
+  },
+  {
+   "word": "and",
+   "start": 19.48,
+   "end": 19.6
+  },
+  {
+   "word": "one",
+   "start": 19.66,
+   "end": 19.84
+  },
+  {
+   "word": "bundle.",
+   "start": 19.897,
+   "end": 20.52
+  },
+  {
+   "word": "Then",
+   "start": 20.576,
+   "end": 20.8
+  },
+  {
+   "word": "the",
+   "start": 20.82,
+   "end": 20.88
+  },
+  {
+   "word": "verify",
+   "start": 20.949,
+   "end": 21.36
+  },
+  {
+   "word": "command",
+   "start": 21.41,
+   "end": 21.76
+  },
+  {
+   "word": "starts",
+   "start": 21.794,
+   "end": 22
+  },
+  {
+   "word": "a",
+   "start": 22.04,
+   "end": 22.08
+  },
+  {
+   "word": "server",
+   "start": 22.137,
+   "end": 22.48
+  },
+  {
+   "word": "from",
+   "start": 22.512,
+   "end": 22.64
+  },
+  {
+   "word": "that",
+   "start": 22.656,
+   "end": 22.72
+  },
+  {
+   "word": "bundle,",
+   "start": 22.777,
+   "end": 23.2
+  },
+  {
+   "word": "and",
+   "start": 23.24,
+   "end": 23.36
+  },
+  {
+   "word": "checks",
+   "start": 23.406,
+   "end": 23.68
+  },
+  {
+   "word": "it.",
+   "start": 23.707,
+   "end": 23.84
+  },
+  {
+   "word": "To",
+   "start": 24.267,
+   "end": 24.48
+  },
+  {
+   "word": "serve",
+   "start": 24.533,
+   "end": 24.8
+  },
+  {
+   "word": "it,",
+   "start": 24.827,
+   "end": 25.04
+  },
+  {
+   "word": "export",
+   "start": 25.109,
+   "end": 25.52
+  },
+  {
+   "word": "one",
+   "start": 25.58,
+   "end": 25.76
+  },
+  {
+   "word": "web",
+   "start": 25.82,
+   "end": 26
+  },
+  {
+   "word": "request",
+   "start": 26.05,
+   "end": 26.4
+  },
+  {
+   "word": "handler.",
+   "start": 26.45,
+   "end": 27.12
+  },
+  {
+   "word": "The",
+   "start": 27.2,
+   "end": 27.44
+  },
+  {
+   "word": "same",
+   "start": 27.488,
+   "end": 27.68
+  },
+  {
+   "word": "few",
+   "start": 27.72,
+   "end": 27.84
+  },
+  {
+   "word": "lines",
+   "start": 27.893,
+   "end": 28.16
+  },
+  {
+   "word": "run",
+   "start": 28.22,
+   "end": 28.4
+  },
+  {
+   "word": "on",
+   "start": 28.427,
+   "end": 28.48
+  },
+  {
+   "word": "Vercel,",
+   "start": 28.52,
+   "end": 29.2
+  },
+  {
+   "word": "Netlify,",
+   "start": 29.24,
+   "end": 29.84
+  },
+  {
+   "word": "Cloudflare",
+   "start": 29.893,
+   "end": 30.4
+  },
+  {
+   "word": "Workers,",
+   "start": 30.46,
+   "end": 31.04
+  },
+  {
+   "word": "Deno,",
+   "start": 31.08,
+   "end": 31.36
+  },
+  {
+   "word": "Bun,",
+   "start": 31.44,
+   "end": 31.76
+  },
+  {
+   "word": "or",
+   "start": 31.787,
+   "end": 31.84
+  },
+  {
+   "word": "Node.",
+   "start": 31.936,
+   "end": 32.36
+  },
+  {
+   "word": "Then",
+   "start": 32.528,
+   "end": 33.04
+  },
+  {
+   "word": "connect",
+   "start": 33.08,
+   "end": 33.36
+  },
+  {
+   "word": "your",
+   "start": 33.392,
+   "end": 33.52
+  },
+  {
+   "word": "agent.",
+   "start": 33.587,
+   "end": 34
+  },
+  {
+   "word": "Here's",
+   "start": 34.112,
+   "end": 34.64
+  },
+  {
+   "word": "Claude",
+   "start": 34.686,
+   "end": 34.96
+  },
+  {
+   "word": "Code",
+   "start": 35.024,
+   "end": 35.28
+  },
+  {
+   "word": "with",
+   "start": 35.312,
+   "end": 35.44
+  },
+  {
+   "word": "the",
+   "start": 35.46,
+   "end": 35.52
+  },
+  {
+   "word": "example",
+   "start": 35.57,
+   "end": 35.92
+  },
+  {
+   "word": "site.",
+   "start": 36,
+   "end": 36.4
+  },
+  {
+   "word": "It",
+   "start": 36.533,
+   "end": 36.8
+  },
+  {
+   "word": "reads",
+   "start": 36.84,
+   "end": 37.04
+  },
+  {
+   "word": "the",
+   "start": 37.06,
+   "end": 37.12
+  },
+  {
+   "word": "skill",
+   "start": 37.173,
+   "end": 37.44
+  },
+  {
+   "word": "the",
+   "start": 37.46,
+   "end": 37.52
+  },
+  {
+   "word": "server",
+   "start": 37.577,
+   "end": 37.92
+  },
+  {
+   "word": "ships,",
+   "start": 37.987,
+   "end": 38.48
+  },
+  {
+   "word": "searches",
+   "start": 38.516,
+   "end": 38.8
+  },
+  {
+   "word": "the",
+   "start": 38.84,
+   "end": 38.96
+  },
+  {
+   "word": "docs,",
+   "start": 39.04,
+   "end": 39.44
+  },
+  {
+   "word": "fetches",
+   "start": 39.467,
+   "end": 39.76
+  },
+  {
+   "word": "the",
+   "start": 39.78,
+   "end": 39.84
+  },
+  {
+   "word": "page,",
+   "start": 39.936,
+   "end": 40.64
+  },
+  {
+   "word": "and",
+   "start": 40.68,
+   "end": 40.8
+  },
+  {
+   "word": "answers",
+   "start": 40.85,
+   "end": 41.2
+  },
+  {
+   "word": "with",
+   "start": 41.232,
+   "end": 41.36
+  },
+  {
+   "word": "a",
+   "start": 41.4,
+   "end": 41.44
+  },
+  {
+   "word": "link",
+   "start": 41.488,
+   "end": 41.68
+  },
+  {
+   "word": "to",
+   "start": 41.707,
+   "end": 41.76
+  },
+  {
+   "word": "the",
+   "start": 41.78,
+   "end": 41.84
+  },
+  {
+   "word": "source.",
+   "start": 41.909,
+   "end": 42.4
+  },
+  {
+   "word": "Start",
+   "start": 42.587,
+   "end": 43.12
+  },
+  {
+   "word": "with",
+   "start": 43.152,
+   "end": 43.28
+  },
+  {
+   "word": "the",
+   "start": 43.32,
+   "end": 43.44
+  },
+  {
+   "word": "getting",
+   "start": 43.46,
+   "end": 43.6
+  },
+  {
+   "word": "started",
+   "start": 43.64,
+   "end": 43.92
+  },
+  {
+   "word": "guide",
+   "start": 43.973,
+   "end": 44.24
+  },
+  {
+   "word": "on",
+   "start": 44.267,
+   "end": 44.32
+  },
+  {
+   "word": "the",
+   "start": 44.34,
+   "end": 44.4
+  },
+  {
+   "word": "plugin's",
+   "start": 44.457,
+   "end": 44.88
+  },
+  {
+   "word": "docs",
+   "start": 44.944,
+   "end": 45.2
+  },
+  {
+   "word": "site.",
+   "start": 45.264,
+   "end": 45.92
+  }
+ ],
+ "segments": [
+  {
+   "id": "s1",
+   "start": 0,
+   "end": 9.041
+  },
+  {
+   "id": "s2",
+   "start": 9.22,
+   "end": 15.04
+  },
+  {
+   "id": "s3",
+   "start": 15.413,
+   "end": 23.84
+  },
+  {
+   "id": "s4",
+   "start": 24.267,
+   "end": 32.36
+  },
+  {
+   "id": "s5",
+   "start": 32.528,
+   "end": 42.4
+  },
+  {
+   "id": "s6",
+   "start": 42.587,
+   "end": 45.92
+  }
+ ],
+ "audioSha256": "92f2fb6aa7bc2fb5ed32ea3d47d4b2b914751a9c2eaa9a683aeb2d83c1b4aa52"
+}

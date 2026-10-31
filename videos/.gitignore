@@ -1,0 +1,14 @@
+# Secrets
+.env
+
+node_modules/
+
+# Build output. Published media lives on the media host, not in git.
+projects/*/renders/
+dist/
+public/*/
+!public/brand/
+!public/fonts/
+
+# Raw capture material (full sessions, unredacted logs). Commit only the redacted files the build reads.
+projects/*/capture/raw/

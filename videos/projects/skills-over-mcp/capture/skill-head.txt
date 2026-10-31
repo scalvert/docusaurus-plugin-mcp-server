@@ -1,0 +1,4 @@
+---
+name: example-api-errors
+description: Diagnose a failed Example API request from its error code or HTTP status, and find the fix in the Example docs. Use when a request to the Example API returns an error.
+---

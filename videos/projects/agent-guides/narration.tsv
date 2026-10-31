@@ -1,0 +1,8 @@
+s1	Your setup page is already a procedure. Mark it up, and the build turns it into a skill an agent can follow, one step at a time.
+s2	Here's the Example SDK's installation page. People read it as they always have: install the package, set your key, and check that it works.
+s3	Wrap the procedure in Agent Guide. Put each step in a Step component, with a Check that says how to tell it worked. Then add a Symptom for each error people hit.
+s4	Some directions are for one reader. For Humans shows on the page, like where to find the button.
+s5	For Agents is hidden from people, and goes only to agents, like never ask for the key in the chat. It's hidden, not secret: anyone can read it in the page's source.
+s6	Build the site, and the guide compiles into a skill named after it. Steps come in order, each with its check, and the key step says Needs the user.
+s7	Now an agent hits the module not found error. It reads the guide, searches, opens its troubleshooting, and answers with the fix and how to check it.
+s8	Start with the agent guides page on the plugin's docs site.

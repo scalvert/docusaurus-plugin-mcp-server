@@ -1,0 +1,26 @@
+{
+  "out_dir": "capture",
+  "shots": [
+    {
+      "name": "page-install",
+      "url": "http://localhost:3000/docs/getting-started/installation",
+      "heading": "Installing the SDK",
+      "items": { "check": "lists the package" },
+      "offset": 140
+    },
+    {
+      "name": "page-env",
+      "url": "http://localhost:3000/docs/getting-started/installation",
+      "heading": "Environment Variables",
+      "items": { "forHumans": "Create a key in the dashboard" },
+      "offset": 140
+    },
+    {
+      "name": "page-trouble",
+      "url": "http://localhost:3000/docs/getting-started/installation",
+      "heading": "Troubleshooting",
+      "items": { "cause": "isn't installed in the folder" },
+      "offset": 140
+    }
+  ]
+}

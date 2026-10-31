@@ -1,0 +1,7 @@
+[MCP] Starting MCP artifact generation...
+[MCP] Found 7 routes to process
+[MCP] Successfully processed 7 documents
+[MCP] Running indexer: local
+[MCP] Packaged 3 skill(s), including 1 agent guide(s)
+[MCP] Artifacts written to /private/tmp/example-docs/build/mcp
+[MCP] Generation complete in 119ms

@@ -1,0 +1,1056 @@
+{
+ "text": "Your setup page is already a procedure. Mark it up, and the build turns it into a skill an agent can follow, one step at a time.\n\nHere's the Example SDK's installation page. People read it as they always have: install the package, set your key, and check that it works.\n\nWrap the procedure in Agent Guide. Put each step in a Step component, with a Check that says how to tell it worked. Then add a Symptom for each error people hit.\n\nSome directions are for one reader. For Humans shows on the page, like where to find the button.\n\nFor Agents is hidden from people, and goes only to agents, like never ask for the key in the chat. It's hidden, not secret: anyone can read it in the page's source.\n\nBuild the site, and the guide compiles into a skill named after it. Steps come in order, each with its check, and the key step says Needs the user.\n\nNow an agent hits the module not found error. It reads the guide, searches, opens its troubleshooting, and answers with the fix and how to check it.\n\nStart with the agent guides page on the plugin's docs site.",
+ "voice": {
+  "voice_id": "JlIjsZ6UuvvPTqUbVOGz",
+  "model_id": "eleven_v3",
+  "settings": {
+   "stability": 0.5,
+   "similarity_boost": 0.8
+  }
+ },
+ "words": [
+  {
+   "word": "Your",
+   "start": 0,
+   "end": 0.08
+  },
+  {
+   "word": "setup",
+   "start": 0.147,
+   "end": 0.48
+  },
+  {
+   "word": "page",
+   "start": 0.528,
+   "end": 0.72
+  },
+  {
+   "word": "is",
+   "start": 0.747,
+   "end": 0.8
+  },
+  {
+   "word": "already",
+   "start": 0.84,
+   "end": 1.12
+  },
+  {
+   "word": "a",
+   "start": 1.16,
+   "end": 1.2
+  },
+  {
+   "word": "procedure.",
+   "start": 1.256,
+   "end": 1.84
+  },
+  {
+   "word": "Mark",
+   "start": 1.936,
+   "end": 2.32
+  },
+  {
+   "word": "it",
+   "start": 2.347,
+   "end": 2.4
+  },
+  {
+   "word": "up,",
+   "start": 2.48,
+   "end": 2.8
+  },
+  {
+   "word": "and",
+   "start": 2.82,
+   "end": 2.88
+  },
+  {
+   "word": "the",
+   "start": 2.9,
+   "end": 2.96
+  },
+  {
+   "word": "build",
+   "start": 3.013,
+   "end": 3.28
+  },
+  {
+   "word": "turns",
+   "start": 3.32,
+   "end": 3.52
+  },
+  {
+   "word": "it",
+   "start": 3.547,
+   "end": 3.6
+  },
+  {
+   "word": "into",
+   "start": 3.648,
+   "end": 3.84
+  },
+  {
+   "word": "a",
+   "start": 3.88,
+   "end": 3.92
+  },
+  {
+   "word": "skill",
+   "start": 3.973,
+   "end": 4.24
+  },
+  {
+   "word": "an",
+   "start": 4.293,
+   "end": 4.4
+  },
+  {
+   "word": "agent",
+   "start": 4.453,
+   "end": 4.72
+  },
+  {
+   "word": "can",
+   "start": 4.76,
+   "end": 4.88
+  },
+  {
+   "word": "follow,",
+   "start": 4.937,
+   "end": 5.52
+  },
+  {
+   "word": "one",
+   "start": 5.56,
+   "end": 5.68
+  },
+  {
+   "word": "step",
+   "start": 5.728,
+   "end": 5.92
+  },
+  {
+   "word": "at",
+   "start": 5.973,
+   "end": 6.08
+  },
+  {
+   "word": "a",
+   "start": 6.12,
+   "end": 6.16
+  },
+  {
+   "word": "time.",
+   "start": 6.224,
+   "end": 6.52
+  },
+  {
+   "word": "Here's",
+   "start": 6.832,
+   "end": 8
+  },
+  {
+   "word": "the",
+   "start": 8.02,
+   "end": 8.08
+  },
+  {
+   "word": "Example",
+   "start": 8.13,
+   "end": 8.48
+  },
+  {
+   "word": "SDK's",
+   "start": 8.62,
+   "end": 9.12
+  },
+  {
+   "word": "installation",
+   "start": 9.163,
+   "end": 9.68
+  },
+  {
+   "word": "page.",
+   "start": 9.76,
+   "end": 10.24
+  },
+  {
+   "word": "People",
+   "start": 10.343,
+   "end": 10.96
+  },
+  {
+   "word": "read",
+   "start": 11.008,
+   "end": 11.2
+  },
+  {
+   "word": "it",
+   "start": 11.253,
+   "end": 11.36
+  },
+  {
+   "word": "as",
+   "start": 11.413,
+   "end": 11.52
+  },
+  {
+   "word": "they",
+   "start": 11.552,
+   "end": 11.68
+  },
+  {
+   "word": "always",
+   "start": 11.714,
+   "end": 11.92
+  },
+  {
+   "word": "have:",
+   "start": 11.984,
+   "end": 12.56
+  },
+  {
+   "word": "install",
+   "start": 12.61,
+   "end": 12.96
+  },
+  {
+   "word": "the",
+   "start": 12.98,
+   "end": 13.04
+  },
+  {
+   "word": "package,",
+   "start": 13.11,
+   "end": 13.76
+  },
+  {
+   "word": "set",
+   "start": 13.82,
+   "end": 14
+  },
+  {
+   "word": "your",
+   "start": 14.016,
+   "end": 14.08
+  },
+  {
+   "word": "key,",
+   "start": 14.18,
+   "end": 14.64
+  },
+  {
+   "word": "and",
+   "start": 14.68,
+   "end": 14.8
+  },
+  {
+   "word": "check",
+   "start": 14.84,
+   "end": 15.04
+  },
+  {
+   "word": "that",
+   "start": 15.056,
+   "end": 15.12
+  },
+  {
+   "word": "it",
+   "start": 15.147,
+   "end": 15.2
+  },
+  {
+   "word": "works.",
+   "start": 15.267,
+   "end": 15.76
+  },
+  {
+   "word": "Wrap",
+   "start": 16.336,
+   "end": 16.72
+  },
+  {
+   "word": "the",
+   "start": 16.74,
+   "end": 16.8
+  },
+  {
+   "word": "procedure",
+   "start": 16.848,
+   "end": 17.28
+  },
+  {
+   "word": "in",
+   "start": 17.36,
+   "end": 17.52
+  },
+  {
+   "word": "Agent",
+   "start": 17.587,
+   "end": 17.92
+  },
+  {
+   "word": "Guide.",
+   "start": 17.973,
+   "end": 18.32
+  },
+  {
+   "word": "Put",
+   "start": 18.48,
+   "end": 18.96
+  },
+  {
+   "word": "each",
+   "start": 19.008,
+   "end": 19.2
+  },
+  {
+   "word": "step",
+   "start": 19.264,
+   "end": 19.52
+  },
+  {
+   "word": "in",
+   "start": 19.573,
+   "end": 19.68
+  },
+  {
+   "word": "a",
+   "start": 19.72,
+   "end": 19.76
+  },
+  {
+   "word": "Step",
+   "start": 19.824,
+   "end": 20.08
+  },
+  {
+   "word": "component,",
+   "start": 20.12,
+   "end": 20.72
+  },
+  {
+   "word": "with",
+   "start": 20.736,
+   "end": 20.8
+  },
+  {
+   "word": "a",
+   "start": 20.84,
+   "end": 20.88
+  },
+  {
+   "word": "Check",
+   "start": 20.933,
+   "end": 21.2
+  },
+  {
+   "word": "that",
+   "start": 21.248,
+   "end": 21.44
+  },
+  {
+   "word": "says",
+   "start": 21.488,
+   "end": 21.68
+  },
+  {
+   "word": "how",
+   "start": 21.74,
+   "end": 21.92
+  },
+  {
+   "word": "to",
+   "start": 21.947,
+   "end": 22
+  },
+  {
+   "word": "tell",
+   "start": 22.032,
+   "end": 22.16
+  },
+  {
+   "word": "it",
+   "start": 22.213,
+   "end": 22.32
+  },
+  {
+   "word": "worked.",
+   "start": 22.366,
+   "end": 22.8
+  },
+  {
+   "word": "Then",
+   "start": 22.928,
+   "end": 23.44
+  },
+  {
+   "word": "add",
+   "start": 23.48,
+   "end": 23.6
+  },
+  {
+   "word": "a",
+   "start": 23.64,
+   "end": 23.68
+  },
+  {
+   "word": "Symptom",
+   "start": 23.72,
+   "end": 24.08
+  },
+  {
+   "word": "for",
+   "start": 24.12,
+   "end": 24.24
+  },
+  {
+   "word": "each",
+   "start": 24.288,
+   "end": 24.48
+  },
+  {
+   "word": "error",
+   "start": 24.533,
+   "end": 24.8
+  },
+  {
+   "word": "people",
+   "start": 24.834,
+   "end": 25.04
+  },
+  {
+   "word": "hit.",
+   "start": 25.12,
+   "end": 25.733
+  },
+  {
+   "word": "Some",
+   "start": 26.181,
+   "end": 26.48
+  },
+  {
+   "word": "directions",
+   "start": 26.524,
+   "end": 26.96
+  },
+  {
+   "word": "are",
+   "start": 27,
+   "end": 27.12
+  },
+  {
+   "word": "for",
+   "start": 27.16,
+   "end": 27.28
+  },
+  {
+   "word": "one",
+   "start": 27.34,
+   "end": 27.52
+  },
+  {
+   "word": "reader.",
+   "start": 27.566,
+   "end": 28.24
+  },
+  {
+   "word": "For",
+   "start": 28.34,
+   "end": 28.64
+  },
+  {
+   "word": "Humans",
+   "start": 28.709,
+   "end": 29.12
+  },
+  {
+   "word": "shows",
+   "start": 29.173,
+   "end": 29.44
+  },
+  {
+   "word": "on",
+   "start": 29.493,
+   "end": 29.6
+  },
+  {
+   "word": "the",
+   "start": 29.66,
+   "end": 29.84
+  },
+  {
+   "word": "page,",
+   "start": 29.888,
+   "end": 30.28
+  },
+  {
+   "word": "like",
+   "start": 30.32,
+   "end": 30.48
+  },
+  {
+   "word": "where",
+   "start": 30.507,
+   "end": 30.64
+  },
+  {
+   "word": "to",
+   "start": 30.667,
+   "end": 30.72
+  },
+  {
+   "word": "find",
+   "start": 30.752,
+   "end": 30.88
+  },
+  {
+   "word": "the",
+   "start": 30.9,
+   "end": 30.96
+  },
+  {
+   "word": "button.",
+   "start": 31.017,
+   "end": 31.44
+  },
+  {
+   "word": "For",
+   "start": 31.89,
+   "end": 32.16
+  },
+  {
+   "word": "Agents",
+   "start": 32.217,
+   "end": 32.56
+  },
+  {
+   "word": "is",
+   "start": 32.613,
+   "end": 32.72
+  },
+  {
+   "word": "hidden",
+   "start": 32.754,
+   "end": 32.96
+  },
+  {
+   "word": "from",
+   "start": 32.992,
+   "end": 33.12
+  },
+  {
+   "word": "people,",
+   "start": 33.177,
+   "end": 33.68
+  },
+  {
+   "word": "and",
+   "start": 33.72,
+   "end": 33.84
+  },
+  {
+   "word": "goes",
+   "start": 33.872,
+   "end": 34
+  },
+  {
+   "word": "only",
+   "start": 34.048,
+   "end": 34.24
+  },
+  {
+   "word": "to",
+   "start": 34.293,
+   "end": 34.4
+  },
+  {
+   "word": "agents,",
+   "start": 34.469,
+   "end": 35.12
+  },
+  {
+   "word": "like",
+   "start": 35.152,
+   "end": 35.28
+  },
+  {
+   "word": "never",
+   "start": 35.333,
+   "end": 35.6
+  },
+  {
+   "word": "ask",
+   "start": 35.66,
+   "end": 35.84
+  },
+  {
+   "word": "for",
+   "start": 35.88,
+   "end": 36
+  },
+  {
+   "word": "the",
+   "start": 36.02,
+   "end": 36.08
+  },
+  {
+   "word": "key",
+   "start": 36.14,
+   "end": 36.32
+  },
+  {
+   "word": "in",
+   "start": 36.347,
+   "end": 36.4
+  },
+  {
+   "word": "the",
+   "start": 36.42,
+   "end": 36.48
+  },
+  {
+   "word": "chat.",
+   "start": 36.56,
+   "end": 37.24
+  },
+  {
+   "word": "It's",
+   "start": 37.36,
+   "end": 37.68
+  },
+  {
+   "word": "hidden,",
+   "start": 37.726,
+   "end": 38.24
+  },
+  {
+   "word": "not",
+   "start": 38.28,
+   "end": 38.4
+  },
+  {
+   "word": "secret:",
+   "start": 38.469,
+   "end": 39.28
+  },
+  {
+   "word": "anyone",
+   "start": 39.337,
+   "end": 39.68
+  },
+  {
+   "word": "can",
+   "start": 39.72,
+   "end": 39.84
+  },
+  {
+   "word": "read",
+   "start": 39.872,
+   "end": 40
+  },
+  {
+   "word": "it",
+   "start": 40.053,
+   "end": 40.16
+  },
+  {
+   "word": "in",
+   "start": 40.187,
+   "end": 40.24
+  },
+  {
+   "word": "the",
+   "start": 40.26,
+   "end": 40.32
+  },
+  {
+   "word": "page's",
+   "start": 40.368,
+   "end": 40.72
+  },
+  {
+   "word": "source.",
+   "start": 40.777,
+   "end": 41.2
+  },
+  {
+   "word": "Build",
+   "start": 41.413,
+   "end": 42.08
+  },
+  {
+   "word": "the",
+   "start": 42.1,
+   "end": 42.16
+  },
+  {
+   "word": "site,",
+   "start": 42.24,
+   "end": 42.64
+  },
+  {
+   "word": "and",
+   "start": 42.68,
+   "end": 42.8
+  },
+  {
+   "word": "the",
+   "start": 42.82,
+   "end": 42.88
+  },
+  {
+   "word": "guide",
+   "start": 42.92,
+   "end": 43.12
+  },
+  {
+   "word": "compiles",
+   "start": 43.168,
+   "end": 43.6
+  },
+  {
+   "word": "into",
+   "start": 43.648,
+   "end": 43.84
+  },
+  {
+   "word": "a",
+   "start": 43.88,
+   "end": 43.92
+  },
+  {
+   "word": "skill",
+   "start": 43.973,
+   "end": 44.24
+  },
+  {
+   "word": "named",
+   "start": 44.28,
+   "end": 44.48
+  },
+  {
+   "word": "after",
+   "start": 44.533,
+   "end": 44.8
+  },
+  {
+   "word": "it.",
+   "start": 44.853,
+   "end": 45.04
+  },
+  {
+   "word": "Steps",
+   "start": 45.173,
+   "end": 45.84
+  },
+  {
+   "word": "come",
+   "start": 45.856,
+   "end": 45.92
+  },
+  {
+   "word": "in",
+   "start": 45.973,
+   "end": 46.08
+  },
+  {
+   "word": "order,",
+   "start": 46.12,
+   "end": 46.56
+  },
+  {
+   "word": "each",
+   "start": 46.592,
+   "end": 46.72
+  },
+  {
+   "word": "with",
+   "start": 46.752,
+   "end": 46.88
+  },
+  {
+   "word": "its",
+   "start": 46.92,
+   "end": 47.04
+  },
+  {
+   "word": "check,",
+   "start": 47.107,
+   "end": 47.6
+  },
+  {
+   "word": "and",
+   "start": 47.62,
+   "end": 47.68
+  },
+  {
+   "word": "the",
+   "start": 47.7,
+   "end": 47.76
+  },
+  {
+   "word": "key",
+   "start": 47.82,
+   "end": 48
+  },
+  {
+   "word": "step",
+   "start": 48.064,
+   "end": 48.32
+  },
+  {
+   "word": "says",
+   "start": 48.432,
+   "end": 48.88
+  },
+  {
+   "word": "Needs",
+   "start": 48.973,
+   "end": 49.44
+  },
+  {
+   "word": "the",
+   "start": 49.46,
+   "end": 49.52
+  },
+  {
+   "word": "user.",
+   "start": 49.6,
+   "end": 50
+  },
+  {
+   "word": "Now",
+   "start": 50.65,
+   "end": 51.04
+  },
+  {
+   "word": "an",
+   "start": 51.067,
+   "end": 51.12
+  },
+  {
+   "word": "agent",
+   "start": 51.16,
+   "end": 51.36
+  },
+  {
+   "word": "hits",
+   "start": 51.408,
+   "end": 51.6
+  },
+  {
+   "word": "the",
+   "start": 51.62,
+   "end": 51.68
+  },
+  {
+   "word": "module",
+   "start": 51.737,
+   "end": 52.08
+  },
+  {
+   "word": "not",
+   "start": 52.14,
+   "end": 52.32
+  },
+  {
+   "word": "found",
+   "start": 52.387,
+   "end": 52.72
+  },
+  {
+   "word": "error.",
+   "start": 52.773,
+   "end": 53.12
+  },
+  {
+   "word": "It",
+   "start": 53.28,
+   "end": 53.6
+  },
+  {
+   "word": "reads",
+   "start": 53.653,
+   "end": 53.92
+  },
+  {
+   "word": "the",
+   "start": 53.94,
+   "end": 54
+  },
+  {
+   "word": "guide,",
+   "start": 54.067,
+   "end": 54.64
+  },
+  {
+   "word": "searches,",
+   "start": 54.702,
+   "end": 55.36
+  },
+  {
+   "word": "opens",
+   "start": 55.413,
+   "end": 55.68
+  },
+  {
+   "word": "its",
+   "start": 55.72,
+   "end": 55.84
+  },
+  {
+   "word": "troubleshooting,",
+   "start": 55.88,
+   "end": 56.88
+  },
+  {
+   "word": "and",
+   "start": 56.9,
+   "end": 56.96
+  },
+  {
+   "word": "answers",
+   "start": 57.01,
+   "end": 57.36
+  },
+  {
+   "word": "with",
+   "start": 57.376,
+   "end": 57.44
+  },
+  {
+   "word": "the",
+   "start": 57.46,
+   "end": 57.52
+  },
+  {
+   "word": "fix",
+   "start": 57.64,
+   "end": 58
+  },
+  {
+   "word": "and",
+   "start": 58.06,
+   "end": 58.24
+  },
+  {
+   "word": "how",
+   "start": 58.28,
+   "end": 58.4
+  },
+  {
+   "word": "to",
+   "start": 58.427,
+   "end": 58.48
+  },
+  {
+   "word": "check",
+   "start": 58.52,
+   "end": 58.72
+  },
+  {
+   "word": "it.",
+   "start": 58.773,
+   "end": 58.96
+  },
+  {
+   "word": "Start",
+   "start": 59.187,
+   "end": 59.92
+  },
+  {
+   "word": "with",
+   "start": 59.936,
+   "end": 60
+  },
+  {
+   "word": "the",
+   "start": 60.04,
+   "end": 60.16
+  },
+  {
+   "word": "agent",
+   "start": 60.213,
+   "end": 60.48
+  },
+  {
+   "word": "guides",
+   "start": 60.526,
+   "end": 60.8
+  },
+  {
+   "word": "page",
+   "start": 60.864,
+   "end": 61.12
+  },
+  {
+   "word": "on",
+   "start": 61.147,
+   "end": 61.2
+  },
+  {
+   "word": "the",
+   "start": 61.22,
+   "end": 61.28
+  },
+  {
+   "word": "plugin's",
+   "start": 61.337,
+   "end": 61.76
+  },
+  {
+   "word": "docs",
+   "start": 61.824,
+   "end": 62.08
+  },
+  {
+   "word": "site.",
+   "start": 62.144,
+   "end": 62.48
+  }
+ ],
+ "segments": [
+  {
+   "id": "s1",
+   "start": 0,
+   "end": 6.52
+  },
+  {
+   "id": "s2",
+   "start": 6.832,
+   "end": 15.76
+  },
+  {
+   "id": "s3",
+   "start": 16.336,
+   "end": 25.733
+  },
+  {
+   "id": "s4",
+   "start": 26.181,
+   "end": 31.44
+  },
+  {
+   "id": "s5",
+   "start": 31.89,
+   "end": 41.2
+  },
+  {
+   "id": "s6",
+   "start": 41.413,
+   "end": 50
+  },
+  {
+   "id": "s7",
+   "start": 50.65,
+   "end": 58.96
+  },
+  {
+   "id": "s8",
+   "start": 59.187,
+   "end": 62.48
+  }
+ ],
+ "audioSha256": "274615de7d7cada6d3de789907c53acad1c5727541a7b977d098b12edad58b75"
+}
