@@ -3,6 +3,16 @@
 
 
 
+
+## v2.7.1 (2026-10-31)
+
+#### :memo: Documentation
+* [#220](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/220) docs: publish the three explainer videos ([@scalvert](https://github.com/scalvert))
+* [#219](https://github.com/scalvert/docusaurus-plugin-mcp-server/pull/219) docs: add explainer videos to the intro, Agent Skills, and agent guides pages ([@scalvert](https://github.com/scalvert))
+
+#### Committers: 1
+- Steve Calvert ([@scalvert](https://github.com/scalvert))
+
 ## v2.7.0 (2026-10-30)
 
 #### :rocket: Enhancement
