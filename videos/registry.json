@@ -11,5 +11,111 @@
       "label": "Guides"
     }
   ],
-  "videos": []
+  "videos": [
+    {
+      "id": "docs-as-mcp-server",
+      "title": "Your Docusaurus docs, as an MCP server",
+      "summary": "Add docusaurus-plugin-mcp-server to a Docusaurus site, build it, and let an AI agent search and read your docs.",
+      "track": "getting-started",
+      "type": "explainer",
+      "visibility": "preview",
+      "previewReason": "Pilot: narration recorded, not yet listened to or reviewed.",
+      "related": {
+        "doc": "https://docusaurus-plugin-mcp-server.vercel.app/docs/getting-started",
+        "docLabel": "Getting started"
+      },
+      "durationSeconds": 56,
+      "updated": "2026-10-30",
+      "hosted": true,
+      "version": 1,
+      "media": {
+        "file": "docs-as-mcp-server.ddfccf1f8e.mp4",
+        "poster": "docs-as-mcp-server.997367d00e.webp",
+        "sha256": "ddfccf1f8e7948e06e1bbbc602615614fcf6d113183bc8598e85882ad7802589",
+        "posterSha256": "997367d00e030172ed3df6c02a77ab3e6b689218daa0d2af0cf7c16818c9f29a",
+        "bytes": 5930906,
+        "width": 1920,
+        "height": 1080
+      },
+      "transcript": [
+        "Ask an AI agent about your project, and it answers from whatever it saw in training. This Docusaurus plugin gives it your real docs, as an M C P server.",
+        "Install it, and add it to the plugins in your Docusaurus config. Give the server a name, and that's the setup.",
+        "Build the site as usual. The plugin turns every page into a search index and one bundle. Then the verify command starts a server from that bundle, and checks it.",
+        "To serve it, export one web request handler. The same few lines run on Vercel, Netlify, Cloudflare Workers, Deno, Bun, or Node.",
+        "Then connect your agent. Here's Claude Code with the example site. It reads the skill the server ships, searches the docs, fetches the page, and answers with a link to the source.",
+        "Start with the getting started guide on the plugin's docs site."
+      ]
+    },
+    {
+      "id": "skills-over-mcp",
+      "title": "Ship Agent Skills with your docs",
+      "summary": "Serve the built-in docs-research skill and your own skills from your docs' MCP server, and see an agent use one.",
+      "track": "guides",
+      "type": "explainer",
+      "visibility": "preview",
+      "previewReason": "Pilot: narration recorded, not yet listened to or reviewed.",
+      "related": {
+        "doc": "https://docusaurus-plugin-mcp-server.vercel.app/docs/guides/agent-skills",
+        "docLabel": "Agent Skills"
+      },
+      "durationSeconds": 70,
+      "updated": "2026-10-30",
+      "hosted": true,
+      "version": 1,
+      "media": {
+        "file": "skills-over-mcp.5cdda23eb7.mp4",
+        "poster": "skills-over-mcp.b02a695b97.webp",
+        "sha256": "5cdda23eb7f43513b736bfe610400896ffc4da210db05e01a2429fff95c193d8",
+        "posterSha256": "b02a695b9793e4c8db0c5240d94ef9556a759d541c63029f43bf0bce267ae635",
+        "bytes": 7031795,
+        "width": 1920,
+        "height": 1080
+      },
+      "transcript": [
+        "Tool descriptions tell an agent what your docs tools do, not how to use your docs well. Agent Skills fill that gap, and your docs site can ship them.",
+        "Every build includes one skill, docs research. It's written from your site. It tells the agent to search, fetch the page, and link its source, then maps where things are.",
+        "Add your own for what only your team knows. Put each skill in a folder with a skill dot M D, and point the plugin at the parent folder.",
+        "Build the site. The plugin checks every skill, and packs it into the same bundle as your docs. There's nothing extra to deploy.",
+        "The server supports the M C P skills extension. Few hosts do yet, so its instructions also list every skill, and tell the agent to read it with docs fetch.",
+        "Here's Claude Code, with a request that fails with a four twenty nine. It reads the error skill first, searches, fetches the rate limiting section, and answers with the fix and a link.",
+        "Read the Agent Skills guide on the plugin's docs site."
+      ]
+    },
+    {
+      "id": "agent-guides",
+      "title": "Turn a docs page into an agent guide",
+      "summary": "Mark up a setup page with AgentGuide, Step, Check, Symptom, and ForAgents, and the build compiles it into a skill agents follow.",
+      "track": "guides",
+      "type": "explainer",
+      "visibility": "preview",
+      "previewReason": "Pilot: narration recorded, not yet listened to or reviewed.",
+      "related": {
+        "doc": "https://docusaurus-plugin-mcp-server.vercel.app/docs/guides/agent-guides",
+        "docLabel": "Agent guides"
+      },
+      "durationSeconds": 74,
+      "updated": "2026-10-30",
+      "hosted": true,
+      "version": 1,
+      "media": {
+        "file": "agent-guides.8744740f82.mp4",
+        "poster": "agent-guides.72059e057f.webp",
+        "sha256": "8744740f82eccaf6ab2b0163d3a1a62cea5c46cd98f8462e3298692d162c3874",
+        "posterSha256": "72059e057f86bac3528f8c393344be0b3fe335f38546936a68d7324ca8b5bf28",
+        "bytes": 9509499,
+        "width": 1920,
+        "height": 1080
+      },
+      "transcript": [
+        "Your setup page is already a procedure. Mark it up, and the build turns it into a skill an agent can follow, one step at a time.",
+        "Here's the Example SDK's installation page. People read it as they always have: install the package, set your key, and check that it works.",
+        "Wrap the procedure in Agent Guide. Put each step in a Step component, with a Check that says how to tell it worked. Then add a Symptom for each error people hit.",
+        "Some directions are for one reader. For Humans shows on the page, like where to find the button.",
+        "For Agents is hidden from people, and goes only to agents, like never ask for the key in the chat. It's hidden, not secret: anyone can read it in the page's source.",
+        "Build the site, and the guide compiles into a skill named after it. Steps come in order, each with its check, and the key step says Needs the user.",
+        "Now an agent hits the module not found error. It reads the guide, searches, opens its troubleshooting, and answers with the fix and how to check it.",
+        "Start with the agent guides page on the plugin's docs site."
+      ]
+    }
+  ]
 }
